@@ -1,0 +1,6 @@
+@RulesScoringAndReferralMatrix_HostAddress = http://localhost:5197
+
+GET {{RulesScoringAndReferralMatrix_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

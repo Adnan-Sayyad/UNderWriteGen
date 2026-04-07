@@ -1,0 +1,6 @@
+@NotificationsAndAlerts_HostAddress = http://localhost:5274
+
+GET {{NotificationsAndAlerts_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

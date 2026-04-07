@@ -1,0 +1,6 @@
+@PolicyBindingIssuanceAndEndorsements_HostAddress = http://localhost:5255
+
+GET {{PolicyBindingIssuanceAndEndorsements_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

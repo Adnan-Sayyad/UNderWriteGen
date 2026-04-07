@@ -1,0 +1,14 @@
+<Solution>
+  <Project Path="ApiGateway/ApiGateway.csproj" />
+  <Project Path="ComplianceAuditAndQA/ComplianceAuditAndQA.csproj" />
+  <Project Path="DistributionAndPartyManagement/DistributionAndPartyManagement.csproj" />
+  <Project Path="IdentityAndAccessManagement/IdentityAndAccessManagement.csproj" />
+  <Project Path="NotificationsAndAlerts/NotificationsAndAlerts.csproj" />
+  <Project Path="PolicyBindingIssuanceAndEndorsements/PolicyBindingIssuanceAndEndorsements.csproj" />
+  <Project Path="PricingQuotationAndTerms/PricingQuotationAndTerms.csproj" />
+  <Project Path="ReportingAndPortfolioAnalytics/ReportingAndPortfolioAnalytics.csproj" />
+  <Project Path="RiskDataAndEvidence/RiskDataAndEvidence.csproj" />
+  <Project Path="RulesScoringAndReferralMatrix/RulesScoringAndReferralMatrix.csproj" />
+  <Project Path="SubmissionAndIntake/SubmissionAndIntake.csproj" />
+  <Project Path="UnderwritingWorkflowAndDecisions/UnderwritingWorkflowAndDecisions.csproj" />
+</Solution>

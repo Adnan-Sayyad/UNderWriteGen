@@ -1,0 +1,6 @@
+@SubmissionAndIntake_HostAddress = http://localhost:5130
+
+GET {{SubmissionAndIntake_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,6 @@
+@ComplianceAuditAndQA_HostAddress = http://localhost:5231
+
+GET {{ComplianceAuditAndQA_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
