@@ -11,7 +11,7 @@ namespace RulesScoringAndReferralMatrix.Models
 
     public class RiskScore
     {
-        public Guid ScoreID { get; set; }
+        public Guid RiskScoreID { get; set; }
         public Guid SubmissionID { get; private set; }
         public string ModelVersion { get; private set; }
         public double ScoreValue { get; private set; }
