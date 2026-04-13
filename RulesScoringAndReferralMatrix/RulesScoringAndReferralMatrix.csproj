@@ -18,6 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Contracts\ServiceContracts\" />
+    <Folder Include="Contracts\RepositoryContracts\" />
     <Folder Include="Controllers\" />
   </ItemGroup>
 
