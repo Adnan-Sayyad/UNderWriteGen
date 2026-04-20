@@ -54,7 +54,7 @@ namespace RulesScoringAndReferralMatrix.Migrations
 
                     b.HasKey("ReferralID");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("Referrals");
                 });
 
             modelBuilder.Entity("RulesScoringAndReferralMatrix.Models.ReferralMatrix", b =>
@@ -105,7 +105,7 @@ namespace RulesScoringAndReferralMatrix.Migrations
 
                     b.HasKey("RiskScoreID");
 
-                    b.ToTable("Referrals");
+                    b.ToTable("RiskScores");
                 });
 
             modelBuilder.Entity("RulesScoringAndReferralMatrix.Models.UWRule", b =>

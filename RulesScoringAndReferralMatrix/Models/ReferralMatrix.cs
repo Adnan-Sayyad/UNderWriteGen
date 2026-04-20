@@ -11,8 +11,8 @@ namespace RulesScoringAndReferralMatrix.Models
     public class ReferralMatrix
     {
         public Guid ReferralMatrixID { get; set; }
-        public string ProductLine { get; private set; }
-        public CriteriaJSON CriteriaJSON { get; private set; }
+        public string ProductLine { get; set; } = string.Empty;
+        public CriteriaJSON CriteriaJSON { get; set; }
         public RequiredAuthority RequiredAuthority { get; set; }
         public UWStatus Status { get; set; }
     }

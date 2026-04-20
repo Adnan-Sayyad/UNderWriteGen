@@ -12,10 +12,10 @@ namespace RulesScoringAndReferralMatrix.Models
     public class RiskScore
     {
         public Guid RiskScoreID { get; set; }
-        public Guid SubmissionID { get; private set; }
-        public string ModelVersion { get; private set; }
-        public double ScoreValue { get; private set; }
-        public Band Band { get; private set; }
-        public DateTime ScoredDate { get; private set; }
+        public Guid SubmissionID { get; set; }
+        public string ModelVersion { get; set; } = string.Empty;
+        public double ScoreValue { get; set; }
+        public Band Band { get; set; }
+        public DateTime ScoredDate { get; set; }
     }
 }

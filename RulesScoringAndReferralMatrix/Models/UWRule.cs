@@ -11,8 +11,8 @@ namespace RulesScoringAndReferralMatrix.Models
     public class UWRule
     {
         public Guid UWRuleID { get; set; }
-        public string ProductLine { get; private set; }
-        public string ExpressionJSON { get; private set; }
+        public string ProductLine { get; set; } = string.Empty;
+        public string ExpressionJSON { get; set; } = string.Empty;
         public Severity Severity { get; set; }
         public UWStatus Status { get; set; }
     }

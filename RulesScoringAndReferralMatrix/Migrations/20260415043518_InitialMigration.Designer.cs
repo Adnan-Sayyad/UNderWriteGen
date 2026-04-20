@@ -12,7 +12,7 @@ using RulesScoringAndReferralMatrix.Data;
 namespace RulesScoringAndReferralMatrix.Migrations
 {
     [DbContext(typeof(RulesScoringAndReferralMatrixDbContext))]
-    [Migration("20260411053436_InitialMigration")]
+    [Migration("20260415043518_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -57,7 +57,7 @@ namespace RulesScoringAndReferralMatrix.Migrations
 
                     b.HasKey("ReferralID");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("Referrals");
                 });
 
             modelBuilder.Entity("RulesScoringAndReferralMatrix.Models.ReferralMatrix", b =>
@@ -108,7 +108,7 @@ namespace RulesScoringAndReferralMatrix.Migrations
 
                     b.HasKey("RiskScoreID");
 
-                    b.ToTable("Referrals");
+                    b.ToTable("RiskScores");
                 });
 
             modelBuilder.Entity("RulesScoringAndReferralMatrix.Models.UWRule", b =>
