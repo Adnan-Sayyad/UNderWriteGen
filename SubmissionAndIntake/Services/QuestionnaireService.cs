@@ -65,6 +65,27 @@ namespace SubmissionAndIntake.Services
             return await _repository.DeleteAsync(id);
         }
 
+        public async Task<IEnumerable<QuestionnaireTemplateDto>> GetTemplatesAsync()
+        {
+            var versions = await _repository.GetDistinctTemplateVersionsAsync();
+            return versions.Select(v => new QuestionnaireTemplateDto
+            {
+                Version = v,
+                Description = $"Questionnaire template version {v}"
+            });
+        }
+
+        public async Task<QuestionnaireTemplateDto?> GetTemplateByVersionAsync(string version)
+        {
+            var versions = await _repository.GetDistinctTemplateVersionsAsync();
+            if (!versions.Contains(version)) return null;
+            return new QuestionnaireTemplateDto
+            {
+                Version = version,
+                Description = $"Questionnaire template version {version}"
+            };
+        }
+
         private static QuestionnaireResponseDto MapToResponseDto(Questionnaire questionnaire) => new()
         {
             QID = questionnaire.QID,

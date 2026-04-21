@@ -13,6 +13,7 @@ namespace SubmissionAndIntake.Contracts.RepositoryContracts
         Task<IEnumerable<Submission>> GetByProductLineAsync(ProductLine productLine);
         Task<Submission> CreateAsync(Submission submission);
         Task<Submission?> UpdateAsync(Submission submission);
+        Task<Submission?> UpdateStatusAsync(Guid id, SubmissionStatus status);
         Task<bool> DeleteAsync(Guid id);
     }
 }

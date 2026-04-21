@@ -83,6 +83,12 @@ namespace SubmissionAndIntake.Services
             return updated is null ? null : MapToResponseDto(updated);
         }
 
+        public async Task<SubmissionResponseDto?> UpdateSubmissionStatusAsync(Guid id, UpdateSubmissionStatusDto dto)
+        {
+            var updated = await _repository.UpdateStatusAsync(id, dto.Status);
+            return updated is null ? null : MapToResponseDto(updated);
+        }
+
         public async Task<bool> DeleteSubmissionAsync(Guid id)
         {
             return await _repository.DeleteAsync(id);

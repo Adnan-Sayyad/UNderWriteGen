@@ -11,5 +11,6 @@ namespace SubmissionAndIntake.Contracts.RepositoryContracts
         Task<IEnumerable<CompletenessCheck>> GetByStatusAsync(CheckStatus status);
         Task<CompletenessCheck> CreateAsync(CompletenessCheck check);
         Task<CompletenessCheck?> UpdateAsync(CompletenessCheck check);
+        Task<CompletenessCheck?> UpdateStatusAsync(Guid id, CheckStatus status);
     }
 }

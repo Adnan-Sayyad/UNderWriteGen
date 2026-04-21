@@ -23,4 +23,10 @@ namespace SubmissionAndIntake.DTOs
         public string ResponsesJSON { get; set; } = string.Empty;
         public DateTime? CompletedDate { get; set; }
     }
+
+    public class QuestionnaireTemplateDto
+    {
+        public string Version { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
 }

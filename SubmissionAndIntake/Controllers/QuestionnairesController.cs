@@ -5,7 +5,7 @@ using SubmissionAndIntake.DTOs;
 namespace SubmissionAndIntake.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/questionnaires")]
     public class QuestionnairesController : ControllerBase
     {
         private readonly IQuestionnaireService _service;
@@ -15,49 +15,46 @@ namespace SubmissionAndIntake.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var questionnaires = await _service.GetAllQuestionnairesAsync();
-            return Ok(questionnaires);
-        }
-
-        [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            var questionnaire = await _service.GetQuestionnaireByIdAsync(id);
-            if (questionnaire is null) return NotFound();
-            return Ok(questionnaire);
-        }
-
-        [HttpGet("submission/{submissionId:guid}")]
+        // GET /api/questionnaires/{submissionId}
+        [HttpGet("{submissionId:guid}")]
         public async Task<IActionResult> GetBySubmissionId(Guid submissionId)
         {
             var questionnaires = await _service.GetQuestionnairesBySubmissionIdAsync(submissionId);
             return Ok(questionnaires);
         }
 
+        // POST /api/questionnaires
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateQuestionnaireDto dto)
         {
             var created = await _service.CreateQuestionnaireAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.QID }, created);
+            return CreatedAtAction(nameof(GetBySubmissionId), new { submissionId = created.SubmissionID }, created);
         }
 
-        [HttpPut("{id:guid}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateQuestionnaireDto dto)
+        // PUT /api/questionnaires/{qId}
+        [HttpPut("{qId:guid}")]
+        public async Task<IActionResult> Update(Guid qId, [FromBody] UpdateQuestionnaireDto dto)
         {
-            var updated = await _service.UpdateQuestionnaireAsync(id, dto);
+            var updated = await _service.UpdateQuestionnaireAsync(qId, dto);
             if (updated is null) return NotFound();
             return Ok(updated);
         }
 
-        [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> Delete(Guid id)
+        // GET /api/questionnaires/templates
+        [HttpGet("templates")]
+        public async Task<IActionResult> GetTemplates()
         {
-            var deleted = await _service.DeleteQuestionnaireAsync(id);
-            if (!deleted) return NotFound();
-            return NoContent();
+            var templates = await _service.GetTemplatesAsync();
+            return Ok(templates);
+        }
+
+        // GET /api/questionnaires/templates/{version}
+        [HttpGet("templates/{version}")]
+        public async Task<IActionResult> GetTemplateByVersion(string version)
+        {
+            var template = await _service.GetTemplateByVersionAsync(version);
+            if (template is null) return NotFound();
+            return Ok(template);
         }
     }
 }

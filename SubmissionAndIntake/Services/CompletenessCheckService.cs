@@ -65,6 +65,12 @@ namespace SubmissionAndIntake.Services
             return updated is null ? null : MapToResponseDto(updated);
         }
 
+        public async Task<CompletenessCheckResponseDto?> UpdateCheckStatusAsync(Guid id, UpdateCheckStatusDto dto)
+        {
+            var updated = await _repository.UpdateStatusAsync(id, dto.Status);
+            return updated is null ? null : MapToResponseDto(updated);
+        }
+
         private static CompletenessCheckResponseDto MapToResponseDto(CompletenessCheck check) => new()
         {
             CheckID = check.CheckID,

@@ -79,6 +79,16 @@ namespace SubmissionAndIntake.Repositories
             return existing;
         }
 
+        public async Task<Submission?> UpdateStatusAsync(Guid id, SubmissionStatus status)
+        {
+            var existing = await _context.Submissions.FirstOrDefaultAsync(s => s.SubmissionID == id);
+            if (existing is null) return null;
+
+            existing.Status = status;
+            await _context.SaveChangesAsync();
+            return existing;
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
             var submission = await _context.Submissions.FirstOrDefaultAsync(s => s.SubmissionID == id);

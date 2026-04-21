@@ -61,5 +61,13 @@ namespace SubmissionAndIntake.Repositories
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<IEnumerable<string>> GetDistinctTemplateVersionsAsync()
+        {
+            return await _context.Questionnaires
+                .Select(q => q.TemplateVersion)
+                .Distinct()
+                .ToListAsync();
+        }
     }
 }

@@ -32,4 +32,9 @@ namespace SubmissionAndIntake.DTOs
         public DateTime CreatedDate { get; set; }
         public SubmissionStatus Status { get; set; }
     }
+
+    public class UpdateSubmissionStatusDto
+    {
+        public SubmissionStatus Status { get; set; }
+    }
 }

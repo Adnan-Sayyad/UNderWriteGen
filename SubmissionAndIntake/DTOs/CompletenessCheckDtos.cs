@@ -23,4 +23,9 @@ namespace SubmissionAndIntake.DTOs
         public CheckStatus Status { get; set; }
         public DateTime? CheckedDate { get; set; }
     }
+
+    public class UpdateCheckStatusDto
+    {
+        public CheckStatus Status { get; set; }
+    }
 }

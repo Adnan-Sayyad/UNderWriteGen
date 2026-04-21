@@ -6,7 +6,7 @@ using SubmissionAndIntake.DTOs;
 namespace SubmissionAndIntake.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/attachments")]
     public class AttachmentsController : ControllerBase
     {
         private readonly IAttachmentService _service;
@@ -16,46 +16,45 @@ namespace SubmissionAndIntake.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var attachments = await _service.GetAllAttachmentsAsync();
-            return Ok(attachments);
-        }
-
-        [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            var attachment = await _service.GetAttachmentByIdAsync(id);
-            if (attachment is null) return NotFound();
-            return Ok(attachment);
-        }
-
-        [HttpGet("submission/{submissionId:guid}")]
+        // GET /api/attachments/{submissionId}
+        [HttpGet("{submissionId:guid}")]
         public async Task<IActionResult> GetBySubmissionId(Guid submissionId)
         {
             var attachments = await _service.GetAttachmentsBySubmissionIdAsync(submissionId);
             return Ok(attachments);
         }
 
-        [HttpGet("doctype/{docType}")]
-        public async Task<IActionResult> GetByDocType(DocType docType)
+        // GET /api/attachments/file/{attachmentId}
+        [HttpGet("file/{attachmentId:guid}")]
+        public async Task<IActionResult> GetById(Guid attachmentId)
         {
-            var attachments = await _service.GetAttachmentsByDocTypeAsync(docType);
-            return Ok(attachments);
+            var attachment = await _service.GetAttachmentByIdAsync(attachmentId);
+            if (attachment is null) return NotFound();
+            return Ok(attachment);
         }
 
+        // GET /api/attachments/{submissionId}/type/{docType}
+        [HttpGet("{submissionId:guid}/type/{docType}")]
+        public async Task<IActionResult> GetBySubmissionIdAndDocType(Guid submissionId, DocType docType)
+        {
+            var all = await _service.GetAttachmentsBySubmissionIdAsync(submissionId);
+            var filtered = all.Where(a => a.DocType == docType);
+            return Ok(filtered);
+        }
+
+        // POST /api/attachments
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateAttachmentDto dto)
         {
             var created = await _service.CreateAttachmentAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.AttachmentID }, created);
+            return CreatedAtAction(nameof(GetById), new { attachmentId = created.AttachmentID }, created);
         }
 
-        [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> Delete(Guid id)
+        // DELETE /api/attachments/{attachmentId}
+        [HttpDelete("{attachmentId:guid}")]
+        public async Task<IActionResult> Delete(Guid attachmentId)
         {
-            var deleted = await _service.DeleteAttachmentAsync(id);
+            var deleted = await _service.DeleteAttachmentAsync(attachmentId);
             if (!deleted) return NotFound();
             return NoContent();
         }

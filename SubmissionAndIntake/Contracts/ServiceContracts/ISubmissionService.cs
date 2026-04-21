@@ -13,6 +13,7 @@ namespace SubmissionAndIntake.Contracts.ServiceContracts
         Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsByProductLineAsync(ProductLine productLine);
         Task<SubmissionResponseDto> CreateSubmissionAsync(CreateSubmissionDto dto);
         Task<SubmissionResponseDto?> UpdateSubmissionAsync(Guid id, UpdateSubmissionDto dto);
+        Task<SubmissionResponseDto?> UpdateSubmissionStatusAsync(Guid id, UpdateSubmissionStatusDto dto);
         Task<bool> DeleteSubmissionAsync(Guid id);
     }
 }

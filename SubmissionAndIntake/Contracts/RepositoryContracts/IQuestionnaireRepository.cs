@@ -10,5 +10,6 @@ namespace SubmissionAndIntake.Contracts.RepositoryContracts
         Task<Questionnaire> CreateAsync(Questionnaire questionnaire);
         Task<Questionnaire?> UpdateAsync(Questionnaire questionnaire);
         Task<bool> DeleteAsync(Guid id);
+        Task<IEnumerable<string>> GetDistinctTemplateVersionsAsync();
     }
 }

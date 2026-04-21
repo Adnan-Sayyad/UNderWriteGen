@@ -60,5 +60,18 @@ namespace SubmissionAndIntake.Repositories
             await _context.SaveChangesAsync();
             return existing;
         }
+
+        public async Task<CompletenessCheck?> UpdateStatusAsync(Guid id, CheckStatus status)
+        {
+            var existing = await _context.CompletenessChecks.FirstOrDefaultAsync(c => c.CheckID == id);
+            if (existing is null) return null;
+
+            existing.Status = status;
+            if (status == CheckStatus.Complete)
+                existing.CheckedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return existing;
+        }
     }
 }

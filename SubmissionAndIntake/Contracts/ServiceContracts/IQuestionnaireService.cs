@@ -10,5 +10,7 @@ namespace SubmissionAndIntake.Contracts.ServiceContracts
         Task<QuestionnaireResponseDto> CreateQuestionnaireAsync(CreateQuestionnaireDto dto);
         Task<QuestionnaireResponseDto?> UpdateQuestionnaireAsync(Guid id, UpdateQuestionnaireDto dto);
         Task<bool> DeleteQuestionnaireAsync(Guid id);
+        Task<IEnumerable<QuestionnaireTemplateDto>> GetTemplatesAsync();
+        Task<QuestionnaireTemplateDto?> GetTemplateByVersionAsync(string version);
     }
 }

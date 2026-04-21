@@ -11,5 +11,6 @@ namespace SubmissionAndIntake.Contracts.ServiceContracts
         Task<IEnumerable<CompletenessCheckResponseDto>> GetChecksByStatusAsync(CheckStatus status);
         Task<CompletenessCheckResponseDto> CreateCheckAsync(CreateCompletenessCheckDto dto);
         Task<CompletenessCheckResponseDto?> UpdateCheckAsync(Guid id, UpdateCompletenessCheckDto dto);
+        Task<CompletenessCheckResponseDto?> UpdateCheckStatusAsync(Guid id, UpdateCheckStatusDto dto);
     }
 }
