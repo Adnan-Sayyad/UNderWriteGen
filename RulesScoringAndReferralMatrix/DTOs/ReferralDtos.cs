@@ -28,4 +28,9 @@ namespace RulesScoringAndReferralMatrix.DTOs
         public DateTime CreatedDate { get; set; }
         public ReferralStatus Status { get; set; }
     }
+
+    public class UpdateReferralStatusDto
+    {
+        public ReferralStatus Status { get; set; }
+    }
 }

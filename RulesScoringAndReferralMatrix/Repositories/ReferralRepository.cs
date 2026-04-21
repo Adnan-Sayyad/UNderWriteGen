@@ -49,6 +49,20 @@ namespace RulesScoringAndReferralMatrix.Repositories
             return referral;
         }
 
+        public async Task<IEnumerable<Referral>> GetByAuthorityAsync(RequiredAuthority authority)
+        {
+            return await _context.Referrals
+                .Where(r => r.RequiredAuthority == authority)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Referral>> GetByAssignedToAsync(string userId)
+        {
+            return await _context.Referrals
+                .Where(r => r.AssignedTo == userId)
+                .ToListAsync();
+        }
+
         public async Task<Referral?> UpdateAsync(Referral referral)
         {
             var existing = await _context.Referrals
@@ -58,6 +72,16 @@ namespace RulesScoringAndReferralMatrix.Repositories
             existing.AssignedTo = referral.AssignedTo;
             existing.Status = referral.Status;
 
+            await _context.SaveChangesAsync();
+            return existing;
+        }
+
+        public async Task<Referral?> UpdateStatusAsync(Guid id, ReferralStatus status)
+        {
+            var existing = await _context.Referrals.FirstOrDefaultAsync(r => r.ReferralID == id);
+            if (existing is null) return null;
+
+            existing.Status = status;
             await _context.SaveChangesAsync();
             return existing;
         }

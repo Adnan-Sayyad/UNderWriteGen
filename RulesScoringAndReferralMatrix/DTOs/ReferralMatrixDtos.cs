@@ -26,4 +26,9 @@ namespace RulesScoringAndReferralMatrix.DTOs
         public RequiredAuthority RequiredAuthority { get; set; }
         public UWStatus Status { get; set; }
     }
+
+    public class UpdateMatrixStatusDto
+    {
+        public UWStatus Status { get; set; }
+    }
 }

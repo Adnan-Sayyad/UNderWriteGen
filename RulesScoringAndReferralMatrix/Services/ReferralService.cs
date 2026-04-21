@@ -54,6 +54,18 @@ namespace RulesScoringAndReferralMatrix.Services
             return MapToResponseDto(created);
         }
 
+        public async Task<IEnumerable<ReferralResponseDto>> GetReferralsByAuthorityAsync(RequiredAuthority authority)
+        {
+            var referrals = await _repository.GetByAuthorityAsync(authority);
+            return referrals.Select(MapToResponseDto);
+        }
+
+        public async Task<IEnumerable<ReferralResponseDto>> GetReferralsByAssignedToAsync(string userId)
+        {
+            var referrals = await _repository.GetByAssignedToAsync(userId);
+            return referrals.Select(MapToResponseDto);
+        }
+
         public async Task<ReferralResponseDto?> UpdateReferralAsync(Guid id, UpdateReferralDto dto)
         {
             var referral = new Referral
@@ -64,6 +76,12 @@ namespace RulesScoringAndReferralMatrix.Services
             };
 
             var updated = await _repository.UpdateAsync(referral);
+            return updated is null ? null : MapToResponseDto(updated);
+        }
+
+        public async Task<ReferralResponseDto?> UpdateReferralStatusAsync(Guid id, UpdateReferralStatusDto dto)
+        {
+            var updated = await _repository.UpdateStatusAsync(id, dto.Status);
             return updated is null ? null : MapToResponseDto(updated);
         }
 

@@ -62,6 +62,16 @@ namespace RulesScoringAndReferralMatrix.Repositories
             return existing;
         }
 
+        public async Task<ReferralMatrix?> UpdateStatusAsync(Guid id, UWStatus status)
+        {
+            var existing = await _context.ReferralMatrices.FirstOrDefaultAsync(m => m.ReferralMatrixID == id);
+            if (existing is null) return null;
+
+            existing.Status = status;
+            await _context.SaveChangesAsync();
+            return existing;
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
             var matrix = await _context.ReferralMatrices.FirstOrDefaultAsync(m => m.ReferralMatrixID == id);

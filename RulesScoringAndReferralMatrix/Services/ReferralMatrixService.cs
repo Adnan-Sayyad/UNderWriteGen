@@ -67,6 +67,12 @@ namespace RulesScoringAndReferralMatrix.Services
             return updated is null ? null : MapToResponseDto(updated);
         }
 
+        public async Task<ReferralMatrixResponseDto?> UpdateMatrixStatusAsync(Guid id, UpdateMatrixStatusDto dto)
+        {
+            var updated = await _repository.UpdateStatusAsync(id, dto.Status);
+            return updated is null ? null : MapToResponseDto(updated);
+        }
+
         public async Task<bool> DeleteMatrixAsync(Guid id)
         {
             return await _repository.DeleteAsync(id);

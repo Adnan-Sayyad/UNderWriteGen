@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
 using RulesScoringAndReferralMatrix.DTOs;
 
 namespace RulesScoringAndReferralMatrix.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/risk-scores")]
     public class RiskScoresController : ControllerBase
     {
         private readonly IRiskScoreService _service;
@@ -15,33 +16,37 @@ namespace RulesScoringAndReferralMatrix.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        // GET /api/risk-scores/{submissionId}
+        [HttpGet("{submissionId:guid}")]
+        public async Task<IActionResult> GetLatestBySubmissionId(Guid submissionId)
         {
-            var scores = await _service.GetAllScoresAsync();
-            return Ok(scores);
-        }
-
-        [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            var score = await _service.GetScoreByIdAsync(id);
+            var score = await _service.GetLatestScoreBySubmissionIdAsync(submissionId);
             if (score is null) return NotFound();
             return Ok(score);
         }
 
-        [HttpGet("submission/{submissionId:guid}")]
-        public async Task<IActionResult> GetBySubmissionId(Guid submissionId)
+        // GET /api/risk-scores/{submissionId}/history
+        [HttpGet("{submissionId:guid}/history")]
+        public async Task<IActionResult> GetHistoryBySubmissionId(Guid submissionId)
         {
             var scores = await _service.GetScoresBySubmissionIdAsync(submissionId);
             return Ok(scores);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateRiskScoreDto dto)
+        // GET /api/risk-scores/band/{band}
+        [HttpGet("band/{band}")]
+        public async Task<IActionResult> GetByBand(Band band)
         {
-            var created = await _service.CreateScoreAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.RiskScoreID }, created);
+            var scores = await _service.GetScoresByBandAsync(band);
+            return Ok(scores);
+        }
+
+        // POST /api/risk-scores/calculate/{submissionId}
+        [HttpPost("calculate/{submissionId:guid}")]
+        public async Task<IActionResult> Calculate(Guid submissionId)
+        {
+            var score = await _service.CalculateScoreForSubmissionAsync(submissionId);
+            return Ok(score);
         }
     }
 }

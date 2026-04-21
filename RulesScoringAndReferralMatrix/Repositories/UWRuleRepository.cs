@@ -61,6 +61,23 @@ namespace RulesScoringAndReferralMatrix.Repositories
             return existing;
         }
 
+        public async Task<IEnumerable<UWRule>> GetBySeverityAsync(Severity severity)
+        {
+            return await _context.Rules
+                .Where(r => r.Severity == severity)
+                .ToListAsync();
+        }
+
+        public async Task<UWRule?> UpdateStatusAsync(Guid id, UWStatus status)
+        {
+            var existing = await _context.Rules.FirstOrDefaultAsync(r => r.UWRuleID == id);
+            if (existing is null) return null;
+
+            existing.Status = status;
+            await _context.SaveChangesAsync();
+            return existing;
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
             var rule = await _context.Rules.FirstOrDefaultAsync(r => r.UWRuleID == id);
