@@ -11,4 +11,11 @@
     <PackageReference Include="Ocelot" Version="24.1.0" />
   </ItemGroup>
 
+  <!-- Ensure Ocelot.json is copied alongside the compiled output -->
+  <ItemGroup>
+    <Content Update="Ocelot.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
