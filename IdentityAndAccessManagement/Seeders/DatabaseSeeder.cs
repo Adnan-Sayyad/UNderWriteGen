@@ -48,7 +48,6 @@ namespace IdentityAndAccessManagement.Seeders
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while seeding the database.");
-                throw;
             }
         }
 

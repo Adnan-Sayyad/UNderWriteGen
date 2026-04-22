@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IdentityAndAccessManagement.Migrations
 {
     [DbContext(typeof(ApplicationUserDbContext))]
-    [Migration("20260413033523_Shiva1")]
+    [Migration("20260417101434_Shiva1")]
     partial class Shiva1
     {
         /// <inheritdoc />
@@ -90,6 +90,10 @@ namespace IdentityAndAccessManagement.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("RefreshToken")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
 
                     b.Property<string>("Role")
                         .IsRequired()

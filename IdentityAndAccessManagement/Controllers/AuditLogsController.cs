@@ -1,4 +1,5 @@
-﻿using IdentityAndAccessManagement.Services.Interfaces;
+using IdentityAndAccessManagement.DTOs;
+using IdentityAndAccessManagement.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,7 +7,7 @@ namespace IdentityAndAccessManagement.Controllers
 {
     [ApiController]
     [Route("api/audit-logs")]
-    [Authorize(Roles = "Admin")]  // Only Admin can access audit logs
+    [AllowAnonymous]
     public class AuditLogsController : ControllerBase
     {
         private readonly IAuditLogService _auditLogService;
@@ -16,38 +17,115 @@ namespace IdentityAndAccessManagement.Controllers
             _auditLogService = auditLogService;
         }
 
-        // ── GET /api/audit-logs?page=1&pageSize=10 ────────────────
+        // ── GET /api/audit-logs?adminId=... ───────────────────────
         [HttpGet]
-        public async Task<IActionResult> GetAll(
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll([FromQuery] Guid adminId)
         {
-            var result = await _auditLogService.GetAllAsync(page, pageSize);
-            return Ok(result);
+            if (adminId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "Admin ID is required. Pass your admin user ID as ?adminId=<your-guid>." });
+
+            try
+            {
+                var result = await _auditLogService.GetAllAsync(adminId);
+                return Ok(ApiResponseDto<IEnumerable<AuditLogDto>>.Ok(
+                    "Audit logs retrieved successfully.", result));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
         }
 
-        // ── GET /api/audit-logs/{auditId} ─────────────────────────
+        // ── GET /api/audit-logs/{auditId}?adminId=... ────────────
         [HttpGet("{auditId:guid}")]
-        public async Task<IActionResult> GetById(Guid auditId)
+        public async Task<IActionResult> GetById(Guid auditId, [FromQuery] Guid adminId)
         {
-            var result = await _auditLogService.GetByIdAsync(auditId);
-            return Ok(result);
+            if (adminId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "Admin ID is required. Pass your admin user ID as ?adminId=<your-guid>." });
+
+            try
+            {
+                var result = await _auditLogService.GetByIdAsync(adminId, auditId);
+                return Ok(ApiResponseDto<AuditLogDto>.Ok(
+                    "Audit log retrieved successfully.", result));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
         }
 
-        // ── GET /api/audit-logs/user/{userId} ─────────────────────
+        // ── GET /api/audit-logs/user/{userId}?adminId=... ─────────
         [HttpGet("user/{userId:guid}")]
-        public async Task<IActionResult> GetByUserId(Guid userId)
+        public async Task<IActionResult> GetByUserId(Guid userId, [FromQuery] Guid adminId)
         {
-            var result = await _auditLogService.GetByUserIdAsync(userId);
-            return Ok(result);
+            if (adminId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "Admin ID is required. Pass your admin user ID as ?adminId=<your-guid>." });
+
+            try
+            {
+                var result = await _auditLogService.GetByUserIdAsync(adminId, userId);
+                return Ok(ApiResponseDto<IEnumerable<AuditLogDto>>.Ok(
+                    "Audit logs retrieved successfully.", result));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
         }
 
-        // ── GET /api/audit-logs/resource/{resource} ───────────────
+        // ── GET /api/audit-logs/resource/{resource}?adminId=... ──
         [HttpGet("resource/{resource}")]
-        public async Task<IActionResult> GetByResource(string resource)
+        public async Task<IActionResult> GetByResource(string resource, [FromQuery] Guid adminId)
         {
-            var result = await _auditLogService.GetByResourceAsync(resource);
-            return Ok(result);
+            if (adminId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "Admin ID is required. Pass your admin user ID as ?adminId=<your-guid>." });
+
+            if (string.IsNullOrWhiteSpace(resource))
+                return BadRequest(new { Success = false, Message = "Resource is required. Valid values: 'Auth' or 'UserManagement'." });
+
+            try
+            {
+                var result = await _auditLogService.GetByResourceAsync(adminId, resource);
+                return Ok(ApiResponseDto<IEnumerable<AuditLogDto>>.Ok(
+                    "Audit logs retrieved successfully.", result));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
         }
     }
 }

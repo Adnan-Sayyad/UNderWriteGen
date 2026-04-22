@@ -34,7 +34,7 @@ namespace IdentityAndAccessManagement.Data.Configurations
 
             builder.Property(e => e.Action)
                 .IsRequired()
-                .HasMaxLength(100);
+                .HasColumnType("nvarchar(max)");
 
             builder.Property(e => e.Resource)
                 .IsRequired()

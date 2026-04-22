@@ -1,4 +1,4 @@
-﻿using IdentityAndAccessManagement.DTOs;
+using IdentityAndAccessManagement.DTOs;
 using IdentityAndAccessManagement.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +7,7 @@ namespace IdentityAndAccessManagement.Controllers
 {
     [ApiController]
     [Route("api/users")]
-    [Authorize]
+    [AllowAnonymous]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -17,94 +17,170 @@ namespace IdentityAndAccessManagement.Controllers
             _userService = userService;
         }
 
-        // ── GET /api/users ────────────────────────────────────────
+        // ── GET /api/users?adminId=... ────────────────────────────
+        // Accessible by: Admin, Manager
         [HttpGet]
-        [Authorize(Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers([FromQuery] Guid adminId)
         {
-            var users = await _userService.GetAllUsersAsync();
-            return Ok(users);
+            if (adminId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "Admin ID is required. Pass your user ID as ?adminId=<your-guid>." });
+
+            try
+            {
+                var users = await _userService.GetAllUsersAsync(adminId);
+                return Ok(ApiResponseDto<IEnumerable<UserDto>>.Ok(
+                    "Users retrieved successfully.", users));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
         }
 
-        // ── GET /api/users/{userId} ───────────────────────────────
+        // ── GET /api/users/{userId}?adminId=... ───────────────────
+        // Accessible by: Admin, Manager
         [HttpGet("{userId:guid}")]
-        [Authorize(Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetUserById(Guid userId)
+        public async Task<IActionResult> GetUserById(Guid userId, [FromQuery] Guid adminId)
         {
-            var user = await _userService.GetUserByIdAsync(userId);
-            return Ok(user);
+            if (adminId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "Admin ID is required. Pass your user ID as ?adminId=<your-guid>." });
+
+            try
+            {
+                var user = await _userService.GetUserByIdAsync(adminId, userId);
+                return Ok(ApiResponseDto<UserDto>.Ok(
+                    "User retrieved successfully.", user));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
         }
 
-        // ── POST /api/users ───────────────────────────────────────
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var user = await _userService.CreateUserAsync(dto);
-            return CreatedAtAction(
-                nameof(GetUserById),
-                new { userId = user.Id },
-                user);
-        }
-
-        // ── PUT /api/users/{userId} ───────────────────────────────
+        // ── PUT /api/users/{userId}?adminId=... ───────────────────
+        // Accessible by: Admin only
         [HttpPut("{userId:guid}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateUser(
-            Guid userId, [FromBody] UpdateUserDto dto)
+        public async Task<IActionResult> UpdateUser(Guid userId, [FromQuery] Guid adminId, [FromBody] UpdateUserDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (adminId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "Admin ID is required. Pass your user ID as ?adminId=<your-guid>." });
 
-            var user = await _userService.UpdateUserAsync(userId, dto);
-            return Ok(user);
+            if (!ModelState.IsValid)
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = "Validation failed.",
+                    Errors  = ModelState
+                        .Where(e => e.Value?.Errors.Count > 0)
+                        .ToDictionary(
+                            k => k.Key,
+                            v => v.Value!.Errors.Select(e => e.ErrorMessage))
+                });
+
+            try
+            {
+                var user = await _userService.UpdateUserAsync(adminId, userId, dto);
+                return Ok(ApiResponseDto<UserDto>.Ok("User updated successfully.", user));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
         }
 
-        // ── PATCH /api/users/{userId}/status ─────────────────────
+        // ── PATCH /api/users/{userId}/status?adminId=... ──────────
+        // Accessible by: Admin only
         [HttpPatch("{userId:guid}/status")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateUserStatus(
-            Guid userId, [FromBody] UpdateUserStatusDto dto)
+        public async Task<IActionResult> UpdateUserStatus(Guid userId, [FromQuery] Guid adminId, [FromBody] UpdateUserStatusDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (adminId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "Admin ID is required. Pass your user ID as ?adminId=<your-guid>." });
 
-            await _userService.UpdateUserStatusAsync(userId, dto);
-            return Ok(new { Message = "User status updated successfully." });
+            if (!ModelState.IsValid)
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = "Validation failed.",
+                    Errors  = ModelState
+                        .Where(e => e.Value?.Errors.Count > 0)
+                        .ToDictionary(
+                            k => k.Key,
+                            v => v.Value!.Errors.Select(e => e.ErrorMessage))
+                });
+
+            try
+            {
+                await _userService.UpdateUserStatusAsync(adminId, userId, dto);
+                return Ok(ApiResponseDto.Ok(
+                    $"User status updated to '{dto.Status}' successfully."));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
         }
 
-        // ── DELETE /api/users/{userId} ────────────────────────────
+        // ── DELETE /api/users/{userId}?adminId=... ────────────────
+        // Accessible by: Admin only
         [HttpDelete("{userId:guid}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteUser(Guid userId)
+        public async Task<IActionResult> DeleteUser(Guid userId, [FromQuery] Guid adminId)
         {
-            await _userService.DeleteUserAsync(userId);
-            return Ok(new { Message = "User deleted successfully." });
-        }
+            if (adminId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "Admin ID is required. Pass your user ID as ?adminId=<your-guid>." });
 
-        // ── GET /api/users/{userId}/roles ─────────────────────────
-        [HttpGet("{userId:guid}/roles")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetUserRoles(Guid userId)
-        {
-            var roles = await _userService.GetUserRolesAsync(userId);
-            return Ok(roles);
-        }
-
-        // ── PUT /api/users/{userId}/roles — Admin full control ────
-        [HttpPut("{userId:guid}/roles")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateUserRoles(
-            Guid userId, [FromBody] UpdateUserRolesDto dto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            await _userService.UpdateUserRolesAsync(userId, dto);
-            return Ok(new { Message = "User roles updated successfully." });
+            try
+            {
+                await _userService.DeleteUserAsync(adminId, userId);
+                return Ok(ApiResponseDto.Ok("User deleted successfully."));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
         }
     }
 }

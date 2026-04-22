@@ -1,7 +1,8 @@
-﻿using IdentityAndAccessManagement.Data;
+using IdentityAndAccessManagement.Data;
 using IdentityAndAccessManagement.DTOs;
 using IdentityAndAccessManagement.Models;
 using IdentityAndAccessManagement.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace IdentityAndAccessManagement.Services
@@ -9,48 +10,35 @@ namespace IdentityAndAccessManagement.Services
     public class AuditLogService : IAuditLogService
     {
         private readonly ApplicationUserDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public AuditLogService(ApplicationUserDbContext context)
+        public AuditLogService(
+            ApplicationUserDbContext context,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-        // ── GET /api/audit-logs?page=1&pageSize=10 ────────────────
-        public async Task<PaginatedResultDto<AuditLogDto>> GetAllAsync(int page, int pageSize)
+        // ── GET /api/audit-logs?adminId=... ───────────────────────
+        public async Task<IEnumerable<AuditLogDto>> GetAllAsync(Guid adminId)
         {
-            // ── Sanitize pagination values ────────────────────────
-            page = page < 1 ? 1 : page;
-            pageSize = pageSize is < 1 or > 100 ? 10 : pageSize;
+            await ValidateAdminAsync(adminId);
 
-            // ── Build base query ──────────────────────────────────
-            // Uses IX_AuditLogs_CreatedAt index for ordering
-            var query = _context.AuditLogs
+            var logs = await _context.AuditLogs
                 .AsNoTracking()
                 .Where(a => !a.IsDeleted)
-                .OrderByDescending(a => a.CreatedAt);
-
-            // ── Count before pagination ───────────────────────────
-            var totalCount = await query.CountAsync();
-
-            // ── Apply pagination ──────────────────────────────────
-            var logs = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
+                .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
-            return new PaginatedResultDto<AuditLogDto>
-            {
-                Data = logs.Select(MapToDto),
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+            return logs.Select(MapToDto);
         }
 
-        // ── GET /api/audit-logs/{auditId} ─────────────────────────
-        public async Task<AuditLogDto> GetByIdAsync(Guid auditId)
+        // ── GET /api/audit-logs/{auditId}?adminId=... ────────────
+        public async Task<AuditLogDto> GetByIdAsync(Guid adminId, Guid auditId)
         {
-            // Uses PK index (AuditId) for direct lookup
+            await ValidateAdminAsync(adminId);
+
             var log = await _context.AuditLogs
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == auditId && !a.IsDeleted)
@@ -59,10 +47,11 @@ namespace IdentityAndAccessManagement.Services
             return MapToDto(log);
         }
 
-        // ── GET /api/audit-logs/user/{userId} ─────────────────────
-        public async Task<IEnumerable<AuditLogDto>> GetByUserIdAsync(Guid userId)
+        // ── GET /api/audit-logs/user/{userId}?adminId=... ─────────
+        public async Task<IEnumerable<AuditLogDto>> GetByUserIdAsync(Guid adminId, Guid userId)
         {
-            // Uses IX_AuditLogs_UserId_CreatedAt composite index
+            await ValidateAdminAsync(adminId);
+
             var logs = await _context.AuditLogs
                 .AsNoTracking()
                 .Where(a => a.UserId == userId && !a.IsDeleted)
@@ -75,24 +64,62 @@ namespace IdentityAndAccessManagement.Services
             return logs.Select(MapToDto);
         }
 
-        // ── GET /api/audit-logs/resource/{resource} ───────────────
-        public async Task<IEnumerable<AuditLogDto>> GetByResourceAsync(string resource)
+        // ── GET /api/audit-logs/resource/{resource}?adminId=... ──
+        public async Task<IEnumerable<AuditLogDto>> GetByResourceAsync(Guid adminId, string resource)
         {
-            if (string.IsNullOrWhiteSpace(resource))
-                throw new ArgumentException("Resource cannot be empty.");
+            await ValidateAdminAsync(adminId);
 
-            // Uses IX_AuditLogs_Resource index
-            // EF.Functions.Like avoids ToLower() which bypasses indexes
+            if (string.IsNullOrWhiteSpace(resource))
+                throw new ArgumentException("Resource cannot be empty. Valid values are: 'Auth', 'UserManagement'.");
+
+            // SQL Server collation is case-insensitive by default — plain equality works fine
             var logs = await _context.AuditLogs
                 .AsNoTracking()
-                .Where(a => EF.Functions.Like(a.Resource, resource) && !a.IsDeleted)
+                .Where(a => a.Resource == resource.Trim() && !a.IsDeleted)
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
             if (!logs.Any())
-                throw new KeyNotFoundException("No audit logs found for this resource.");
+                throw new KeyNotFoundException(
+                    $"No audit logs found for resource '{resource}'. " +
+                    "Valid values are: 'Auth' (login/register/password events) or " +
+                    "'UserManagement' (update/delete/status change events).");
 
             return logs.Select(MapToDto);
+        }
+
+        // ── Private: Validate Admin ────────────────────────────────
+        private async Task ValidateAdminAsync(Guid adminId)
+        {
+            // ── Step 1: Account must exist ────────────────────────
+            var admin = await _userManager.FindByIdAsync(adminId.ToString())
+                ?? throw new UnauthorizedAccessException(
+                    $"No account found with ID '{adminId}'. Please provide a valid admin ID.");
+
+            // ── Step 2: Account must not be deleted ───────────────
+            if (admin.IsDeleted)
+                throw new UnauthorizedAccessException(
+                    "This account has been deactivated. Please contact the administrator.");
+
+            // ── Step 3: Account must not be locked or disabled ────
+            if (admin.Status == "Locked")
+                throw new UnauthorizedAccessException(
+                    "This account is locked. Please contact the administrator to unlock it.");
+
+            if (admin.Status == "Disabled")
+                throw new UnauthorizedAccessException(
+                    "This account has been disabled. Please contact the administrator.");
+
+            // ── Step 4: Must be logged in (RefreshToken present) ──
+            if (string.IsNullOrEmpty(admin.RefreshToken))
+                throw new UnauthorizedAccessException(
+                    "You are not logged in. Please login first to access audit logs.");
+
+            // ── Step 5: Must have Admin role ──────────────────────
+            var roles = await _userManager.GetRolesAsync(admin);
+            if (!roles.Contains("Admin"))
+                throw new UnauthorizedAccessException(
+                    "Access denied. Only logged in Admins are authorized to view audit logs.");
         }
 
         // ── Private: Map to DTO ───────────────────────────────────
@@ -100,13 +127,13 @@ namespace IdentityAndAccessManagement.Services
         {
             return new AuditLogDto
             {
-                Id = log.Id,
-                UserId = log.UserId,
-                Email = log.Email,
-                Action = log.Action,
-                Resource = log.Resource,
+                Id        = log.Id,
+                UserId    = log.UserId,
+                Email     = log.Email,
+                Action    = log.Action,
+                Resource  = log.Resource,
                 CreatedAt = log.CreatedAt,
-                Metadata = log.Metadata,
+                Metadata  = log.Metadata,
                 IsDeleted = log.IsDeleted
             };
         }

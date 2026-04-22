@@ -31,6 +31,8 @@ namespace IdentityAndAccessManagement.Models
 
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiry { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

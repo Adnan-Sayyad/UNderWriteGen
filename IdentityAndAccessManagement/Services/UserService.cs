@@ -1,4 +1,4 @@
-﻿using IdentityAndAccessManagement.Data;
+using IdentityAndAccessManagement.Data;
 using IdentityAndAccessManagement.DTOs;
 using IdentityAndAccessManagement.Models;
 using IdentityAndAccessManagement.Services.Interfaces;
@@ -9,22 +9,21 @@ namespace IdentityAndAccessManagement.Services
     public class UserService : IUserService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly ApplicationUserDbContext _context;
 
         public UserService(
             UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole<Guid>> roleManager,
             ApplicationUserDbContext context)
         {
             _userManager = userManager;
-            _roleManager = roleManager;
             _context = context;
         }
 
         // ── GET /api/users ────────────────────────────────────────
-        public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
+        public async Task<IEnumerable<UserDto>> GetAllUsersAsync(Guid adminId)
         {
+            await ValidateAdminAsync(adminId, requireAdminOnly: false);
+
             var users = _userManager.Users
                 .Where(u => !u.IsDeleted)
                 .ToList();
@@ -40,72 +39,39 @@ namespace IdentityAndAccessManagement.Services
         }
 
         // ── GET /api/users/{userId} ───────────────────────────────
-        public async Task<UserDto> GetUserByIdAsync(Guid userId)
+        public async Task<UserDto> GetUserByIdAsync(Guid adminId, Guid userId)
         {
+            await ValidateAdminAsync(adminId, requireAdminOnly: false);
+
             var user = await _userManager.FindByIdAsync(userId.ToString())
-                ?? throw new KeyNotFoundException("User not found.");
+                ?? throw new KeyNotFoundException(
+                    $"No account found with ID '{userId}'. Please provide a valid user ID.");
 
             if (user.IsDeleted)
-                throw new KeyNotFoundException("User not found.");
-
-            var roles = await _userManager.GetRolesAsync(user);
-            return MapToDto(user, roles);
-        }
-
-        // ── POST /api/users ───────────────────────────────────────
-        public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
-        {
-            // ── Step 1: Check email ───────────────────────────────
-            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-            if (existingUser != null)
-                throw new InvalidOperationException("Email is already in use.");
-
-            // ── Step 2: Validate role exists ──────────────────────
-            if (!await _roleManager.RoleExistsAsync(dto.Role))
-                throw new InvalidOperationException(
-                    $"Role '{dto.Role}' does not exist.");
-
-            // ── Step 3: Create user ───────────────────────────────
-            var user = new ApplicationUser
-            {
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Email = dto.Email,
-                Role = dto.Role,
-                Status = "Active",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (!result.Succeeded)
-                throw new InvalidOperationException(
-                    string.Join(", ", result.Errors.Select(e => e.Description)));
-
-            // ── Step 4: Assign role in UserRoles table ────────────
-            await AssignRolesInternalAsync(user, new List<string> { dto.Role });
-
-            // ── Step 5: Audit log ─────────────────────────────────
-            await LogAuditAsync(user,
-                $"UserCreated with Role: {dto.Role}",
-                "UserManagement");
+                throw new KeyNotFoundException(
+                    $"No account found with ID '{userId}'. Please provide a valid user ID.");
 
             var roles = await _userManager.GetRolesAsync(user);
             return MapToDto(user, roles);
         }
 
         // ── PUT /api/users/{userId} ───────────────────────────────
-        public async Task<UserDto> UpdateUserAsync(Guid userId, UpdateUserDto dto)
+        public async Task<UserDto> UpdateUserAsync(Guid adminId, Guid userId, UpdateUserDto dto)
         {
+            await ValidateAdminAsync(adminId, requireAdminOnly: true);
+
             var user = await _userManager.FindByIdAsync(userId.ToString())
-                ?? throw new KeyNotFoundException("User not found.");
+                ?? throw new KeyNotFoundException(
+                    $"No account found with ID '{userId}'. Please provide a valid user ID.");
 
             if (user.IsDeleted)
-                throw new KeyNotFoundException("User not found.");
+                throw new KeyNotFoundException(
+                    "This account has been deactivated and cannot be updated.");
 
-            user.FirstName = dto.FirstName;
-            user.LastName = dto.LastName;
-            user.Email = dto.Email;
-            user.UpdatedAt = DateTime.UtcNow;
+            user.FirstName  = dto.FirstName;
+            user.LastName   = dto.LastName;
+            user.Email      = dto.Email;
+            user.UpdatedAt  = DateTime.UtcNow;
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -119,24 +85,33 @@ namespace IdentityAndAccessManagement.Services
         }
 
         // ── PATCH /api/users/{userId}/status ─────────────────────
-        public async Task UpdateUserStatusAsync(Guid userId, UpdateUserStatusDto dto)
+        public async Task UpdateUserStatusAsync(Guid adminId, Guid userId, UpdateUserStatusDto dto)
         {
+            await ValidateAdminAsync(adminId, requireAdminOnly: true);
+
             var user = await _userManager.FindByIdAsync(userId.ToString())
-                ?? throw new KeyNotFoundException("User not found.");
+                ?? throw new KeyNotFoundException(
+                    $"No account found with ID '{userId}'. Please provide a valid user ID.");
 
             if (user.IsDeleted)
-                throw new KeyNotFoundException("User not found.");
+                throw new KeyNotFoundException(
+                    "This account has been deactivated and cannot be updated.");
 
             var previousStatus = user.Status;
-            user.Status = dto.Status;
+            user.Status    = dto.Status;
             user.UpdatedAt = DateTime.UtcNow;
 
-            // ── Lock / Unlock account ─────────────────────────────
-            if (dto.Status == "Locked")
+            // ── Lock / Disable: invalidate session ────────────────
+            if (dto.Status == "Locked" || dto.Status == "Disabled")
+            {
+                user.RefreshToken = null;
                 await _userManager.SetLockoutEndDateAsync(
                     user, DateTimeOffset.UtcNow.AddYears(100));
+            }
             else
+            {
                 await _userManager.SetLockoutEndDateAsync(user, null);
+            }
 
             await _userManager.UpdateAsync(user);
 
@@ -146,89 +121,66 @@ namespace IdentityAndAccessManagement.Services
         }
 
         // ── DELETE /api/users/{userId} ────────────────────────────
-        public async Task DeleteUserAsync(Guid userId)
+        public async Task DeleteUserAsync(Guid adminId, Guid userId)
         {
+            await ValidateAdminAsync(adminId, requireAdminOnly: true);
+
             var user = await _userManager.FindByIdAsync(userId.ToString())
-                ?? throw new KeyNotFoundException("User not found.");
+                ?? throw new KeyNotFoundException(
+                    $"No account found with ID '{userId}'. Please provide a valid user ID.");
 
             if (user.IsDeleted)
-                throw new KeyNotFoundException("User already deleted.");
+                throw new KeyNotFoundException(
+                    $"No account found with ID '{userId}'. Please provide a valid user ID.");
 
-            // Soft delete
-            user.IsDeleted = true;
-            user.DeletedAt = DateTime.UtcNow;
-            user.UpdatedAt = DateTime.UtcNow;
+            // ── Soft delete ───────────────────────────────────────
+            user.IsDeleted    = true;
+            user.DeletedAt    = DateTime.UtcNow;
+            user.UpdatedAt    = DateTime.UtcNow;
+            user.RefreshToken = null;
 
-            // Invalidate all tokens on delete
-            await _userManager.UpdateSecurityStampAsync(user);
             await _userManager.UpdateAsync(user);
 
             await LogAuditAsync(user, "UserDeleted", "UserManagement");
         }
 
-        // ── GET /api/users/{userId}/roles ─────────────────────────
-        public async Task<IEnumerable<string>> GetUserRolesAsync(Guid userId)
+        // ── Private: Validate Admin ───────────────────────────────
+        private async Task ValidateAdminAsync(Guid adminId, bool requireAdminOnly)
         {
-            var user = await _userManager.FindByIdAsync(userId.ToString())
-                ?? throw new KeyNotFoundException("User not found.");
+            // ── Step 1: Account must exist ────────────────────────
+            var admin = await _userManager.FindByIdAsync(adminId.ToString())
+                ?? throw new UnauthorizedAccessException(
+                    $"No account found with ID '{adminId}'. Please provide a valid admin ID.");
 
-            if (user.IsDeleted)
-                throw new KeyNotFoundException("User not found.");
+            // ── Step 2: Account must not be deleted ───────────────
+            if (admin.IsDeleted)
+                throw new UnauthorizedAccessException(
+                    "This account has been deactivated. Please contact the administrator.");
 
-            // Returns from Identity UserRoles table
-            return await _userManager.GetRolesAsync(user);
-        }
+            // ── Step 3: Account must not be locked or disabled ────
+            if (admin.Status == "Locked")
+                throw new UnauthorizedAccessException(
+                    "This account is locked. Please contact the administrator to unlock it.");
 
-        // ── PUT /api/users/{userId}/roles — Admin only ────────────
-        public async Task UpdateUserRolesAsync(Guid userId, UpdateUserRolesDto dto)
-        {
-            var user = await _userManager.FindByIdAsync(userId.ToString())
-                ?? throw new KeyNotFoundException("User not found.");
+            if (admin.Status == "Disabled")
+                throw new UnauthorizedAccessException(
+                    "This account has been disabled. Please contact the administrator.");
 
-            if (user.IsDeleted)
-                throw new KeyNotFoundException("User not found.");
+            // ── Step 4: Must be logged in (RefreshToken present) ──
+            if (string.IsNullOrEmpty(admin.RefreshToken))
+                throw new UnauthorizedAccessException(
+                    "You are not logged in. Please login first to access user management.");
 
-            // ── Validate all roles exist before assigning ─────────
-            foreach (var role in dto.Roles)
-            {
-                if (!await _roleManager.RoleExistsAsync(role))
-                    throw new InvalidOperationException(
-                        $"Role '{role}' does not exist.");
-            }
+            // ── Step 5: Role check ────────────────────────────────
+            var roles = await _userManager.GetRolesAsync(admin);
 
-            var previousRoles = await _userManager.GetRolesAsync(user);
+            if (requireAdminOnly && !roles.Contains("Admin"))
+                throw new UnauthorizedAccessException(
+                    "Access denied. Only logged in Admins can perform this action.");
 
-            // ── Assign roles and sync display field ───────────────
-            await AssignRolesInternalAsync(user, dto.Roles.ToList());
-
-            // ── Invalidate existing tokens — new roles take effect ─
-            await _userManager.UpdateSecurityStampAsync(user);
-
-            await LogAuditAsync(user,
-                $"RoleUpdated: [{string.Join(", ", previousRoles)}] → [{string.Join(", ", dto.Roles)}]",
-                "UserManagement");
-        }
-
-        // ── Private: Assign Roles Internal ───────────────────────
-        // Shared by CreateUserAsync and UpdateUserRolesAsync
-        private async Task AssignRolesInternalAsync(
-            ApplicationUser user, List<string> roles)
-        {
-            // Remove all existing roles
-            var existingRoles = await _userManager.GetRolesAsync(user);
-            if (existingRoles.Any())
-                await _userManager.RemoveFromRolesAsync(user, existingRoles);
-
-            // Assign new roles in Identity UserRoles table
-            var result = await _userManager.AddToRolesAsync(user, roles);
-            if (!result.Succeeded)
-                throw new InvalidOperationException(
-                    string.Join(", ", result.Errors.Select(e => e.Description)));
-
-            // Sync user.Role display field
-            user.Role = string.Join(", ", roles);
-            user.UpdatedAt = DateTime.UtcNow;
-            await _userManager.UpdateAsync(user);
+            if (!requireAdminOnly && !roles.Contains("Admin") && !roles.Contains("Manager"))
+                throw new UnauthorizedAccessException(
+                    "Access denied. Only logged in Admins or Managers can view users.");
         }
 
         // ── Private: Map to DTO ───────────────────────────────────
@@ -236,15 +188,16 @@ namespace IdentityAndAccessManagement.Services
         {
             return new UserDto
             {
-                Id = user.Id,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                UserName = user.UserName ?? string.Empty,
-                Email = user.Email ?? string.Empty,
-                Role = string.Join(", ", roles),
-                Status = user.Status,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
+                Id          = user.Id,
+                FirstName   = user.FirstName,
+                LastName    = user.LastName,
+                UserName    = user.UserName ?? string.Empty,
+                Email       = user.Email ?? string.Empty,
+                PhoneNumber = user.PhoneNumber,
+                Role        = string.Join(", ", roles),
+                Status      = user.Status,
+                CreatedAt   = user.CreatedAt,
+                UpdatedAt   = user.UpdatedAt
             };
         }
 
@@ -254,10 +207,10 @@ namespace IdentityAndAccessManagement.Services
         {
             var audit = new AuditLogs
             {
-                UserId = user.Id,
-                Email = user.Email ?? string.Empty,
-                Action = action,
-                Resource = resource,
+                UserId    = user.Id,
+                Email     = user.Email ?? string.Empty,
+                Action    = action,
+                Resource  = resource,
                 CreatedAt = DateTime.UtcNow
             };
 

@@ -90,12 +90,14 @@ namespace IdentityAndAccessManagement.Seeders
                 // ── 1. Admin ──────────────────────────────────────
                 (new ApplicationUser
                 {
-                    FirstName = "Shiva",
-                    LastName  = "Molige",
-                    Email     = "moligeshiva@admin.com",
-                    Role      = "Admin",
-                    Status    = "Active",
-                    CreatedAt = DateTime.UtcNow
+                    Id          = Guid.NewGuid(),
+                    FirstName   = "Shiva",
+                    LastName    = "Molige",
+                    Email       = "moligeshiva@admin.com",
+                    PhoneNumber = "7981558584",
+                    Role        = "Admin",
+                    Status      = "Active",
+                    CreatedAt   = DateTime.UtcNow
                 },
                 "Admin",
                 "Admin@shiva2781"),
@@ -103,12 +105,14 @@ namespace IdentityAndAccessManagement.Seeders
                 // ── 2. Underwriter ────────────────────────────────
                 (new ApplicationUser
                 {
-                    FirstName = "Sarah",
-                    LastName  = "Mitchell",
-                    Email     = "sarah.mitchell@underwritepro.com",
-                    Role      = "Underwriter",
-                    Status    = "Active",
-                    CreatedAt = DateTime.UtcNow
+                    Id          = Guid.NewGuid(),
+                    FirstName   = "Sarah",
+                    LastName    = "Mitchell",
+                    Email       = "sarah.mitchell@underwritepro.com",
+                    PhoneNumber = "9826769823",
+                    Role        = "Underwriter",
+                    Status      = "Active",
+                    CreatedAt   = DateTime.UtcNow
                 },
                 "Underwriter",
                 "Uw@Sarah123!"),
@@ -116,12 +120,14 @@ namespace IdentityAndAccessManagement.Seeders
                 // ── 3. Agent ──────────────────────────────────────
                 (new ApplicationUser
                 {
-                    FirstName = "James",
-                    LastName  = "Carter",
-                    Email     = "james.carter@underwritepro.com",
-                    Role      = "Agent",
-                    Status    = "Active",
-                    CreatedAt = DateTime.UtcNow
+                    Id          = Guid.NewGuid(),
+                    FirstName   = "James",
+                    LastName    = "Carter",
+                    Email       = "james.carter@underwritepro.com",
+                    PhoneNumber = "8976624534",
+                    Role        = "Agent",
+                    Status      = "Active",
+                    CreatedAt   = DateTime.UtcNow
                 },
                 "Agent",
                 "Agent@James123!"),
@@ -129,12 +135,14 @@ namespace IdentityAndAccessManagement.Seeders
                 // ── 4. Compliance ─────────────────────────────────
                 (new ApplicationUser
                 {
-                    FirstName = "Emily",
-                    LastName  = "Watson",
-                    Email     = "emily.watson@underwritepro.com",
-                    Role      = "Compliance",
-                    Status    = "Active",
-                    CreatedAt = DateTime.UtcNow
+                    Id          = Guid.NewGuid(),
+                    FirstName   = "Emily",
+                    LastName    = "Watson",
+                    Email       = "emily.watson@underwritepro.com",
+                    PhoneNumber = "8967231790",
+                    Role        = "Compliance",
+                    Status      = "Active",
+                    CreatedAt   = DateTime.UtcNow
                 },
                 "Compliance",
                 "Comp@Emily123!"),
@@ -142,12 +150,14 @@ namespace IdentityAndAccessManagement.Seeders
                 // ── 5. Operations ─────────────────────────────────
                 (new ApplicationUser
                 {
-                    FirstName = "Michael",
-                    LastName  = "Torres",
-                    Email     = "michael.torres@underwritepro.com",
-                    Role      = "Operations",
-                    Status    = "Active",
-                    CreatedAt = DateTime.UtcNow
+                    Id          = Guid.NewGuid(),
+                    FirstName   = "Michael",
+                    LastName    = "Torres",
+                    Email       = "michael.torres@underwritepro.com",
+                    PhoneNumber = "7856234765",
+                    Role        = "Operations",
+                    Status      = "Active",
+                    CreatedAt   = DateTime.UtcNow
                 },
                 "Operations",
                 "Ops@Michael123!")

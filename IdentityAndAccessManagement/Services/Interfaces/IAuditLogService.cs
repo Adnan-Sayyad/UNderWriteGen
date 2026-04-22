@@ -4,9 +4,9 @@ namespace IdentityAndAccessManagement.Services.Interfaces
 {
     public interface IAuditLogService
     {
-        Task<PaginatedResultDto<AuditLogDto>> GetAllAsync(int page, int pageSize);
-        Task<AuditLogDto> GetByIdAsync(Guid auditId);
-        Task<IEnumerable<AuditLogDto>> GetByUserIdAsync(Guid userId);
-        Task<IEnumerable<AuditLogDto>> GetByResourceAsync(string resource);
+        Task<IEnumerable<AuditLogDto>> GetAllAsync(Guid adminId);
+        Task<AuditLogDto> GetByIdAsync(Guid adminId, Guid auditId);
+        Task<IEnumerable<AuditLogDto>> GetByUserIdAsync(Guid adminId, Guid userId);
+        Task<IEnumerable<AuditLogDto>> GetByResourceAsync(Guid adminId, string resource);
     }
 }

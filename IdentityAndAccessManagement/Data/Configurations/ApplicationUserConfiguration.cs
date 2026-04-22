@@ -38,6 +38,13 @@ namespace IdentityAndAccessManagement.Data.Configurations
                 .HasMaxLength(50)
                 .HasDefaultValue("User");
 
+            builder.Property(e => e.RefreshToken)
+                .IsRequired(false)
+                .HasMaxLength(512);
+
+            builder.Property(e => e.RefreshTokenExpiry)
+                .IsRequired(false);
+
             builder.Property(e => e.Status)
                 .IsRequired()
                 .HasMaxLength(50)

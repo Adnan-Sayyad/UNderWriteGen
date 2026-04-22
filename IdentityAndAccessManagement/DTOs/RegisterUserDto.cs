@@ -1,8 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace IdentityAndAccessManagement.DTOs
 {
-    public class CreateUserDto
+    public class RegisterUserDto
     {
         [Required(ErrorMessage = "First name is required.")]
         [MaxLength(100, ErrorMessage = "First name cannot exceed 100 characters.")]
@@ -22,9 +22,8 @@ namespace IdentityAndAccessManagement.DTOs
             ErrorMessage = "Password must have uppercase, lowercase, digit and special character.")]
         public string Password { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Role is required.")]
-        [RegularExpression("^(Admin|Manager|User|Guest)$",
-            ErrorMessage = "Role must be Admin, Manager, User or Guest.")]
-        public string Role { get; set; } = string.Empty;
+        [Phone(ErrorMessage = "Invalid phone number format.")]
+        [MaxLength(20, ErrorMessage = "Phone number cannot exceed 20 characters.")]
+        public string? PhoneNumber { get; set; }
     }
 }
