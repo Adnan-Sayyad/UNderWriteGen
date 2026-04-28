@@ -1,26 +1,41 @@
-var builder = WebApplication.CreateBuilder(args);
+using Microsoft.EntityFrameworkCore;
+using PolicyBindingIssuanceAndEndorsements.Data;
+using PolicyBindingIssuanceAndEndorsements.Services;
 
-// Add services to the container.
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "Policy Binding, Issuance & Endorsements Service", Version = "v1" });
+});
+
+// Register EF Core DbContext
+builder.Services.AddDbContext<PolicyDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register services
+builder.Services.AddScoped<IPolicyService, PolicyService>();
+builder.Services.AddScoped<IEndorsementService, EndorsementService>();
+builder.Services.AddScoped<ICancellationService, CancellationService>();
+builder.Services.AddScoped<IRenewalService, RenewalService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Auto-apply migrations on startup
+using (var scope = app.Services.CreateScope())
 {
-    app.MapOpenApi();
+    var db = scope.ServiceProvider.GetRequiredService<PolicyDbContext>();
+    db.Database.Migrate();
 }
 
-app.UseHttpsRedirection();
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Policy Binding, Issuance & Endorsements Service v1");
+});
+
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

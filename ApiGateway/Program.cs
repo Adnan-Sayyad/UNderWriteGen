@@ -1,23 +1,19 @@
+using Ocelot.DependencyInjection;
+using Ocelot.Middleware;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ── Load Ocelot routing config ────────────────────────────────────────
+// Ocelot.json defines all downstream routes for every microservice
+builder.Configuration
+    .AddJsonFile("Ocelot.json", optional: false, reloadOnChange: true);
 
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// ── Register Ocelot ───────────────────────────────────────────────────
+builder.Services.AddOcelot(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
+// ── Ocelot middleware — this is the gateway, no controllers needed ────
+await app.UseOcelot();
 
 app.Run();
