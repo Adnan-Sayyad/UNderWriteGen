@@ -19,6 +19,7 @@ namespace NotificationsAndAlerts.Services
         {
             var notification = new Notification
             {
+                NotificationID = await GenerateIdAsync(),
                 UserID = dto.UserID,
                 Message = dto.Message,
                 Category = dto.Category,
@@ -32,7 +33,7 @@ namespace NotificationsAndAlerts.Services
             return ToDto(notification);
         }
 
-        public async Task<NotificationResponseDto?> GetByIdAsync(int id)
+        public async Task<NotificationResponseDto?> GetByIdAsync(string id)
         {
             var n = await _db.Notifications.FindAsync(id);
             return n is null ? null : ToDto(n);
@@ -55,7 +56,7 @@ namespace NotificationsAndAlerts.Services
             return list.Select(ToDto);
         }
 
-        public async Task<bool> MarkAsReadAsync(int id)
+        public async Task<bool> MarkAsReadAsync(string id)
         {
             var n = await _db.Notifications.FindAsync(id);
             if (n is null) return false;
@@ -64,7 +65,7 @@ namespace NotificationsAndAlerts.Services
             return true;
         }
 
-        public async Task<bool> DismissAsync(int id)
+        public async Task<bool> DismissAsync(string id)
         {
             var n = await _db.Notifications.FindAsync(id);
             if (n is null) return false;
@@ -73,13 +74,26 @@ namespace NotificationsAndAlerts.Services
             return true;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(string id)
         {
             var n = await _db.Notifications.FindAsync(id);
             if (n is null) return false;
             _db.Notifications.Remove(n);
             await _db.SaveChangesAsync();
             return true;
+        }
+
+        // Generates IDs in the format NTF-yyyyMMdd-XXXX (sequential per day).
+        private async Task<string> GenerateIdAsync()
+        {
+            var today = DateTime.UtcNow.ToString("yyyyMMdd");
+            var prefix = $"NTF-{today}-";
+
+            var countToday = await _db.Notifications
+                .Where(n => n.NotificationID.StartsWith(prefix))
+                .CountAsync();
+
+            return $"{prefix}{(countToday + 1):D4}";
         }
 
         private static NotificationResponseDto ToDto(Notification n) => new()

@@ -4,7 +4,7 @@
 GET {{host}}/api/notifications
 
 ### Get a single notification
-GET {{host}}/api/notifications/1
+GET {{host}}/api/notifications/NTF-20260102-0001
 
 ### Get notifications for a specific user
 GET {{host}}/api/notifications/user/USR-001
@@ -20,10 +20,10 @@ Content-Type: application/json
 }
 
 ### Mark as read
-PUT {{host}}/api/notifications/1/read
+PUT {{host}}/api/notifications/NTF-20260102-0001/read
 
 ### Dismiss a notification
-PUT {{host}}/api/notifications/3/dismiss
+PUT {{host}}/api/notifications/NTF-20260104-0001/dismiss
 
 ### Delete
-DELETE {{host}}/api/notifications/2
+DELETE {{host}}/api/notifications/NTF-20260103-0001

@@ -23,7 +23,7 @@ namespace NotificationsAndAlerts.Data
             modelBuilder.Entity<Notification>().HasData(
                 new Notification
                 {
-                    NotificationID = 1,
+                    NotificationID = "NTF-20260102-0001",
                     UserID = "USR-001",
                     Message = "Submission SUB-2026-0042 has been referred for your review.",
                     Category = "Referral",
@@ -32,7 +32,7 @@ namespace NotificationsAndAlerts.Data
                 },
                 new Notification
                 {
-                    NotificationID = 2,
+                    NotificationID = "NTF-20260103-0001",
                     UserID = "USR-002",
                     Message = "Quote QT-2026-0099 has been generated and is awaiting customer acceptance.",
                     Category = "Quote",
@@ -41,7 +41,7 @@ namespace NotificationsAndAlerts.Data
                 },
                 new Notification
                 {
-                    NotificationID = 3,
+                    NotificationID = "NTF-20260104-0001",
                     UserID = "USR-001",
                     Message = "SLA breach warning: case CASE-2026-0007 nearing 24-hour deadline.",
                     Category = "SLA",

@@ -17,8 +17,7 @@ namespace NotificationsAndAlerts.Migrations
                 name: "Notification",
                 columns: table => new
                 {
-                    NotificationID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    NotificationID = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     UserID = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Category = table.Column<string>(type: "nvarchar(450)", nullable: false),
@@ -35,9 +34,9 @@ namespace NotificationsAndAlerts.Migrations
                 columns: new[] { "NotificationID", "Category", "CreatedDate", "Message", "Status", "UserID" },
                 values: new object[,]
                 {
-                    { 1, "Referral", new DateTime(2026, 1, 2, 9, 30, 0, 0, DateTimeKind.Unspecified), "Submission SUB-2026-0042 has been referred for your review.", "Unread", "USR-001" },
-                    { 2, "Quote", new DateTime(2026, 1, 3, 11, 15, 0, 0, DateTimeKind.Unspecified), "Quote QT-2026-0099 has been generated and is awaiting customer acceptance.", "Read", "USR-002" },
-                    { 3, "SLA", new DateTime(2026, 1, 4, 8, 0, 0, 0, DateTimeKind.Unspecified), "SLA breach warning: case CASE-2026-0007 nearing 24-hour deadline.", "Unread", "USR-001" }
+                    { "NTF-20260102-0001", "Referral", new DateTime(2026, 1, 2, 9, 30, 0, 0, DateTimeKind.Unspecified), "Submission SUB-2026-0042 has been referred for your review.", "Unread", "USR-001" },
+                    { "NTF-20260103-0001", "Quote", new DateTime(2026, 1, 3, 11, 15, 0, 0, DateTimeKind.Unspecified), "Quote QT-2026-0099 has been generated and is awaiting customer acceptance.", "Read", "USR-002" },
+                    { "NTF-20260104-0001", "SLA", new DateTime(2026, 1, 4, 8, 0, 0, 0, DateTimeKind.Unspecified), "SLA breach warning: case CASE-2026-0007 nearing 24-hour deadline.", "Unread", "USR-001" }
                 });
 
             migrationBuilder.CreateIndex(

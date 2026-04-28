@@ -13,7 +13,7 @@ namespace NotificationsAndAlerts.Models.DTOs
 
     public class NotificationResponseDto
     {
-        public int NotificationID { get; set; }
+        public string NotificationID { get; set; } = string.Empty;
         public string UserID { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;

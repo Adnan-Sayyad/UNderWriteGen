@@ -38,8 +38,8 @@ namespace NotificationsAndAlerts.Controllers
         }
 
         // GET /api/notifications/{id}
-        [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(string id)
         {
             var n = await _service.GetByIdAsync(id);
             if (n is null)
@@ -56,30 +56,30 @@ namespace NotificationsAndAlerts.Controllers
         }
 
         // PUT /api/notifications/{id}/read
-        [HttpPut("{id:int}/read")]
-        public async Task<IActionResult> MarkRead(int id)
+        [HttpPut("{id}/read")]
+        public async Task<IActionResult> MarkRead(string id)
         {
             var ok = await _service.MarkAsReadAsync(id);
             if (!ok) return NotFound(ApiResponse<object>.Fail($"Notification '{id}' not found"));
-            return Ok(ApiResponse<int>.Ok(id, "Marked as read"));
+            return Ok(ApiResponse<string>.Ok(id, "Marked as read"));
         }
 
         // PUT /api/notifications/{id}/dismiss
-        [HttpPut("{id:int}/dismiss")]
-        public async Task<IActionResult> Dismiss(int id)
+        [HttpPut("{id}/dismiss")]
+        public async Task<IActionResult> Dismiss(string id)
         {
             var ok = await _service.DismissAsync(id);
             if (!ok) return NotFound(ApiResponse<object>.Fail($"Notification '{id}' not found"));
-            return Ok(ApiResponse<int>.Ok(id, "Notification dismissed"));
+            return Ok(ApiResponse<string>.Ok(id, "Notification dismissed"));
         }
 
         // DELETE /api/notifications/{id}
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> Delete(int id)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(string id)
         {
             var ok = await _service.DeleteAsync(id);
             if (!ok) return NotFound(ApiResponse<object>.Fail($"Notification '{id}' not found"));
-            return Ok(ApiResponse<int>.Ok(id, "Notification deleted"));
+            return Ok(ApiResponse<string>.Ok(id, "Notification deleted"));
         }
     }
 }
