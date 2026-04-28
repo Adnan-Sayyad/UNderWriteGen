@@ -19,36 +19,6 @@ namespace NotificationsAndAlerts.Data
                 entity.HasIndex(n => n.Category);
             });
 
-            // Seed sample data
-            modelBuilder.Entity<Notification>().HasData(
-                new Notification
-                {
-                    NotificationID = "NTF-20260102-0001",
-                    UserID = "USR-001",
-                    Message = "Submission SUB-2026-0042 has been referred for your review.",
-                    Category = "Referral",
-                    Status = "Unread",
-                    CreatedDate = new DateTime(2026, 1, 2, 9, 30, 0)
-                },
-                new Notification
-                {
-                    NotificationID = "NTF-20260103-0001",
-                    UserID = "USR-002",
-                    Message = "Quote QT-2026-0099 has been generated and is awaiting customer acceptance.",
-                    Category = "Quote",
-                    Status = "Read",
-                    CreatedDate = new DateTime(2026, 1, 3, 11, 15, 0)
-                },
-                new Notification
-                {
-                    NotificationID = "NTF-20260104-0001",
-                    UserID = "USR-001",
-                    Message = "SLA breach warning: case CASE-2026-0007 nearing 24-hour deadline.",
-                    Category = "SLA",
-                    Status = "Unread",
-                    CreatedDate = new DateTime(2026, 1, 4, 8, 0, 0)
-                }
-            );
         }
     }
 }

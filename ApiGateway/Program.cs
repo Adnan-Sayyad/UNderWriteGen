@@ -3,17 +3,25 @@ using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Load Ocelot routing config ────────────────────────────────────────
-// Ocelot.json defines all downstream routes for every microservice
 builder.Configuration
     .AddJsonFile("Ocelot.json", optional: false, reloadOnChange: true);
 
-// ── Register Ocelot ───────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddOcelot(builder.Configuration);
 
 var app = builder.Build();
 
-// ── Ocelot middleware — this is the gateway, no controllers needed ────
+app.UseCors();
+
 await app.UseOcelot();
 
 app.Run();

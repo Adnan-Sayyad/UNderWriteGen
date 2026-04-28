@@ -23,7 +23,7 @@ public class HttpRulesApi : IRulesApi
     {
         try
         {
-            var response = await _http.GetAsync($"api/risk-scores/{submissionId}", ct);
+            var response = await _http.GetAsync($"risk-scores/{submissionId}", ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {

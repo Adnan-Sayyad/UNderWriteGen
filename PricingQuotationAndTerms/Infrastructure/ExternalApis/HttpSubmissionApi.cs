@@ -23,7 +23,7 @@ public class HttpSubmissionApi : ISubmissionApi
     {
         try
         {
-            var response = await _http.GetAsync($"api/submissions/{submissionId}", ct);
+            var response = await _http.GetAsync($"submissions/{submissionId}", ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {

@@ -7,8 +7,13 @@ namespace RiskDataAndEvidence.Services;
 public class EvidenceRefService : IEvidenceRefService
 {
     private readonly IEvidenceRefRepository _repo;
+    private readonly ISubmissionValidationService _submissionValidation;
 
-    public EvidenceRefService(IEvidenceRefRepository repo) => _repo = repo;
+    public EvidenceRefService(IEvidenceRefRepository repo, ISubmissionValidationService submissionValidation)
+    {
+        _repo = repo;
+        _submissionValidation = submissionValidation;
+    }
 
     public async Task<IEnumerable<EvidenceRefSummaryDto>> GetBySubmissionIdAsync(Guid submissionId)
         => (await _repo.GetBySubmissionIdAsync(submissionId)).Select(ToSummary);
@@ -24,6 +29,9 @@ public class EvidenceRefService : IEvidenceRefService
 
     public async Task<EvidenceRefDetailDto> CreateAsync(CreateEvidenceRefDto dto)
     {
+        if (!await _submissionValidation.SubmissionExistsAsync(dto.SubmissionID))
+            throw new KeyNotFoundException($"Submission '{dto.SubmissionID}' not found.");
+
         var ev = new EvidenceRef
         {
             SubmissionID = dto.SubmissionID,

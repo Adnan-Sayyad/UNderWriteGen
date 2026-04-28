@@ -21,6 +21,12 @@ builder.Services.AddScoped<IEndorsementService, EndorsementService>();
 builder.Services.AddScoped<ICancellationService, CancellationService>();
 builder.Services.AddScoped<IRenewalService, RenewalService>();
 
+// Inter-service HTTP clients
+builder.Services.AddHttpClient<ISubmissionClientService, HttpSubmissionClientService>(c =>
+    c.BaseAddress = new Uri(builder.Configuration["Services:SubmissionApi"]!));
+builder.Services.AddHttpClient<INotificationClientService, HttpNotificationClientService>(c =>
+    c.BaseAddress = new Uri(builder.Configuration["Services:NotificationApi"]!));
+
 var app = builder.Build();
 
 // Auto-apply migrations on startup

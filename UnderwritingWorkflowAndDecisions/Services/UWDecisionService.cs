@@ -7,8 +7,13 @@ namespace UnderwritingWorkflowAndDecisions.Services
     public class UWDecisionService : IUWDecisionService
     {
         private readonly UWWorkflowDbContext _db;
+        private readonly INotificationClientService _notificationClient;
 
-        public UWDecisionService(UWWorkflowDbContext db) => _db = db;
+        public UWDecisionService(UWWorkflowDbContext db, INotificationClientService notificationClient)
+        {
+            _db = db;
+            _notificationClient = notificationClient;
+        }
 
         public IEnumerable<UWDecision> GetBySubmission(Guid submissionId) =>
             _db.UWDecisions.Where(d => d.SubmissionID == submissionId).ToList();
@@ -33,6 +38,11 @@ namespace UnderwritingWorkflowAndDecisions.Services
             };
             _db.UWDecisions.Add(decision);
             _db.SaveChanges();
+
+            var category = dto.Decision is "Approve" or "Decline" ? "Compliance" : "Referral";
+            var message = $"UW Decision '{dto.Decision}' recorded for submission '{dto.SubmissionID}'. Reason: {dto.Reason}";
+            _ = _notificationClient.SendAsync(dto.DecidedBy.ToString(), message, category);
+
             return decision;
         }
 

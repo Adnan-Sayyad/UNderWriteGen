@@ -9,9 +9,13 @@ namespace ComplianceAuditAndQA.Services
     public class ComplianceChecklistService : IComplianceChecklistService
     {
         private readonly ComplianceDbContext _context;
+        private readonly ISubmissionClientService _submissionClient;
 
-        public ComplianceChecklistService(ComplianceDbContext context)
-            => _context = context;
+        public ComplianceChecklistService(ComplianceDbContext context, ISubmissionClientService submissionClient)
+        {
+            _context = context;
+            _submissionClient = submissionClient;
+        }
 
         // ── GET all ───────────────────────────────────────────────
         public async Task<IEnumerable<ComplianceChecklistDto>> GetAllAsync()
@@ -51,6 +55,9 @@ namespace ComplianceAuditAndQA.Services
         // ── CREATE ────────────────────────────────────────────────
         public async Task<ComplianceChecklistDto> CreateAsync(CreateComplianceChecklistDto dto)
         {
+            if (!await _submissionClient.SubmissionExistsAsync(dto.SubmissionId))
+                throw new KeyNotFoundException($"Submission '{dto.SubmissionId}' not found. Cannot create compliance checklist.");
+
             var checklist = new ComplianceChecklist
             {
                 ChecklistId   = Guid.NewGuid(),

@@ -40,6 +40,10 @@ builder.Services.AddScoped<IComplianceChecklistService, ComplianceChecklistServi
 builder.Services.AddScoped<IAuthorityBreachService,     AuthorityBreachService>();
 builder.Services.AddScoped<IExceptionLogService,        ExceptionLogService>();
 
+// Inter-service HTTP clients
+builder.Services.AddHttpClient<ISubmissionClientService, HttpSubmissionClientService>(c =>
+    c.BaseAddress = new Uri(builder.Configuration["Services:SubmissionApi"]!));
+
 // ── Controllers + Swagger ─────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

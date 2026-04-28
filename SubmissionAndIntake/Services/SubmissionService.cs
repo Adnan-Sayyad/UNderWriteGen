@@ -9,10 +9,12 @@ namespace SubmissionAndIntake.Services
     public class SubmissionService : ISubmissionService
     {
         private readonly ISubmissionRepository _repository;
+        private readonly IDistributionValidationService _distributionValidation;
 
-        public SubmissionService(ISubmissionRepository repository)
+        public SubmissionService(ISubmissionRepository repository, IDistributionValidationService distributionValidation)
         {
             _repository = repository;
+            _distributionValidation = distributionValidation;
         }
 
         public async Task<IEnumerable<SubmissionResponseDto>> GetAllSubmissionsAsync()
@@ -53,6 +55,11 @@ namespace SubmissionAndIntake.Services
 
         public async Task<SubmissionResponseDto> CreateSubmissionAsync(CreateSubmissionDto dto)
         {
+            if (!await _distributionValidation.AgentExistsAsync(dto.AgentID.ToString()))
+                throw new KeyNotFoundException($"Agent '{dto.AgentID}' not found in Distribution service.");
+            if (!await _distributionValidation.PartyExistsAsync(dto.PartyID.ToString()))
+                throw new KeyNotFoundException($"Party '{dto.PartyID}' not found in Distribution service.");
+
             var submission = new Submission
             {
                 PartyID = dto.PartyID,

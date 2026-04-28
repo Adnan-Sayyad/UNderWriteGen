@@ -27,6 +27,10 @@ builder.Services.AddScoped<IRiskScoreService, RiskScoreService>();
 builder.Services.AddScoped<IReferralMatrixService, ReferralMatrixService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 
+// Inter-service HTTP clients
+builder.Services.AddHttpClient<INotificationClientService, HttpNotificationClientService>(c =>
+    c.BaseAddress = new Uri(builder.Configuration["Services:NotificationApi"]!));
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

@@ -7,8 +7,13 @@ namespace RiskDataAndEvidence.Services;
 public class RiskProfileService : IRiskProfileService
 {
     private readonly IRiskProfileRepository _repo;
+    private readonly ISubmissionValidationService _submissionValidation;
 
-    public RiskProfileService(IRiskProfileRepository repo) => _repo = repo;
+    public RiskProfileService(IRiskProfileRepository repo, ISubmissionValidationService submissionValidation)
+    {
+        _repo = repo;
+        _submissionValidation = submissionValidation;
+    }
 
     public async Task<IEnumerable<RiskProfileSummaryDto>> GetAllAsync()
         => (await _repo.GetAllAsync()).Select(ToSummary);
@@ -30,6 +35,9 @@ public class RiskProfileService : IRiskProfileService
 
     public async Task<RiskProfileDetailDto> CreateAsync(CreateRiskProfileDto dto)
     {
+        if (!await _submissionValidation.SubmissionExistsAsync(dto.SubmissionID))
+            throw new KeyNotFoundException($"Submission '{dto.SubmissionID}' not found.");
+
         var profile = new RiskProfile
         {
             SubmissionID = dto.SubmissionID,
