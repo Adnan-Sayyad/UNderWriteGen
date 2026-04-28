@@ -1,1 +1,29 @@
-/* You can add global styles to this file, and also import other style files */
+/* ============================================================
+   UnderwritePro – Global Stylesheet
+   Import order matters: variables → Bootstrap → utilities
+   ============================================================ */
+
+@import './styles/_variables.css';
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+@import './styles/_utilities.css';
+
+/* Base resets */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: var(--bs-body-font-family);
+  background-color: #f4f6f9;
+  color: #212529;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+
+/* Smooth transitions for route changes */
+router-outlet + * { animation: fadeIn .15s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }

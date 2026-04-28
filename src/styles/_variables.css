@@ -1,0 +1,41 @@
+/* UnderwritePro – Bootstrap CSS variable overrides
+   Import this before bootstrap/dist/css/bootstrap.min.css */
+
+:root {
+  /* Brand palette */
+  --uwpro-primary:        #1a3c6e;
+  --uwpro-primary-light:  #2a5298;
+  --uwpro-secondary:      #4a7fbd;
+  --uwpro-accent:         #f0a500;
+  --uwpro-danger:         #d93025;
+  --uwpro-success:        #1e7e34;
+  --uwpro-warning:        #e6a817;
+  --uwpro-info:           #0d6efd;
+
+  /* Bootstrap token overrides */
+  --bs-primary:           var(--uwpro-primary);
+  --bs-secondary:         var(--uwpro-secondary);
+  --bs-body-font-family:  'Segoe UI', system-ui, -apple-system, sans-serif;
+  --bs-body-font-size:    0.9rem;
+  --bs-border-radius:     0.375rem;
+
+  /* Sidebar */
+  --sidebar-width:        260px;
+  --sidebar-bg:           var(--uwpro-primary);
+  --sidebar-text:         #cfd8e3;
+  --sidebar-active-bg:    var(--uwpro-primary-light);
+  --sidebar-active-text:  #ffffff;
+
+  /* Navbar */
+  --navbar-height:        56px;
+  --navbar-bg:            #ffffff;
+  --navbar-border:        #dee2e6;
+
+  /* Status badge colours */
+  --status-draft:         #6c757d;
+  --status-active:        #198754;
+  --status-pending:       #fd7e14;
+  --status-approved:      #0d6efd;
+  --status-declined:      #dc3545;
+  --status-expired:       #6c757d;
+}

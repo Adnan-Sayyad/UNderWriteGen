@@ -1,0 +1,23 @@
+<div class="d-flex align-items-start justify-content-between mb-3">
+  <div>
+    <nav *ngIf="breadcrumbs.length" aria-label="breadcrumb" class="mb-1">
+      <ol class="breadcrumb mb-0" style="font-size:.8rem">
+        @for (crumb of breadcrumbs; track crumb.label; let last = $last) {
+          <li class="breadcrumb-item" [class.active]="last">
+            @if (!last && crumb.route) {
+              <a [routerLink]="crumb.route">{{ crumb.label }}</a>
+            } @else {
+              {{ crumb.label }}
+            }
+          </li>
+        }
+      </ol>
+    </nav>
+    <h4 class="mb-0 fw-semibold text-dark">
+      @if (icon) { <i class="bi {{ icon }} me-2 text-primary"></i> }
+      {{ title }}
+    </h4>
+    @if (subtitle) { <small class="text-muted">{{ subtitle }}</small> }
+  </div>
+  <ng-content></ng-content>
+</div>
