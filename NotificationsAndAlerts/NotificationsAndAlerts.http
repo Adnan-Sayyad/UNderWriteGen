@@ -1,6 +1,29 @@
-@NotificationsAndAlerts_HostAddress = http://localhost:5274
+@host = http://localhost:8084
 
-GET {{NotificationsAndAlerts_HostAddress}}/weatherforecast/
-Accept: application/json
+### Get all notifications
+GET {{host}}/api/notifications
 
-###
+### Get a single notification
+GET {{host}}/api/notifications/1
+
+### Get notifications for a specific user
+GET {{host}}/api/notifications/user/USR-001
+
+### Create a new notification
+POST {{host}}/api/notifications
+Content-Type: application/json
+
+{
+  "userID": "USR-003",
+  "message": "Compliance review pending for policy POL-2026-0050.",
+  "category": "Compliance"
+}
+
+### Mark as read
+PUT {{host}}/api/notifications/1/read
+
+### Dismiss a notification
+PUT {{host}}/api/notifications/3/dismiss
+
+### Delete
+DELETE {{host}}/api/notifications/2
