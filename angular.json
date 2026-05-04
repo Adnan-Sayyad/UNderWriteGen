@@ -19,21 +19,15 @@
           "options": {
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
-            "assets": [
-              { "glob": "**/*", "input": "public" }
-            ],
-            "styles": [
-              "src/styles.css"
-            ],
-            "scripts": [
-              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
-            ]
+            "assets": [{ "glob": "**/*", "input": "public" }],
+            "styles": ["src/styles.css"],
+            "scripts": ["node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"]
           },
           "configurations": {
             "production": {
               "budgets": [
-                { "type": "initial",          "maximumWarning": "1MB",  "maximumError": "2MB" },
-                { "type": "anyComponentStyle","maximumWarning": "8kB",  "maximumError": "16kB" }
+                { "type": "initial", "maximumWarning": "1MB", "maximumError": "2MB" },
+                { "type": "anyComponentStyle", "maximumWarning": "8kB", "maximumError": "16kB" }
               ],
               "outputHashing": "all"
             },
@@ -48,7 +42,7 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "configurations": {
-            "production":  { "buildTarget": "angularFrontendUnderwritePro:build:production" },
+            "production": { "buildTarget": "angularFrontendUnderwritePro:build:production" },
             "development": { "buildTarget": "angularFrontendUnderwritePro:build:development" }
           },
           "defaultConfiguration": "development"
