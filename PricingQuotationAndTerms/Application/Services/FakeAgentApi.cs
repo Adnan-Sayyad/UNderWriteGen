@@ -10,17 +10,14 @@ namespace PricingQuotationAndTerms.Application.Services;
 /// </summary>
 public class FakeAgentApi : IAgentApi
 {
-    public Task<AgentDto?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
+    public Task<AgentDto?> GetAgentByIdAsync(string agentId, CancellationToken ct = default)
     {
-        // Odd last byte = preferred agent (to test both paths)
-        bool isPreferred = agentId.ToByteArray()[15] % 2 == 1;
-
         return Task.FromResult<AgentDto?>(new AgentDto
         {
             AgentId          = agentId,
             ProducerCode     = "PROD-FAKE-001",
             Region           = "Metro",
-            IsPreferredAgent = isPreferred,
+            IsPreferredAgent = true,
             CommissionRate   = 0.05m
         });
     }

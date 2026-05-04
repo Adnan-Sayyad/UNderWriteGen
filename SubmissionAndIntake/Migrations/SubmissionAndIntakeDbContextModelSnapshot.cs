@@ -105,8 +105,9 @@ namespace SubmissionAndIntake.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("AgentID")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("AgentID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CoverageJSON")
                         .IsRequired()
@@ -118,8 +119,9 @@ namespace SubmissionAndIntake.Migrations
                     b.Property<DateTime>("InceptionDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("PartyID")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("PartyID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("ProductLine")
                         .HasColumnType("int");

@@ -8,9 +8,9 @@ namespace PricingQuotationAndTerms.Contracts.DTOs;
 public class SubmissionDto
 {
     public Guid     Id                  { get; set; }
-    public Guid     PartyId             { get; set; }
-    public Guid     AgentId             { get; set; }
-    public string   ProductLine         { get; set; } = string.Empty; // "Motor","Health","Property","Life"
+    public string   PartyId             { get; set; } = string.Empty; // e.g. "PTY-20260501-0001"
+    public string   AgentId             { get; set; } = string.Empty; // e.g. "AGT-20260501-0001"
+    public string   ProductLine         { get; set; } = string.Empty; // "Life","Health","PnC","Commercial"
     public decimal  SumInsured          { get; set; }
     public int      PolicyTenureMonths  { get; set; }  // 12 = 1 year
     public string   OccupationType      { get; set; } = string.Empty;

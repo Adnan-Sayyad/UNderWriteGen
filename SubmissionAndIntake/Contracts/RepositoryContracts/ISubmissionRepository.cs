@@ -7,8 +7,8 @@ namespace SubmissionAndIntake.Contracts.RepositoryContracts
     {
         Task<IEnumerable<Submission>> GetAllAsync();
         Task<Submission?> GetByIdAsync(Guid id);
-        Task<IEnumerable<Submission>> GetByAgentIdAsync(Guid agentId);
-        Task<IEnumerable<Submission>> GetByPartyIdAsync(Guid partyId);
+        Task<IEnumerable<Submission>> GetByAgentIdAsync(string agentId);
+        Task<IEnumerable<Submission>> GetByPartyIdAsync(string partyId);
         Task<IEnumerable<Submission>> GetByStatusAsync(SubmissionStatus status);
         Task<IEnumerable<Submission>> GetByProductLineAsync(ProductLine productLine);
         Task<Submission> CreateAsync(Submission submission);

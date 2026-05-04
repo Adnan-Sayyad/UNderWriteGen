@@ -55,35 +55,6 @@ namespace NotificationsAndAlerts.Migrations
                     b.HasIndex("UserID");
 
                     b.ToTable("Notification", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            NotificationID = "NTF-20260102-0001",
-                            Category = "Referral",
-                            CreatedDate = new DateTime(2026, 1, 2, 9, 30, 0, 0, DateTimeKind.Unspecified),
-                            Message = "Submission SUB-2026-0042 has been referred for your review.",
-                            Status = "Unread",
-                            UserID = "USR-001"
-                        },
-                        new
-                        {
-                            NotificationID = "NTF-20260103-0001",
-                            Category = "Quote",
-                            CreatedDate = new DateTime(2026, 1, 3, 11, 15, 0, 0, DateTimeKind.Unspecified),
-                            Message = "Quote QT-2026-0099 has been generated and is awaiting customer acceptance.",
-                            Status = "Read",
-                            UserID = "USR-002"
-                        },
-                        new
-                        {
-                            NotificationID = "NTF-20260104-0001",
-                            Category = "SLA",
-                            CreatedDate = new DateTime(2026, 1, 4, 8, 0, 0, 0, DateTimeKind.Unspecified),
-                            Message = "SLA breach warning: case CASE-2026-0007 nearing 24-hour deadline.",
-                            Status = "Unread",
-                            UserID = "USR-001"
-                        });
                 });
 #pragma warning restore 612, 618
         }

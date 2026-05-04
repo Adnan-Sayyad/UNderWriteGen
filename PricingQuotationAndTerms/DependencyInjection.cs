@@ -5,6 +5,7 @@ using PricingQuotationAndTerms.Contracts.Interfaces;
 using PricingQuotationAndTerms.Domain.Repositories;
 using PricingQuotationAndTerms.Infrastructure.BackgroundJobs;
 using PricingQuotationAndTerms.Infrastructure.Data;
+using PricingQuotationAndTerms.Infrastructure.ExternalApis;
 using PricingQuotationAndTerms.Infrastructure.Repositories;
 
 namespace PricingQuotationAndTerms;
@@ -44,16 +45,13 @@ public static class DependencyInjection
         // ── Public Contracts ──────────────────────────────────────────
         services.AddScoped<IPricingApi, PricingApiAdapter>();
 
-        // ── External Services (DEV: Fake stubs) ───────────────────────
-        services.AddScoped<ISubmissionApi, FakeSubmissionApi>();
-        services.AddScoped<IRulesApi,      FakeRulesApi>();
-        services.AddScoped<IAgentApi,      FakeAgentApi>();
-
-        // ── PRODUCTION: Uncomment when teammates' services are ready ──
-        // services.AddHttpClient<ISubmissionApi, HttpSubmissionApi>(c =>
-        //     c.BaseAddress = new Uri(configuration["Services:SubmissionApi"]!));
-        // services.AddHttpClient<IRulesApi, HttpRulesApi>(c =>
-        //     c.BaseAddress = new Uri(configuration["Services:RulesApi"]!));
+        // ── External Services (REST HTTP clients) ─────────────────────
+        services.AddHttpClient<ISubmissionApi, HttpSubmissionApi>(c =>
+            c.BaseAddress = new Uri(configuration["Services:SubmissionApi"]!));
+        services.AddHttpClient<IRulesApi, HttpRulesApi>(c =>
+            c.BaseAddress = new Uri(configuration["Services:RulesApi"]!));
+        services.AddHttpClient<IAgentApi, HttpAgentApi>(c =>
+            c.BaseAddress = new Uri(configuration["Services:AgentApi"]!));
 
         // ── Background Jobs ───────────────────────────────────────────
         services.AddHostedService<QuoteExpiryJob>();

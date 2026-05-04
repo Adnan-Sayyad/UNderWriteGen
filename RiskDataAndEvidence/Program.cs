@@ -29,6 +29,9 @@ builder.Services.AddCors(opts =>
     opts.AddDefaultPolicy(p =>
         p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
+builder.Services.AddHttpClient<ISubmissionValidationService, HttpSubmissionValidationService>(c =>
+    c.BaseAddress = new Uri(builder.Configuration["Services:SubmissionApi"]!));
+
 var app = builder.Build();
 
 // ── Auto-migrate on startup ───────────────────────────────────────────────────

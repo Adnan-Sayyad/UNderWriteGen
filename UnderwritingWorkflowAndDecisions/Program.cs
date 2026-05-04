@@ -20,6 +20,10 @@ builder.Services.AddScoped<IUWNoteService, UWNoteService>();
 builder.Services.AddScoped<IUWDecisionService, UWDecisionService>();
 builder.Services.AddScoped<ISubjectivityService, SubjectivityService>();
 
+// Inter-service HTTP clients
+builder.Services.AddHttpClient<INotificationClientService, HttpNotificationClientService>(c =>
+    c.BaseAddress = new Uri(builder.Configuration["Services:NotificationApi"]!));
+
 var app = builder.Build();
 
 // Auto-apply migrations on startup

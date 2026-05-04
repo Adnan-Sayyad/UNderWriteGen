@@ -1,398 +1,421 @@
 {
   "Routes": [
-
-    // ───────────────────────────────────────────
-    // 1. Identity & Access Service (Port: 8081)
-    // ───────────────────────────────────────────
+    {
+      "DownstreamPathTemplate": "/api/auth",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }],
+      "UpstreamPathTemplate": "/auth",
+      "UpstreamHttpMethod": ["POST"]
+    },
     {
       "DownstreamPathTemplate": "/api/auth/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8081
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }],
       "UpstreamPathTemplate": "/auth/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/users",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }],
+      "UpstreamPathTemplate": "/users",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/users/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8081
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }],
       "UpstreamPathTemplate": "/users/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/audit-logs",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }],
+      "UpstreamPathTemplate": "/audit-logs",
+      "UpstreamHttpMethod": ["GET"]
     },
     {
       "DownstreamPathTemplate": "/api/audit-logs/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8081
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }],
       "UpstreamPathTemplate": "/audit-logs/{everything}",
-      "UpstreamHttpMethod": [ "GET" ]
+      "UpstreamHttpMethod": ["GET"]
     },
 
-    // ───────────────────────────────────────────
-    // 2. Party & Distribution Service (Port: 8082)
-    // ───────────────────────────────────────────
+    {
+      "DownstreamPathTemplate": "/api/agents",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }],
+      "UpstreamPathTemplate": "/agents",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
     {
       "DownstreamPathTemplate": "/api/agents/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8082
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }],
       "UpstreamPathTemplate": "/agents/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"]
     },
     {
-      "DownstreamPathTemplate": "/api/parties/{everything}",
+      "DownstreamPathTemplate": "/api/customerparties",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8082
-        }
-      ],
-      "UpstreamPathTemplate": "/parties/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }],
+      "UpstreamPathTemplate": "/customerparties",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/customerparties/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }],
+      "UpstreamPathTemplate": "/customerparties/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"]
     },
 
-    // ───────────────────────────────────────────
-    // 3. Submission & Intake Service (Port: 8083)
-    // ───────────────────────────────────────────
+    {
+      "DownstreamPathTemplate": "/api/submissions",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }],
+      "UpstreamPathTemplate": "/submissions",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
     {
       "DownstreamPathTemplate": "/api/submissions/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8083
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }],
       "UpstreamPathTemplate": "/submissions/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/questionnaires",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }],
+      "UpstreamPathTemplate": "/questionnaires",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/questionnaires/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8083
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }],
       "UpstreamPathTemplate": "/questionnaires/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/attachments",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }],
+      "UpstreamPathTemplate": "/attachments",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/attachments/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8083
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }],
       "UpstreamPathTemplate": "/attachments/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "DELETE"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/completeness-checks",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }],
+      "UpstreamPathTemplate": "/completeness-checks",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/completeness-checks/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8083
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }],
       "UpstreamPathTemplate": "/completeness-checks/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH"]
     },
 
-    // ───────────────────────────────────────────
-    // 4. Risk Data & Evidence Service (Port: 8084)
-    // ───────────────────────────────────────────
     {
-      "DownstreamPathTemplate": "/api/risk-profiles/{everything}",
+      "DownstreamPathTemplate": "/api/notifications",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8084
-        }
-      ],
-      "UpstreamPathTemplate": "/risk-profiles/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8084 }],
+      "UpstreamPathTemplate": "/notifications",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
-      "DownstreamPathTemplate": "/api/evidence-refs/{everything}",
+      "DownstreamPathTemplate": "/api/notifications/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8084
-        }
-      ],
-      "UpstreamPathTemplate": "/evidence-refs/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8084 }],
+      "UpstreamPathTemplate": "/notifications/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
     },
 
-    // ───────────────────────────────────────────
-    // 5. Rules, Scoring & Referral Service (Port: 8085)
-    // ───────────────────────────────────────────
+    {
+      "DownstreamPathTemplate": "/api/uw-rules",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8085 }],
+      "UpstreamPathTemplate": "/uw-rules",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
     {
       "DownstreamPathTemplate": "/api/uw-rules/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8085
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8085 }],
       "UpstreamPathTemplate": "/uw-rules/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/risk-scores",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8085 }],
+      "UpstreamPathTemplate": "/risk-scores",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/risk-scores/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8085
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8085 }],
       "UpstreamPathTemplate": "/risk-scores/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST" ]
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/referral-matrix",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8085 }],
+      "UpstreamPathTemplate": "/referral-matrix",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/referral-matrix/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8085
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8085 }],
       "UpstreamPathTemplate": "/referral-matrix/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/referrals",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8085 }],
+      "UpstreamPathTemplate": "/referrals",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/referrals/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8085
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8085 }],
       "UpstreamPathTemplate": "/referrals/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH"]
     },
 
-    // ───────────────────────────────────────────
-    // 6. Pricing & Quotation Service (Port: 8086)
-    // ───────────────────────────────────────────
+    {
+      "DownstreamPathTemplate": "/api/pricing-params",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8086 }],
+      "UpstreamPathTemplate": "/pricing-params",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
     {
       "DownstreamPathTemplate": "/api/pricing-params/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8086
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8086 }],
       "UpstreamPathTemplate": "/pricing-params/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/quotes",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8086 }],
+      "UpstreamPathTemplate": "/quotes",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/quotes/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8086
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8086 }],
       "UpstreamPathTemplate": "/quotes/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH", "DELETE"]
     },
 
-    // ───────────────────────────────────────────
-    // 7. UW Workflow Service (Port: 8087)
-    // ───────────────────────────────────────────
+    {
+      "DownstreamPathTemplate": "/api/uw-notes",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8087 }],
+      "UpstreamPathTemplate": "/uw-notes",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
     {
       "DownstreamPathTemplate": "/api/uw-notes/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8087
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8087 }],
       "UpstreamPathTemplate": "/uw-notes/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/uw-decisions",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8087 }],
+      "UpstreamPathTemplate": "/uw-decisions",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/uw-decisions/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8087
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8087 }],
       "UpstreamPathTemplate": "/uw-decisions/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/subjectivities",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8087 }],
+      "UpstreamPathTemplate": "/subjectivities",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/subjectivities/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8087
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8087 }],
       "UpstreamPathTemplate": "/subjectivities/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
     },
 
-    // ───────────────────────────────────────────
-    // 8. Policy & Endorsement Service (Port: 8088)
-    // ───────────────────────────────────────────
+    {
+      "DownstreamPathTemplate": "/api/policies",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
+      "UpstreamPathTemplate": "/policies",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
     {
       "DownstreamPathTemplate": "/api/policies/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8088
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
       "UpstreamPathTemplate": "/policies/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/endorsements",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
+      "UpstreamPathTemplate": "/endorsements",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/endorsements/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8088
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
       "UpstreamPathTemplate": "/endorsements/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/cancellations",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
+      "UpstreamPathTemplate": "/cancellations",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/cancellations/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8088
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
       "UpstreamPathTemplate": "/cancellations/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/renewals",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
+      "UpstreamPathTemplate": "/renewals",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/renewals/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8088
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
       "UpstreamPathTemplate": "/renewals/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
     },
 
-    // ───────────────────────────────────────────
-    // 9. Compliance & QA Service (Port: 8089)
-    // ───────────────────────────────────────────
+    {
+      "DownstreamPathTemplate": "/api/compliance-checklists",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8089 }],
+      "UpstreamPathTemplate": "/compliance-checklists",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
     {
       "DownstreamPathTemplate": "/api/compliance-checklists/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8089
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8089 }],
       "UpstreamPathTemplate": "/compliance-checklists/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/authority-breaches",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8089 }],
+      "UpstreamPathTemplate": "/authority-breaches",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/authority-breaches/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8089
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8089 }],
       "UpstreamPathTemplate": "/authority-breaches/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/exception-logs",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8089 }],
+      "UpstreamPathTemplate": "/exception-logs",
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
     {
       "DownstreamPathTemplate": "/api/exception-logs/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8089
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8089 }],
       "UpstreamPathTemplate": "/exception-logs/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
     },
 
-    // ───────────────────────────────────────────
-    // 10. Reporting & Analytics Service (Port: 8090)
-    // ───────────────────────────────────────────
+    {
+      "DownstreamPathTemplate": "/api/reports",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8090 }],
+      "UpstreamPathTemplate": "/reports",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
     {
       "DownstreamPathTemplate": "/api/reports/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8090
-        }
-      ],
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8090 }],
       "UpstreamPathTemplate": "/reports/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST" ]
+      "UpstreamHttpMethod": ["GET", "POST"]
     },
 
-    // ───────────────────────────────────────────
-    // 11. Notification Service (Port: 8091)
-    // ───────────────────────────────────────────
     {
-      "DownstreamPathTemplate": "/api/notifications/{everything}",
+      "DownstreamPathTemplate": "/api/risk-profiles",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 8091
-        }
-      ],
-      "UpstreamPathTemplate": "/notifications/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8091 }],
+      "UpstreamPathTemplate": "/risk-profiles",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/risk-profiles/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8091 }],
+      "UpstreamPathTemplate": "/risk-profiles/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/evidence-refs",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8091 }],
+      "UpstreamPathTemplate": "/evidence-refs",
+      "UpstreamHttpMethod": ["GET", "POST"]
+    },
+    {
+      "DownstreamPathTemplate": "/api/evidence-refs/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8091 }],
+      "UpstreamPathTemplate": "/evidence-refs/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
     }
-
   ],
 
   "GlobalConfiguration": {

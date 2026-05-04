@@ -34,16 +34,16 @@ namespace SubmissionAndIntake.Controllers
         }
 
         // GET /api/submissions/party/{partyId}
-        [HttpGet("party/{partyId:guid}")]
-        public async Task<IActionResult> GetByPartyId(Guid partyId)
+        [HttpGet("party/{partyId}")]
+        public async Task<IActionResult> GetByPartyId(string partyId)
         {
             var submissions = await _service.GetSubmissionsByPartyIdAsync(partyId);
             return Ok(submissions);
         }
 
         // GET /api/submissions/agent/{agentId}
-        [HttpGet("agent/{agentId:guid}")]
-        public async Task<IActionResult> GetByAgentId(Guid agentId)
+        [HttpGet("agent/{agentId}")]
+        public async Task<IActionResult> GetByAgentId(string agentId)
         {
             var submissions = await _service.GetSubmissionsByAgentIdAsync(agentId);
             return Ok(submissions);

@@ -63,26 +63,6 @@ namespace DistributionAndPartyManagement.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("Agent", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            AgentID = "AGT-20250101-0001",
-                            ContactInfo = "Mumbai Office, Andheri West",
-                            Name = "Rajesh Kumar",
-                            ProducerCode = "MUM-LIF-001",
-                            Region = "Mumbai",
-                            Status = "Active"
-                        },
-                        new
-                        {
-                            AgentID = "AGT-20250101-0002",
-                            ContactInfo = "Delhi Office, Connaught Place",
-                            Name = "Priya Sharma",
-                            ProducerCode = "DEL-PNC-002",
-                            Region = "Delhi",
-                            Status = "Active"
-                        });
                 });
 
             modelBuilder.Entity("DistributionAndPartyManagement.Models.Entities.CustomerParty", b =>
@@ -129,28 +109,6 @@ namespace DistributionAndPartyManagement.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("CustomerParty", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            PartyID = "PTY-20250101-0001",
-                            ContactInfo = "Pune, Maharashtra",
-                            DOBIncorporation = new DateTime(1985, 6, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Amit Patel",
-                            PartyType = "Individual",
-                            Segment = "Retail",
-                            Status = "Active"
-                        },
-                        new
-                        {
-                            PartyID = "PTY-20250101-0002",
-                            ContactInfo = "Bangalore, Karnataka",
-                            DOBIncorporation = new DateTime(2010, 3, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "TechCorp Solutions Pvt Ltd",
-                            PartyType = "Organization",
-                            Segment = "SME",
-                            Status = "Active"
-                        });
                 });
 #pragma warning restore 612, 618
         }
