@@ -18,8 +18,8 @@ public class FakeSubmissionApi : ISubmissionApi
         return Task.FromResult<SubmissionDto?>(new SubmissionDto
         {
             Id                 = submissionId,
-            PartyId            = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
-            AgentId            = Guid.Parse("11111111-2222-3333-4444-555555555555"),
+            PartyId            = "PTY-FAKE-0001",
+            AgentId            = "AGT-FAKE-0001",
             ProductLine        = "Health",
             SumInsured         = 500_000m,
             PolicyTenureMonths = 12,

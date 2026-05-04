@@ -1,17 +1,21 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using PricingQuotationAndTerms.Contracts.DTOs;
 using PricingQuotationAndTerms.Contracts.Interfaces;
 
 namespace PricingQuotationAndTerms.Infrastructure.ExternalApis;
 
 /// <summary>
-/// PRODUCTION implementation — calls the real Rules/Scoring microservice at port 8085.
-/// Enable this in DependencyInjection.cs when teammate's module is ready.
+/// PRODUCTION implementation — calls the real Rules/Scoring microservice.
+/// Maps the RiskScoreResponseDto (Band as enum int) to RiskScoreDto (Band as string).
 /// </summary>
 public class HttpRulesApi : IRulesApi
 {
     private readonly HttpClient _http;
     private readonly ILogger<HttpRulesApi> _logger;
+
+    // Band enum: 0=Low, 1=Medium, 2=High (matches RulesScoringAndReferralMatrix Band enum)
+    private static readonly string[] BandNames = ["Low", "Medium", "High"];
 
     public HttpRulesApi(HttpClient http, ILogger<HttpRulesApi> logger)
     {
@@ -23,7 +27,7 @@ public class HttpRulesApi : IRulesApi
     {
         try
         {
-            var response = await _http.GetAsync($"api/risk-scores/{submissionId}", ct);
+            var response = await _http.GetAsync($"risk-scores/{submissionId}", ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -32,7 +36,24 @@ public class HttpRulesApi : IRulesApi
             }
 
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<RiskScoreDto>(ct);
+
+            // Deserialize Rules service response — Band is an integer enum
+            var raw = await response.Content.ReadFromJsonAsync<RiskScoreRaw>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }, ct);
+
+            if (raw is null) return null;
+
+            string bandName = (raw.Band >= 0 && raw.Band < BandNames.Length)
+                ? BandNames[raw.Band]
+                : "Medium";
+
+            return new RiskScoreDto
+            {
+                SubmissionId = raw.SubmissionID,
+                ScoreValue   = (decimal)raw.ScoreValue,
+                Band         = bandName,
+                ModelVersion = raw.ModelVersion ?? "v1.0"
+            };
         }
         catch (HttpRequestException ex)
         {
@@ -40,5 +61,16 @@ public class HttpRulesApi : IRulesApi
             throw new InvalidOperationException(
                 "Rules/Scoring service is unavailable. Cannot calculate risk score.", ex);
         }
+    }
+
+    // Mirrors RiskScoreResponseDto from RulesScoringAndReferralMatrix service
+    private sealed class RiskScoreRaw
+    {
+        public Guid    RiskScoreID  { get; set; }
+        public Guid    SubmissionID { get; set; }
+        public string? ModelVersion { get; set; }
+        public double  ScoreValue   { get; set; }
+        public int     Band         { get; set; }   // 0=Low, 1=Medium, 2=High
+        public DateTime ScoredDate  { get; set; }
     }
 }

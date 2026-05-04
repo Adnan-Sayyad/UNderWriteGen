@@ -8,5 +8,5 @@ namespace PricingQuotationAndTerms.Contracts.Interfaces;
 /// </summary>
 public interface IAgentApi
 {
-    Task<AgentDto?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default);
+    Task<AgentDto?> GetAgentByIdAsync(string agentId, CancellationToken ct = default);
 }

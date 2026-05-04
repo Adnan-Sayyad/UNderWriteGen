@@ -7,8 +7,18 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
     public class PolicyService : IPolicyService
     {
         private readonly PolicyDbContext _db;
+        private readonly ISubmissionClientService _submissionClient;
+        private readonly INotificationClientService _notificationClient;
 
-        public PolicyService(PolicyDbContext db) => _db = db;
+        public PolicyService(
+            PolicyDbContext db,
+            ISubmissionClientService submissionClient,
+            INotificationClientService notificationClient)
+        {
+            _db = db;
+            _submissionClient = submissionClient;
+            _notificationClient = notificationClient;
+        }
 
         public IEnumerable<Policy> GetAll() => _db.Policies.ToList();
 
@@ -35,6 +45,10 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
 
         public Policy Bind(CreatePolicyDto dto)
         {
+            var submissionExists = _submissionClient.SubmissionExistsAsync(dto.SubmissionID).GetAwaiter().GetResult();
+            if (!submissionExists)
+                throw new KeyNotFoundException($"Submission '{dto.SubmissionID}' not found. Cannot bind policy.");
+
             var policy = new Policy
             {
                 SubmissionID = dto.SubmissionID,
@@ -46,6 +60,10 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
             };
             _db.Policies.Add(policy);
             _db.SaveChanges();
+
+            var message = $"Policy '{policy.PolicyNumber}' has been successfully bound for submission '{dto.SubmissionID}'.";
+            _ = _notificationClient.SendAsync("system", message, "Compliance");
+
             return policy;
         }
 

@@ -40,23 +40,23 @@ public class HttpDataCollectorService : IHttpDataCollectorService
 		// ── Fetch from each service in parallel ───────────────────────────────
 		var submissionsTask = GetAsync<List<SubmissionResponseDto>>(
 			"SubmissionService",
-			$"/api/submissions?productLine={scopeValue}&from={from}&to={to}", ct);
+			$"/submissions?productLine={scopeValue}&from={from}&to={to}", ct);
 
 		var quotesTask = GetAsync<List<QuoteResponseDto>>(
 			"PricingService",
-			$"/api/quotes?productLine={scopeValue}&status=Accepted&from={from}&to={to}", ct);
+			$"/quotes?productLine={scopeValue}&status=Accepted&from={from}&to={to}", ct);
 
 		var referralsTask = GetAsync<List<ReferralResponseDto>>(
 			"RulesService",
-			$"/api/referrals?productLine={scopeValue}&from={from}&to={to}", ct);
+			$"/referrals?productLine={scopeValue}&from={from}&to={to}", ct);
 
 		var policiesTask = GetAsync<List<PolicyResponseDto>>(
 			"PolicyService",
-			$"/api/policies?productLine={scopeValue}&status=Active&from={from}&to={to}", ct);
+			$"/policies?productLine={scopeValue}&status=Active&from={from}&to={to}", ct);
 
 		var decisionsTask = GetAsync<List<UWDecisionResponseDto>>(
 			"UWWorkflowService",
-			$"/api/uw-decisions?productLine={scopeValue}&from={from}&to={to}", ct);
+			$"/uw-decisions?productLine={scopeValue}&from={from}&to={to}", ct);
 
 		await Task.WhenAll(submissionsTask, quotesTask, referralsTask, policiesTask, decisionsTask);
 
@@ -85,7 +85,7 @@ public class HttpDataCollectorService : IHttpDataCollectorService
 		var riskScoreTasks = finalised
 			.Select(s => GetAsync<RiskScoreResponseDto>(
 				"RulesService",
-				$"/api/risk-scores/{s.SubmissionID}", ct))
+				$"/risk-scores/{s.SubmissionID}", ct))
 			.ToList();
 
 		await Task.WhenAll(riskScoreTasks);

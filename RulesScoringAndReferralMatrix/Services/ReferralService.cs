@@ -9,10 +9,12 @@ namespace RulesScoringAndReferralMatrix.Services
     public class ReferralService : IReferralService
     {
         private readonly IReferralRepository _repository;
+        private readonly INotificationClientService _notificationClient;
 
-        public ReferralService(IReferralRepository repository)
+        public ReferralService(IReferralRepository repository, INotificationClientService notificationClient)
         {
             _repository = repository;
+            _notificationClient = notificationClient;
         }
 
         public async Task<IEnumerable<ReferralResponseDto>> GetAllReferralsAsync()
@@ -51,6 +53,13 @@ namespace RulesScoringAndReferralMatrix.Services
             };
 
             var created = await _repository.CreateAsync(referral);
+
+            if (!string.IsNullOrWhiteSpace(dto.AssignedTo))
+            {
+                var message = $"New referral for submission '{dto.SubmissionID}' requires your review. Authority: {dto.RequiredAuthority}. Reason: {dto.Reason}";
+                await _notificationClient.SendAsync(dto.AssignedTo, message, "Referral");
+            }
+
             return MapToResponseDto(created);
         }
 

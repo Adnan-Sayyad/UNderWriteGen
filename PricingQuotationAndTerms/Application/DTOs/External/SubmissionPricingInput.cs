@@ -3,8 +3,8 @@ namespace PricingQuotationAndTerms.Application.DTOs.External;
 public class SubmissionPricingInput
 {
     public Guid     SubmissionId        { get; set; }
-    public Guid     PartyId             { get; set; }
-    public Guid     AgentId             { get; set; }
+    public string   PartyId             { get; set; } = string.Empty;
+    public string   AgentId             { get; set; } = string.Empty;
     public string   ProductLine         { get; set; } = string.Empty;
     public decimal  SumInsured          { get; set; }
     public int      PolicyTenureMonths  { get; set; }

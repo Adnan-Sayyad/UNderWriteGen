@@ -21,6 +21,12 @@ var jwtAud    = builder.Configuration["Jwt:Audience"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Force the old JwtSecurityTokenHandler so token validation is compatible
+        // with how IdentityAndAccessManagement signs tokens (no 'kid' header).
+        // The newer JsonWebTokenHandler (default in .NET 8+) can fail key lookup
+        // when neither the token nor the key has a KeyId set.
+        options.UseSecurityTokenValidators = true;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer           = true,
@@ -39,6 +45,10 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IComplianceChecklistService, ComplianceChecklistService>();
 builder.Services.AddScoped<IAuthorityBreachService,     AuthorityBreachService>();
 builder.Services.AddScoped<IExceptionLogService,        ExceptionLogService>();
+
+// Inter-service HTTP clients
+builder.Services.AddHttpClient<ISubmissionClientService, HttpSubmissionClientService>(c =>
+    c.BaseAddress = new Uri(builder.Configuration["Services:SubmissionApi"]!));
 
 // ── Controllers + Swagger ─────────────────────────────────────────────────
 builder.Services.AddControllers();
