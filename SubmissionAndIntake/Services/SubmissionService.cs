@@ -29,13 +29,13 @@ namespace SubmissionAndIntake.Services
             return submission is null ? null : MapToResponseDto(submission);
         }
 
-        public async Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsByAgentIdAsync(Guid agentId)
+        public async Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsByAgentIdAsync(string agentId)
         {
             var submissions = await _repository.GetByAgentIdAsync(agentId);
             return submissions.Select(MapToResponseDto);
         }
 
-        public async Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsByPartyIdAsync(Guid partyId)
+        public async Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsByPartyIdAsync(string partyId)
         {
             var submissions = await _repository.GetByPartyIdAsync(partyId);
             return submissions.Select(MapToResponseDto);
@@ -55,9 +55,9 @@ namespace SubmissionAndIntake.Services
 
         public async Task<SubmissionResponseDto> CreateSubmissionAsync(CreateSubmissionDto dto)
         {
-            if (!await _distributionValidation.AgentExistsAsync(dto.AgentID.ToString()))
+            if (!await _distributionValidation.AgentExistsAsync(dto.AgentID))
                 throw new KeyNotFoundException($"Agent '{dto.AgentID}' not found in Distribution service.");
-            if (!await _distributionValidation.PartyExistsAsync(dto.PartyID.ToString()))
+            if (!await _distributionValidation.PartyExistsAsync(dto.PartyID))
                 throw new KeyNotFoundException($"Party '{dto.PartyID}' not found in Distribution service.");
 
             var submission = new Submission

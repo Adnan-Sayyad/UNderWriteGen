@@ -21,6 +21,12 @@ var jwtAud    = builder.Configuration["Jwt:Audience"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Force the old JwtSecurityTokenHandler so token validation is compatible
+        // with how IdentityAndAccessManagement signs tokens (no 'kid' header).
+        // The newer JsonWebTokenHandler (default in .NET 8+) can fail key lookup
+        // when neither the token nor the key has a KeyId set.
+        options.UseSecurityTokenValidators = true;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer           = true,

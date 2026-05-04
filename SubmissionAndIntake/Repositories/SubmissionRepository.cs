@@ -25,14 +25,14 @@ namespace SubmissionAndIntake.Repositories
             return await _context.Submissions.FirstOrDefaultAsync(s => s.SubmissionID == id);
         }
 
-        public async Task<IEnumerable<Submission>> GetByAgentIdAsync(Guid agentId)
+        public async Task<IEnumerable<Submission>> GetByAgentIdAsync(string agentId)
         {
             return await _context.Submissions
                 .Where(s => s.AgentID == agentId)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Submission>> GetByPartyIdAsync(Guid partyId)
+        public async Task<IEnumerable<Submission>> GetByPartyIdAsync(string partyId)
         {
             return await _context.Submissions
                 .Where(s => s.PartyID == partyId)
