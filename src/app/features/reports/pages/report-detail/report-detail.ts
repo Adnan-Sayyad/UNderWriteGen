@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { ReportsApiService } from '../../services/reports-api.service';
-import { UWReport } from '../../models/reports.model';
+import { ReportDetailDto } from '../../models/reports.model';
 
 @Component({
   selector: 'app-report-detail',
@@ -14,7 +14,7 @@ import { UWReport } from '../../models/reports.model';
 })
 export class ReportDetailPage implements OnInit {
   readonly reportId = signal('');
-  readonly report   = signal<UWReport | null>(null);
+  readonly report   = signal<ReportDetailDto | null>(null);
   readonly loading  = signal(true);
   readonly alertMsg = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
 
@@ -29,23 +29,35 @@ export class ReportDetailPage implements OnInit {
     private route: ActivatedRoute,
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.reportId.set(id);
     if (!id) { this.loading.set(false); return; }
     this.svc.getReport(id).subscribe({
-      next: (res: any) => { this.report.set(res?.data ?? res); this.loading.set(false); },
-      error: () => { this.loading.set(false); this.flash('danger', 'Failed to load report.'); },
+      next: (res: any) => {
+        this.report.set(res?.data ?? res);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.flash('danger', 'Failed to load report. It may not exist or the service may be unavailable.');
+      },
     });
   }
 
-  metricsEntries(): { key: string; value: string }[] {
-    const m = this.report()?.metrics ?? {};
-    return Object.entries(m).map(([key, value]) => ({ key, value: String(value) }));
+  get r(): ReportDetailDto { return this.report()!; }
+
+  riskPct(count: number): number {
+    const total = this.r?.riskMix?.total ?? 0;
+    return total > 0 ? Math.round((count / total) * 100) : 0;
   }
 
-  private flash(type: 'success' | 'danger', text: string) {
+  formatDate(d: string | null): string {
+    return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  }
+
+  private flash(type: 'success' | 'danger', text: string): void {
     this.alertMsg.set({ type, text });
-    setTimeout(() => this.alertMsg.set(null), 4000);
+    setTimeout(() => this.alertMsg.set(null), 5000);
   }
 }
