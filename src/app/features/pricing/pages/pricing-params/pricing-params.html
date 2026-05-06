@@ -1,6 +1,116 @@
-﻿<app-page-header title="Pricing Parameters" icon="bi-calculator"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Pricing Parameters" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="Pricing Parameters"
+    subtitle="Rating factor tables by product line"
+    icon="bi-sliders"
+    [breadcrumbs]="breadcrumbs">
+    <div class="d-flex gap-2">
+      <a routerLink="/pricing" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-calculator me-1"></i>Quotes
+      </a>
+      <button class="btn btn-sm btn-primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i>Add Parameter
+      </button>
+    </div>
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+      } @else if (!params().length) {
+        <app-empty-state icon="bi-sliders" title="No pricing parameters"
+                         message="Add pricing parameters to enable quote calculations."></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Product Line</th>
+                <th>Factor Name</th>
+                <th>Effective From</th>
+                <th>Effective To</th>
+                <th>Status</th>
+                <th class="table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of params(); track p.paramId) {
+                <tr>
+                  <td><span class="badge bg-primary">{{ p.productLine }}</span></td>
+                  <td class="fw-medium">{{ p.factorName }}</td>
+                  <td class="small text-muted">{{ p.effectiveFrom | date:'mediumDate' }}</td>
+                  <td class="small text-muted">{{ p.effectiveTo | date:'mediumDate' }}</td>
+                  <td><span class="badge" [ngClass]="statusClass(p.status)">{{ p.status }}</span></td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(p)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>
+
+@if (modalMode()) {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-sliders me-2 text-primary"></i>
+        {{ modalMode() === 'create' ? 'Add Parameter' : 'Edit Parameter' }}
+      </h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <form [formGroup]="form" novalidate>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Product Line</label>
+            <input type="text" class="form-control form-control-sm" formControlName="productLine"
+                   placeholder="e.g. Life, Health, PnC" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Factor Name</label>
+            <input type="text" class="form-control form-control-sm" formControlName="factorName" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Effective From</label>
+            <input type="date" class="form-control form-control-sm" formControlName="effectiveFrom" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Effective To</label>
+            <input type="date" class="form-control form-control-sm" formControlName="effectiveTo" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Status</label>
+            <select class="form-select form-select-sm" formControlName="status">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="save()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Save
+      </button>
+    </div>
+  </div>
+}

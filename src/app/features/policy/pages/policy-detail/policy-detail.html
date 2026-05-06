@@ -1,6 +1,128 @@
-﻿<app-page-header title="Policy Detail" icon="bi-journal-bookmark"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Policy Detail" message="This section is under development."></app-empty-state>
-  </div>
+<div class="page-container">
+  <app-page-header
+    title="Policy Detail"
+    subtitle="View policy information, coverage, and actions"
+    icon="bi-journal-bookmark"
+    [breadcrumbs]="breadcrumbs">
+    @if (policy()) {
+      <button class="btn btn-sm btn-outline-primary me-2" (click)="goEndorsement()">
+        <i class="bi bi-pencil-square me-1"></i>Endorse
+      </button>
+      <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
+        <i class="bi bi-x-circle me-1"></i>Cancel Policy
+      </button>
+    }
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading policy…</div>
+  } @else if (!policy()) {
+    <div class="alert alert-warning">Policy not found.</div>
+  } @else {
+    <div class="row g-3">
+      <div class="col-md-8">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle text-primary"></i>
+            <span class="fw-semibold small">Policy Overview</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="detail-item">
+                  <span class="detail-label">Policy Number</span>
+                  <span class="fw-semibold">{{ policy()!.policyNumber }}</span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="detail-item">
+                  <span class="detail-label">Submission ID</span>
+                  <a [routerLink]="['/submissions', policy()!.submissionId]" class="text-decoration-none">
+                    {{ policy()!.submissionId }}
+                  </a>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="detail-item">
+                  <span class="detail-label">Product Line</span>
+                  <span class="badge bg-primary">{{ policy()!.productLine }}</span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="detail-item">
+                  <span class="detail-label">Inception Date</span>
+                  <span>{{ policy()!.inceptionDate | date:'mediumDate' }}</span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="detail-item">
+                  <span class="detail-label">Expiry Date</span>
+                  <span>{{ policy()!.expiryDate | date:'mediumDate' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @if (coverageEntries().length) {
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
+              <i class="bi bi-shield-check text-success"></i>
+              <span class="fw-semibold small">Coverage Details</span>
+            </div>
+            <div class="card-body p-0">
+              <table class="table table-sm mb-0">
+                <thead class="table-light">
+                  <tr><th>Field</th><th>Value</th></tr>
+                </thead>
+                <tbody>
+                  @for (e of coverageEntries(); track e.key) {
+                    <tr>
+                      <td class="fw-medium text-capitalize">{{ e.key }}</td>
+                      <td>{{ e.value }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="mb-3">
+              <div class="detail-label">Status</div>
+              <span class="badge fs-6" [ngClass]="statusClass(policy()!.status)">{{ policy()!.status }}</span>
+            </div>
+            <div class="mb-3">
+              <div class="detail-label">Policy ID</div>
+              <code class="small">{{ policy()!.policyId }}</code>
+            </div>
+            <hr />
+            <div class="d-grid gap-2">
+              <button class="btn btn-sm btn-outline-primary" (click)="goEndorsement()">
+                <i class="bi bi-pencil-square me-1"></i>Add Endorsement
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
+                <i class="bi bi-x-circle me-1"></i>Request Cancellation
+              </button>
+              <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/policy', 'renewals']">
+                <i class="bi bi-arrow-repeat me-1"></i>View Renewals
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 </div>

@@ -1,0 +1,77 @@
+<div class="page-container">
+  <app-page-header
+    title="Audit Logs"
+    subtitle="Immutable record of all user actions and system events"
+    icon="bi-journal-text"
+    [breadcrumbs]="breadcrumbs">
+    <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </app-page-header>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-transparent"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control" placeholder="Filter by email…"
+                   [value]="searchEmail()" (input)="searchEmail.set($any($event.target).value)" />
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="filterRes()" (change)="applyResourceFilter($any($event.target).value)">
+            <option value="">All Resources</option>
+            @for (r of resources; track r) { <option [value]="r">{{ r }}</option> }
+          </select>
+        </div>
+        <div class="col text-end">
+          <small class="text-muted">{{ filtered().length }} record(s)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+      } @else if (!filtered().length) {
+        <app-empty-state icon="bi-journal-x" title="No audit logs found"
+                         message="Logs appear here as users interact with the system."></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Timestamp</th>
+                <th>User (Email)</th>
+                <th>Action</th>
+                <th>Resource</th>
+                <th>Metadata</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (log of filtered(); track log.id) {
+                <tr>
+                  <td class="text-muted small text-nowrap">{{ log.createdAt | date:'medium' }}</td>
+                  <td class="small">{{ log.email }}</td>
+                  <td>
+                    <span class="badge action-badge">{{ log.action }}</span>
+                  </td>
+                  <td class="small">{{ log.resource }}</td>
+                  <td class="small text-muted text-truncate" style="max-width:240px">
+                    {{ log.metadata || '—' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</div>

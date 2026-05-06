@@ -1,6 +1,80 @@
-﻿<app-page-header title="Referrals" icon="bi-arrow-left-right"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Referrals" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="Referrals"
+    subtitle="Manage underwriting referrals requiring authority approval"
+    icon="bi-arrow-left-right"
+    [breadcrumbs]="breadcrumbs">
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body border-bottom py-2 d-flex flex-wrap align-items-center gap-2">
+      <label class="small text-muted mb-0">Status:</label>
+      <select class="form-select form-select-sm w-auto" [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
+        <option value="">All</option>
+        <option value="Pending">Pending</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
+      </select>
+      <span class="text-muted small ms-auto">{{ filtered().length }} referral(s)</span>
+    </div>
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading referrals…</div>
+      } @else if (!filtered().length) {
+        <app-empty-state icon="bi-arrow-left-right" title="No referrals found"></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Submission</th>
+                <th>Reason</th>
+                <th>Raised By</th>
+                <th>Required Authority</th>
+                <th>Assigned To</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th class="table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of filtered(); track r.referralId) {
+                <tr>
+                  <td>
+                    <a [routerLink]="['/submissions', r.submissionId]" class="text-decoration-none small">
+                      {{ r.submissionId }}
+                    </a>
+                  </td>
+                  <td class="small">{{ r.reason }}</td>
+                  <td class="small text-muted">{{ r.raisedBy }}</td>
+                  <td><span class="badge" [ngClass]="authorityClass(r.requiredAuthority)">{{ r.requiredAuthority }}</span></td>
+                  <td class="small text-muted">{{ r.assignedTo }}</td>
+                  <td class="small text-muted">{{ r.createdDate | date:'mediumDate' }}</td>
+                  <td><span class="badge" [ngClass]="statusClass(r.status)">{{ r.status }}</span></td>
+                  <td class="table-actions">
+                    @if (r.status === 'Pending') {
+                      <button class="btn btn-sm btn-success me-1" title="Approve" (click)="updateStatus(r, 'Approved')">
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" title="Reject" (click)="updateStatus(r, 'Rejected')">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>

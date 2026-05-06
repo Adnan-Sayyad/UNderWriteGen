@@ -1,6 +1,80 @@
-﻿<app-page-header title="Sign In" icon="bi-shield-lock"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Sign In" message="This section is under development."></app-empty-state>
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <h5 class="mb-1 fw-semibold">Welcome back</h5>
+  <p class="text-muted mb-4" style="font-size:.85rem">Sign in to your UnderwritePro account</p>
+
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 py-2" role="alert">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Email -->
+  <div class="mb-3">
+    <label class="form-label fw-medium" for="email">Email address</label>
+    <div class="input-group">
+      <span class="input-group-text bg-light"><i class="bi bi-envelope text-muted"></i></span>
+      <input
+        id="email"
+        type="email"
+        class="form-control"
+        [class.is-invalid]="emailCtrl.invalid && emailCtrl.touched"
+        formControlName="email"
+        placeholder="you@company.com"
+        autocomplete="email"
+      />
+      @if (emailCtrl.invalid && emailCtrl.touched) {
+        <div class="invalid-feedback">
+          @if (emailCtrl.errors?.['required']) { Email is required. }
+          @else { Please enter a valid email address. }
+        </div>
+      }
+    </div>
   </div>
-</div>
+
+  <!-- Password -->
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <label class="form-label fw-medium" for="password">Password</label>
+      <a routerLink="/auth/forgot-password" class="small text-primary text-decoration-none">Forgot password?</a>
+    </div>
+    <div class="input-group">
+      <span class="input-group-text bg-light"><i class="bi bi-lock text-muted"></i></span>
+      <input
+        id="password"
+        [type]="showPass() ? 'text' : 'password'"
+        class="form-control"
+        [class.is-invalid]="passwordCtrl.invalid && passwordCtrl.touched"
+        formControlName="password"
+        placeholder="Enter your password"
+        autocomplete="current-password"
+      />
+      <button type="button" class="input-group-text bg-light border-start-0 cursor-pointer"
+              (click)="showPass.set(!showPass())">
+        <i class="bi" [class.bi-eye]="!showPass()" [class.bi-eye-slash]="showPass()"></i>
+      </button>
+      @if (passwordCtrl.invalid && passwordCtrl.touched) {
+        <div class="invalid-feedback">
+          @if (passwordCtrl.errors?.['required']) { Password is required. }
+          @else { Password must be at least 6 characters. }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <button type="submit" class="btn btn-primary w-100 fw-semibold" [disabled]="loading()">
+    @if (loading()) {
+      <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+      Signing in…
+    } @else {
+      <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+    }
+  </button>
+
+  <!-- Register link -->
+  <p class="text-center mt-3 mb-0" style="font-size:.875rem">
+    Don't have an account?
+    <a routerLink="/auth/register" class="text-primary fw-semibold text-decoration-none">Create one</a>
+  </p>
+</form>

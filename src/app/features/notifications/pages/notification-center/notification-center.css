@@ -1,1 +1,4 @@
-﻿
+.notif-card { border-left: 3px solid transparent !important; transition: box-shadow .15s; }
+.notif-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1) !important; }
+.notif-unread { border-left-color: var(--uwpro-primary) !important; background: #f0f5ff; }
+.notif-icon { flex-shrink: 0; }

@@ -1,6 +1,91 @@
-﻿<app-page-header title="Questionnaire" icon="bi-card-checklist"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Questionnaire" message="This section is under development."></app-empty-state>
-  </div>
+<div class="page-container">
+  <app-page-header
+    title="Submission Questionnaire"
+    subtitle="Complete the risk assessment questionnaire for this submission"
+    icon="bi-card-checklist"
+    [breadcrumbs]="breadcrumbs">
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading questionnaire…</div>
+  } @else {
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
+        <i class="bi bi-card-checklist text-primary"></i>
+        <span class="fw-semibold small">Risk Assessment</span>
+        <span class="text-muted small ms-auto">Submission: {{ submissionId() }}</span>
+      </div>
+      <div class="card-body">
+        @if (questionnaire()) {
+          <div class="alert alert-success d-flex gap-2 py-2 mb-3">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Questionnaire previously completed on {{ questionnaire()!.completedDate | date:'mediumDate' }}. You may update responses below.</span>
+          </div>
+        }
+        <form [formGroup]="form" novalidate>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-medium required-mark">Occupation Type</label>
+              <input type="text" class="form-control form-control-sm" formControlName="occupationType"
+                     [class.is-invalid]="form.controls.occupationType.invalid && form.controls.occupationType.touched"
+                     placeholder="e.g. Professional, Manual Labour, Executive" />
+              <div class="invalid-feedback">Occupation type is required.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-medium required-mark">Sum Insured ($)</label>
+              <input type="number" class="form-control form-control-sm" formControlName="sumInsured"
+                     min="0" step="1000"
+                     [class.is-invalid]="form.controls.sumInsured.invalid && form.controls.sumInsured.touched" />
+              <div class="invalid-feedback">Sum insured is required.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-medium">Existing Medical Conditions</label>
+              <select class="form-select form-select-sm" formControlName="existingConditions">
+                <option value="None">None</option>
+                <option value="Diabetes">Diabetes</option>
+                <option value="Hypertension">Hypertension</option>
+                <option value="Heart Disease">Heart Disease</option>
+                <option value="Cancer">Cancer</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-medium">Smoking Status</label>
+              <select class="form-select form-select-sm" formControlName="smokingStatus">
+                <option value="Non-Smoker">Non-Smoker</option>
+                <option value="Smoker">Smoker</option>
+                <option value="Ex-Smoker">Ex-Smoker</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-medium">Annual Income ($)</label>
+              <input type="number" class="form-control form-control-sm" formControlName="annualIncome" min="0" step="1000" />
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-medium">Additional Notes</label>
+              <textarea class="form-control form-control-sm" formControlName="additionalNotes" rows="3"
+                        placeholder="Any additional information relevant to the risk…"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
+        <a [routerLink]="['/submissions', submissionId()]" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>Back to Submission
+        </a>
+        <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving()">
+          @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Save Questionnaire
+        </button>
+      </div>
+    </div>
+  }
 </div>

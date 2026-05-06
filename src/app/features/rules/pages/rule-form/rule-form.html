@@ -1,6 +1,69 @@
-﻿<app-page-header title="Rule Details" icon="bi-diagram-3"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Rule Details" message="This section is under development."></app-empty-state>
-  </div>
+<div class="page-container">
+  <app-page-header
+    [title]="ruleId() ? 'Edit Rule' : 'New Rule'"
+    subtitle="Define underwriting rule expression, severity and product scope"
+    icon="bi-diagram-3"
+    [breadcrumbs]="breadcrumbs">
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>
+  } @else {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <form [formGroup]="form" novalidate>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label small fw-medium required-mark">Product Line</label>
+              <select class="form-select form-select-sm" formControlName="productLine">
+                @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-medium required-mark">Severity</label>
+              <select class="form-select form-select-sm" formControlName="severity">
+                @for (s of severities; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+              <div class="form-text">
+                <span class="badge bg-danger me-1">Block</span>
+                <span class="badge bg-warning text-dark me-1">Refer</span>
+                <span class="badge bg-info text-dark me-1">Load</span>
+                <span class="badge bg-secondary">Info</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-medium">Status</label>
+              <select class="form-select form-select-sm" formControlName="status">
+                @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-medium required-mark">Expression (JSON)</label>
+              <textarea class="form-control form-control-sm font-monospace" formControlName="expressionJSON"
+                        rows="8"
+                        [class.is-invalid]="form.controls.expressionJSON.invalid && form.controls.expressionJSON.touched"
+                        placeholder='e.g. { "field": "age", "operator": "gt", "value": 65 }'></textarea>
+              <div class="invalid-feedback">Expression is required.</div>
+              <div class="form-text">Enter a valid JSON object representing the rule condition.</div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-secondary btn-sm" (click)="cancel()">Cancel</button>
+        <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving()">
+          @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Save Rule
+        </button>
+      </div>
+    </div>
+  }
 </div>

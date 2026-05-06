@@ -1,6 +1,105 @@
-﻿<app-page-header title="Report Detail" icon="bi-bar-chart-line"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Report Detail" message="This section is under development."></app-empty-state>
-  </div>
+<div class="page-container">
+  <app-page-header
+    title="Report Detail"
+    subtitle="Detailed metrics and analysis for the selected report"
+    icon="bi-bar-chart-line"
+    [breadcrumbs]="breadcrumbs">
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading report…</div>
+  } @else if (!report()) {
+    <div class="alert alert-warning">Report not found.</div>
+  } @else {
+    <div class="row g-3">
+      <!-- KPI Cards -->
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+          <div class="fs-2 fw-bold text-primary">{{ report()!.metrics.quotes }}</div>
+          <div class="small text-muted">Total Quotes</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+          <div class="fs-2 fw-bold text-success">{{ report()!.metrics.hitRatio | number:'1.1-1' }}%</div>
+          <div class="small text-muted">Hit Ratio</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+          <div class="fs-2 fw-bold text-warning">{{ report()!.metrics.avgPremium | currency:'USD':'symbol':'1.0-0' }}</div>
+          <div class="small text-muted">Avg Premium</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+          <div class="fs-2 fw-bold text-info">{{ report()!.metrics.tat | number:'1.1-1' }}d</div>
+          <div class="small text-muted">Avg TAT</div>
+        </div>
+      </div>
+
+      <!-- Report Info -->
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-transparent border-bottom py-2">
+            <span class="fw-semibold small"><i class="bi bi-info-circle me-2 text-primary"></i>Report Information</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="small text-muted">Report ID</div>
+                <code class="small">{{ report()!.reportId }}</code>
+              </div>
+              <div class="col-6">
+                <div class="small text-muted">Scope</div>
+                <span class="badge bg-primary">{{ report()!.scope }}</span>
+              </div>
+              <div class="col-6">
+                <div class="small text-muted">Generated Date</div>
+                <span class="small">{{ report()!.generatedDate | date:'mediumDate' }}</span>
+              </div>
+              <div class="col-6">
+                <div class="small text-muted">Referral Rate</div>
+                <span class="small">{{ report()!.metrics.referralRate | number:'1.1-1' }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Mix -->
+      @if (report()!.metrics.riskMix && (report()!.metrics.riskMix | keyvalue).length) {
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom py-2">
+              <span class="fw-semibold small"><i class="bi bi-pie-chart me-2 text-success"></i>Risk Mix</span>
+            </div>
+            <div class="card-body p-0">
+              <table class="table table-sm mb-0">
+                <thead class="table-light">
+                  <tr><th>Category</th><th class="text-end">Count / Value</th></tr>
+                </thead>
+                <tbody>
+                  @for (e of (report()!.metrics.riskMix | keyvalue); track e.key) {
+                    <tr>
+                      <td class="text-capitalize">{{ e.key }}</td>
+                      <td class="text-end fw-medium">{{ e.value }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
 </div>

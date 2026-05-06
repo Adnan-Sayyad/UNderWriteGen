@@ -1,6 +1,121 @@
-﻿<app-page-header title="SLA Configuration" icon="bi-alarm"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="SLA Configuration" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="SLA Configuration"
+    subtitle="Define service level agreement thresholds for each process"
+    icon="bi-alarm"
+    [breadcrumbs]="breadcrumbs">
+    <button class="btn btn-primary btn-sm" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i>Add SLA
+    </button>
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (!slas().length) {
+        <app-empty-state icon="bi-alarm" title="No SLAs configured"></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Process</th>
+                <th>Product Line</th>
+                <th class="text-center">Target (days)</th>
+                <th class="text-center">Warning (days)</th>
+                <th>Active</th>
+                <th class="table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of slas(); track s.id) {
+                <tr>
+                  <td class="fw-medium">{{ s.process }}</td>
+                  <td><span class="badge bg-primary">{{ s.productLine }}</span></td>
+                  <td class="text-center">
+                    <span class="badge bg-success">{{ s.targetDays }}d</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-warning text-dark">{{ s.warningDays }}d</span>
+                  </td>
+                  <td>
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" [checked]="s.active"
+                             (change)="toggleActive(s)" role="switch" />
+                    </div>
+                  </td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(s)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>
+
+@if (modalMode()) {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-alarm me-2 text-primary"></i>
+        {{ modalMode() === 'create' ? 'Add SLA' : 'Edit SLA' }}
+      </h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <form [formGroup]="form" novalidate>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Process Name</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="form.controls.process.invalid && form.controls.process.touched"
+                   formControlName="process" placeholder="e.g. UW Decision" />
+            <div class="invalid-feedback">Process name is required.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-medium required-mark">Product Line</label>
+            <select class="form-select form-select-sm" formControlName="productLine">
+              <option value="All">All</option>
+              <option value="Life">Life</option>
+              <option value="Health">Health</option>
+              <option value="PnC">PnC</option>
+              <option value="Commercial">Commercial</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-medium required-mark">Target Days</label>
+            <input type="number" class="form-control form-control-sm" formControlName="targetDays" min="1" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-medium required-mark">Warning Days</label>
+            <input type="number" class="form-control form-control-sm" formControlName="warningDays" min="1" />
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" formControlName="active" role="switch" id="slaActive" />
+              <label class="form-check-label small" for="slaActive">Active</label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="save()">Save SLA</button>
+    </div>
+  </div>
+}

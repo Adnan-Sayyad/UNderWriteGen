@@ -1,6 +1,134 @@
-﻿<app-page-header title="Audit Log" icon="bi-clock-history"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Audit Log" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="Audit Log"
+    subtitle="Immutable record of all user actions and system events for compliance review"
+    icon="bi-clock-history"
+    [breadcrumbs]="breadcrumbs">
+    <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </app-page-header>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-transparent"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control" placeholder="Search by user email…"
+                   [value]="searchEmail()" (input)="searchEmail.set($any($event.target).value)" />
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="filterAction()" (change)="filterAction.set($any($event.target).value)">
+            <option value="">All Actions</option>
+            @for (a of uniqueActions(); track a) { <option [value]="a">{{ a }}</option> }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="filterRes()" (change)="filterRes.set($any($event.target).value)">
+            <option value="">All Resources</option>
+            @for (r of resources; track r) { <option [value]="r">{{ r }}</option> }
+          </select>
+        </div>
+        <div class="col text-end">
+          <small class="text-muted">{{ filtered().length }} of {{ logs().length }} record(s)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+      } @else if (!filtered().length) {
+        <app-empty-state icon="bi-journal-x" title="No audit records found"
+                         message="Audit entries appear as users perform actions in the system."></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:1.5rem"></th>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Resource</th>
+                <th>Metadata</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (log of filtered(); track log.id) {
+                <tr class="cursor-pointer" (click)="toggleExpand(log.id)">
+                  <td class="text-center text-muted">
+                    <i class="bi bi-chevron-right chevron-icon"
+                       [class.rotated]="expanded()===log.id"></i>
+                  </td>
+                  <td class="text-muted small text-nowrap">{{ log.createdAt | date:'medium' }}</td>
+                  <td>
+                    <div class="fw-medium small">{{ log.email }}</div>
+                    @if (log.userId) {
+                      <small class="text-muted font-monospace">{{ log.userId | slice:0:8 }}…</small>
+                    }
+                  </td>
+                  <td>
+                    <span class="badge action-badge">{{ log.action }}</span>
+                  </td>
+                  <td class="small text-muted">{{ log.resource }}</td>
+                  <td class="small text-muted text-truncate" style="max-width:200px">
+                    {{ log.metadata || '—' }}
+                  </td>
+                </tr>
+                @if (expanded() === log.id) {
+                  <tr class="meta-row">
+                    <td colspan="6" class="pt-0 pb-2 px-4">
+                      <div class="meta-panel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <span class="small fw-semibold text-muted text-uppercase" style="font-size:.7rem;letter-spacing:.05em">
+                            Full Audit Entry
+                          </span>
+                          <span class="badge bg-light text-dark border">ID: {{ log.id | slice:0:8 }}…</span>
+                        </div>
+                        <div class="row g-3">
+                          <div class="col-md-4">
+                            <div class="meta-item">
+                              <span class="meta-label">User ID</span>
+                              <span class="font-monospace small">{{ log.userId || '—' }}</span>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <div class="meta-item">
+                              <span class="meta-label">Action</span>
+                              <span>{{ log.action }}</span>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <div class="meta-item">
+                              <span class="meta-label">Resource</span>
+                              <span>{{ log.resource }}</span>
+                            </div>
+                          </div>
+                          <div class="col-12">
+                            <div class="meta-item">
+                              <span class="meta-label">Metadata</span>
+                              <pre class="meta-pre mb-0">{{ formatMeta(log.metadata) }}</pre>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>

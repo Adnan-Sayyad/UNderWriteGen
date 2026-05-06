@@ -1,1 +1,1 @@
-﻿
+.required-mark::after { content:" *";color:#dc3545; }

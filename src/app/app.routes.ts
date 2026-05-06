@@ -3,6 +3,13 @@ import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 
 export const routes: Routes = [
+  // Public landing page (default)
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./features/landing/landing').then(m => m.LandingPage),
+  },
+
   // Auth shell (public)
   {
     path: 'auth',
@@ -48,6 +55,8 @@ export const routes: Routes = [
       },
       { path: 'reports',       loadChildren: () => import('./features/reports/reports.routes').then(m => m.REPORTS_ROUTES) },
       { path: 'notifications', loadChildren: () => import('./features/notifications/notifications.routes').then(m => m.NOTIFICATIONS_ROUTES) },
+      { path: 'profile',       loadComponent: () => import('./features/auth/pages/profile/profile').then(m => m.ProfilePage) },
+      { path: 'access-denied', loadComponent: () => import('./features/access-denied/access-denied').then(m => m.AccessDeniedPage) },
       {
         path: 'admin',
         canActivate: [roleGuard], data: { roles: ['Admin'] },
@@ -56,5 +65,5 @@ export const routes: Routes = [
     ],
   },
 
-  { path: '**', redirectTo: 'auth/login' },
+  { path: '**', redirectTo: '' },
 ];

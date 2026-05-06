@@ -1,1 +1,14 @@
-﻿
+.action-badge { background:#e8f0fe; color:#1a56db; font-size:.72rem; font-weight:600; padding:.25em .6em; border-radius:.3rem; }
+
+.chevron-icon { display:inline-block; transition:transform .2s ease; font-size:.75rem; }
+.chevron-icon.rotated { transform:rotate(90deg); }
+
+.meta-row > td { background:#f8f9fa; }
+.meta-panel { background:#fff; border:1px solid #dee2e6; border-radius:.4rem; padding:1rem 1.25rem; }
+
+.meta-item { display:flex; flex-direction:column; gap:.15rem; }
+.meta-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:#6c757d; font-weight:600; }
+
+.meta-pre { font-size:.78rem; background:#f4f6f9; border:1px solid #e3e6ea; border-radius:.3rem; padding:.6rem .8rem; white-space:pre-wrap; word-break:break-all; color:#212529; max-height:220px; overflow-y:auto; }
+
+.cursor-pointer { cursor:pointer; }

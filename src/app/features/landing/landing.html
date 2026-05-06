@@ -1,0 +1,284 @@
+<!-- ═══════════════════════════════════════════════════════
+     NAVIGATION BAR
+════════════════════════════════════════════════════════ -->
+<nav class="lp-nav" [class.lp-nav--scrolled]="scrolled()">
+  <div class="lp-nav-inner">
+    <!-- Brand -->
+    <a class="lp-brand" routerLink="/">
+      <div class="lp-brand-icon"><i class="bi bi-shield-lock-fill"></i></div>
+      <span class="lp-brand-name">UnderwritePro</span>
+    </a>
+
+    <!-- Links -->
+    <ul class="lp-nav-links">
+      <li><button class="lp-nav-link" (click)="scrollTo('about')">About</button></li>
+      <li><button class="lp-nav-link" (click)="scrollTo('features')">Features</button></li>
+      <li><button class="lp-nav-link" (click)="scrollTo('contact')">Contact Us</button></li>
+    </ul>
+
+    <!-- Auth buttons -->
+    <div class="lp-nav-actions">
+      <a routerLink="/auth/login" class="btn-lp-outline">Sign In</a>
+      <a routerLink="/auth/register" class="btn-lp-solid">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════════════ -->
+<section class="lp-hero">
+  <!-- Decorative blobs -->
+  <div class="hero-blob hero-blob-1"></div>
+  <div class="hero-blob hero-blob-2"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <i class="bi bi-lightning-charge-fill me-1"></i>
+      Insurance Underwriting Platform
+    </div>
+
+    <h1 class="hero-title">
+      Smarter Underwriting,<br>
+      <span class="hero-highlight">Faster Decisions</span>
+    </h1>
+
+    <p class="hero-sub">
+      UnderwritePro is an end-to-end insurance underwriting system built on a
+      microservices architecture. From submission intake to policy issuance,
+      every step of the underwriting lifecycle is digitised, automated and
+      audit-ready.
+    </p>
+
+    <div class="hero-actions">
+      <a routerLink="/auth/register" class="btn-lp-hero-primary">
+        <i class="bi bi-person-plus-fill me-2"></i>Create Free Account
+      </a>
+      <button class="btn-lp-hero-ghost" (click)="scrollTo('features')">
+        <i class="bi bi-play-circle me-2"></i>Explore Features
+      </button>
+    </div>
+
+    <!-- Stats row -->
+    <div class="hero-stats">
+      @for (s of stats; track s.label) {
+        <div class="hero-stat">
+          <span class="hero-stat-value">{{ s.value }}</span>
+          <span class="hero-stat-label">{{ s.label }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Hero illustration -->
+  <div class="hero-illustration">
+    <div class="dash-preview">
+      <div class="dash-topbar">
+        <div class="dash-dot red"></div>
+        <div class="dash-dot yellow"></div>
+        <div class="dash-dot green"></div>
+        <span class="dash-url">underwritepro.app</span>
+      </div>
+      <div class="dash-body">
+        <div class="dash-sidebar">
+          @for (item of ['Submissions','Risk','Rules','Pricing','Policy','Compliance','Reports']; track item) {
+            <div class="dash-side-item">{{ item }}</div>
+          }
+        </div>
+        <div class="dash-main">
+          <div class="dash-card dash-card-wide">
+            <div class="dash-card-bar" style="width:82%"></div>
+            <div class="dash-card-bar short" style="width:60%"></div>
+          </div>
+          <div class="dash-card-row">
+            <div class="dash-kpi green">82%</div>
+            <div class="dash-kpi blue">147</div>
+            <div class="dash-kpi orange">23</div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-bar" style="width:90%"></div>
+            <div class="dash-card-bar short" style="width:55%"></div>
+            <div class="dash-card-bar short" style="width:70%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     ABOUT
+════════════════════════════════════════════════════════ -->
+<section class="lp-section lp-about" id="about">
+  <div class="lp-container">
+    <div class="section-label">About the Platform</div>
+    <h2 class="section-title">Built for Modern Insurance Teams</h2>
+    <p class="section-sub">
+      UnderwritePro replaces fragmented spreadsheets and legacy systems with a
+      unified, cloud-ready platform. Every module — from risk scoring to compliance
+      audit — talks to each other through a secure API gateway, giving your team
+      a single source of truth for every policy.
+    </p>
+
+    <div class="about-grid">
+      <div class="about-card">
+        <div class="about-icon"><i class="bi bi-layers"></i></div>
+        <h4>Microservices Architecture</h4>
+        <p>11 independent services, each owning its domain, deployable and scalable independently without affecting the rest of the platform.</p>
+      </div>
+      <div class="about-card">
+        <div class="about-icon"><i class="bi bi-lock-fill"></i></div>
+        <h4>Role-Based Security</h4>
+        <p>JWT-secured endpoints with 8 distinct roles — Admin, Underwriter, Agent, Compliance, Pricing, Operations, Assistant and more.</p>
+      </div>
+      <div class="about-card">
+        <div class="about-icon"><i class="bi bi-journal-check"></i></div>
+        <h4>Full Audit Trail</h4>
+        <p>Every action is logged. Regulators and internal auditors get a complete, tamper-evident history of every decision made on the platform.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     FEATURES
+════════════════════════════════════════════════════════ -->
+<section class="lp-section lp-features" id="features">
+  <div class="lp-container">
+    <div class="section-label">What's Inside</div>
+    <h2 class="section-title">Everything You Need,<br>Nothing You Don't</h2>
+
+    <div class="features-grid">
+      @for (f of features; track f.title) {
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="bi {{ f.icon }}"></i>
+          </div>
+          <h5 class="feature-title">{{ f.title }}</h5>
+          <p class="feature-desc">{{ f.desc }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     CTA BANNER
+════════════════════════════════════════════════════════ -->
+<section class="lp-cta">
+  <div class="lp-container">
+    <h2 class="cta-title">Ready to modernise your underwriting?</h2>
+    <p class="cta-sub">Register today or sign in to your existing account.</p>
+    <div class="cta-actions">
+      <a routerLink="/auth/register" class="btn-lp-hero-primary">
+        <i class="bi bi-person-plus-fill me-2"></i>Create Account
+      </a>
+      <a routerLink="/auth/login" class="btn-lp-hero-ghost">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     CONTACT
+════════════════════════════════════════════════════════ -->
+<section class="lp-section lp-contact" id="contact">
+  <div class="lp-container">
+    <div class="section-label">Get In Touch</div>
+    <h2 class="section-title">Contact the Platform Administrator</h2>
+    <p class="section-sub">
+      Have questions about access, onboarding or the platform? Reach out directly
+      to the system administrator.
+    </p>
+
+    <div class="contact-wrapper">
+      <!-- Admin card -->
+      <div class="contact-card">
+        <div class="contact-avatar">SM</div>
+        <div class="contact-info">
+          <h4 class="contact-name">Shiva Molige</h4>
+          <span class="contact-role"><i class="bi bi-shield-fill-check me-1"></i>System Administrator · IAM Module Owner</span>
+        </div>
+
+        <div class="contact-details">
+          <a href="mailto:moligeshiva@admin.com" class="contact-item">
+            <div class="contact-item-icon"><i class="bi bi-envelope-fill"></i></div>
+            <div>
+              <div class="contact-item-label">Email</div>
+              <div class="contact-item-value">moligeshiva&#64;admin.com</div>
+            </div>
+          </a>
+          <a href="tel:+917981558584" class="contact-item">
+            <div class="contact-item-icon"><i class="bi bi-telephone-fill"></i></div>
+            <div>
+              <div class="contact-item-label">Phone</div>
+              <div class="contact-item-value">+91 79815 58584</div>
+            </div>
+          </a>
+          <div class="contact-item">
+            <div class="contact-item-icon"><i class="bi bi-geo-alt-fill"></i></div>
+            <div>
+              <div class="contact-item-label">Platform</div>
+              <div class="contact-item-value">UnderwritePro — Identity &amp; Access Management</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick links card -->
+      <div class="quick-links-card">
+        <h5 class="quick-title"><i class="bi bi-lightning-fill me-2 text-warning"></i>Quick Access</h5>
+        <div class="quick-links">
+          <a routerLink="/auth/login" class="quick-link">
+            <i class="bi bi-box-arrow-in-right"></i>
+            <span>Sign In to Platform</span>
+            <i class="bi bi-chevron-right ms-auto"></i>
+          </a>
+          <a routerLink="/auth/register" class="quick-link">
+            <i class="bi bi-person-plus"></i>
+            <span>Register New Account</span>
+            <i class="bi bi-chevron-right ms-auto"></i>
+          </a>
+          <button class="quick-link" (click)="scrollTo('features')">
+            <i class="bi bi-grid"></i>
+            <span>Browse Features</span>
+            <i class="bi bi-chevron-right ms-auto"></i>
+          </button>
+          <button class="quick-link" (click)="scrollTo('about')">
+            <i class="bi bi-info-circle"></i>
+            <span>About UnderwritePro</span>
+            <i class="bi bi-chevron-right ms-auto"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════════ -->
+<footer class="lp-footer">
+  <div class="lp-container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="lp-brand">
+          <div class="lp-brand-icon sm"><i class="bi bi-shield-lock-fill"></i></div>
+          <span class="lp-brand-name">UnderwritePro</span>
+        </div>
+        <p class="footer-tagline">Insurance Underwriting System</p>
+      </div>
+      <div class="footer-links">
+        <button class="footer-link" (click)="scrollTo('about')">About</button>
+        <button class="footer-link" (click)="scrollTo('features')">Features</button>
+        <button class="footer-link" (click)="scrollTo('contact')">Contact</button>
+        <a routerLink="/auth/login" class="footer-link">Sign In</a>
+        <a routerLink="/auth/register" class="footer-link">Register</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 UnderwritePro. Developed &amp; maintained by <strong>UnderwritePro Team</strong>.</span>
+    </div>
+  </div>
+</footer>
