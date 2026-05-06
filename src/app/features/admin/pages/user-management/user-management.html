@@ -1,6 +1,328 @@
-﻿<app-page-header title="User Management" icon="bi-people"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="User Management" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="User Management"
+    subtitle="Create, edit and manage system users and their roles"
+    icon="bi-people"
+    [breadcrumbs]="breadcrumbs">
+    <button class="btn btn-primary btn-sm" (click)="openCreate()">
+      <i class="bi bi-person-plus me-1"></i>New User
+    </button>
+  </app-page-header>
+
+  <!-- Alert -->
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex align-items-center gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      <span>{{ alertMsg()!.text }}</span>
+    </div>
+  }
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-transparent"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control" placeholder="Search by name or email…"
+                   [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" />
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="roleFilter()" (change)="roleFilter.set($any($event.target).value)">
+            <option value="">All Roles</option>
+            @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+          </select>
+        </div>
+        <div class="col-md-4 text-end">
+          <small class="text-muted">{{ filtered().length }} user(s)</small>
+          <button class="btn btn-sm btn-outline-secondary ms-2" (click)="loadUsers()" title="Refresh">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+      } @else if (!filtered().length) {
+        <app-empty-state icon="bi-people" title="No users found"
+                         message="Create a new user or adjust your filters."></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th class="table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of filtered(); track u.id) {
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="user-avatar">{{ u.firstName.charAt(0) }}{{ u.lastName.charAt(0) }}</div>
+                      <div>
+                        <div class="fw-medium">{{ u.firstName }} {{ u.lastName }}</div>
+                        <small class="text-muted">{{ u.userName }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-muted small">{{ u.email }}</td>
+                  <td><span class="badge" style="background:var(--uwpro-primary)">{{ u.role }}</span></td>
+                  <td><app-status-badge [status]="u.status"></app-status-badge></td>
+                  <td class="text-muted small">{{ u.createdAt | date:'mediumDate' }}</td>
+                  <td class="table-actions">
+                    <div class="d-flex gap-1">
+                      <button class="btn btn-sm btn-outline-primary" title="Edit user info" (click)="openEdit(u)">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary" title="Assign Role" (click)="openAssignRole(u)">
+                        <i class="bi bi-person-badge"></i>
+                      </button>
+                      <button class="btn btn-sm" [class]="statusBtnClass(u.status)"
+                              [title]="'Status: ' + u.status" (click)="openStatus(u)">
+                        <i class="bi" [class]="statusBtnIcon(u.status)"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" title="Delete user" (click)="deleteUser(u)">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>
+
+<!-- ── CREATE MODAL ── -->
+@if (modalMode() === 'create') {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold"><i class="bi bi-person-plus me-2 text-primary"></i>Create New User</h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <form [formGroup]="createForm" novalidate>
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label small fw-medium required-mark">First Name</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="createForm.controls.firstName.invalid && createForm.controls.firstName.touched"
+                   formControlName="firstName" placeholder="First name" />
+            <div class="invalid-feedback">Required.</div>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-medium required-mark">Last Name</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="createForm.controls.lastName.invalid && createForm.controls.lastName.touched"
+                   formControlName="lastName" placeholder="Last name" />
+            <div class="invalid-feedback">Required.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Email</label>
+            <input type="email" class="form-control form-control-sm"
+                   [class.is-invalid]="createForm.controls.email.invalid && createForm.controls.email.touched"
+                   formControlName="email" placeholder="user@company.com" />
+            <div class="invalid-feedback">Valid email required.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium">Phone Number</label>
+            <input type="tel" class="form-control form-control-sm"
+                   formControlName="phoneNumber" placeholder="+1 555 000 0000" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Password</label>
+            <input type="password" class="form-control form-control-sm"
+                   [class.is-invalid]="createForm.controls.password.invalid && createForm.controls.password.touched"
+                   formControlName="password" placeholder="Min 8 chars, upper/lower/digit/symbol" />
+            @if (createForm.controls.password.invalid && createForm.controls.password.touched) {
+              <div class="invalid-feedback d-block">
+                @if (createForm.controls.password.errors?.['required']) { Password required. }
+                @else if (createForm.controls.password.errors?.['minlength']) { Min 8 characters. }
+                @else { Must include uppercase, lowercase, digit and symbol. }
+              </div>
+            }
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Role</label>
+            <select class="form-select form-select-sm" formControlName="role">
+              @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="saveCreate()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Create User
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ── EDIT MODAL ── -->
+@if (modalMode() === 'edit') {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold"><i class="bi bi-pencil me-2 text-primary"></i>Edit User</h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <form [formGroup]="editForm" novalidate>
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label small fw-medium required-mark">First Name</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="editForm.controls.firstName.invalid && editForm.controls.firstName.touched"
+                   formControlName="firstName" />
+            <div class="invalid-feedback">Required.</div>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-medium required-mark">Last Name</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="editForm.controls.lastName.invalid && editForm.controls.lastName.touched"
+                   formControlName="lastName" />
+            <div class="invalid-feedback">Required.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Email</label>
+            <input type="email" class="form-control form-control-sm"
+                   [class.is-invalid]="editForm.controls.email.invalid && editForm.controls.email.touched"
+                   formControlName="email" />
+            <div class="invalid-feedback">Valid email required.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium">Phone Number</label>
+            <input type="tel" class="form-control form-control-sm"
+                   formControlName="phoneNumber" placeholder="+1 555 000 0000" />
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="saveEdit()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Save Changes
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ── ASSIGN ROLE MODAL ── -->
+@if (modalMode() === 'assign-role') {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel modal-panel-sm shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-person-badge me-2 text-primary"></i>Assign Role
+      </h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <!-- User info card -->
+      <div class="d-flex align-items-center gap-3 mb-4 p-3 bg-light rounded">
+        <div class="user-avatar flex-shrink-0">
+          {{ selected()?.firstName?.charAt(0) }}{{ selected()?.lastName?.charAt(0) }}
+        </div>
+        <div>
+          <div class="fw-semibold">{{ selected()?.firstName }} {{ selected()?.lastName }}</div>
+          <small class="text-muted">{{ selected()?.email }}</small>
+          <div class="mt-1">
+            <span class="badge" style="background:var(--uwpro-primary)">
+              Current: {{ selected()?.role || 'No role' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Role picker -->
+      <form [formGroup]="assignRoleForm">
+        <label class="form-label fw-medium required-mark">Select New Role</label>
+        <div class="d-flex flex-column gap-2">
+          @for (r of roles; track r) {
+            <div class="form-check role-option p-2 rounded border"
+                 [class.border-primary]="assignRoleForm.controls.role.value === r"
+                 [class.bg-primary]="assignRoleForm.controls.role.value === r"
+                 [class.bg-opacity-10]="assignRoleForm.controls.role.value === r">
+              <input class="form-check-input" type="radio" [id]="'role-'+r"
+                     [value]="r" formControlName="role" />
+              <label class="form-check-label w-100 ms-1" [for]="'role-'+r">
+                <span class="fw-medium">{{ r }}</span>
+              </label>
+            </div>
+          }
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="saveAssignRole()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        <i class="bi bi-check-lg me-1"></i>Assign Role
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ── STATUS MODAL ── -->
+@if (modalMode() === 'status') {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel modal-panel-sm shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold"><i class="bi bi-toggle-on me-2 text-primary"></i>Change Status</h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <p class="text-muted small mb-3">
+        Update status for <strong>{{ selected()?.firstName }} {{ selected()?.lastName }}</strong>
+      </p>
+      <form [formGroup]="statusForm">
+        @for (s of statuses; track s) {
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" [id]="'st-'+s" [value]="s" formControlName="status" />
+            <label class="form-check-label d-flex align-items-center gap-2" [for]="'st-'+s">
+              <span class="badge"
+                    [class.bg-success]="s==='Active'"
+                    [class.bg-warning]="s==='Locked'"
+                    [class.text-dark]="s==='Locked'"
+                    [class.bg-danger]="s==='Disabled'">{{ s }}</span>
+              <small class="text-muted">
+                @if (s==='Active')   { User can log in and access the system. }
+                @if (s==='Locked')   { Account is temporarily locked. }
+                @if (s==='Disabled') { Account is permanently disabled. }
+              </small>
+            </label>
+          </div>
+        }
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="saveStatus()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Update
+      </button>
+    </div>
+  </div>
+}

@@ -43,7 +43,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": { "buildTarget": "angularFrontendUnderwritePro:build:production" },
-            "development": { "buildTarget": "angularFrontendUnderwritePro:build:development" }
+            "development": {
+              "buildTarget": "angularFrontendUnderwritePro:build:development",
+              "proxyConfig": "proxy.conf.json"
+            }
           },
           "defaultConfiguration": "development"
         },

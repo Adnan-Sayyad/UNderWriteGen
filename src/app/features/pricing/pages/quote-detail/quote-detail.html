@@ -1,6 +1,141 @@
-﻿<app-page-header title="Quote Detail" icon="bi-currency-dollar"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Quote Detail" message="This section is under development."></app-empty-state>
-  </div>
+<div class="page-container">
+  <app-page-header
+    title="Quote Detail"
+    subtitle="Review premium breakdown, terms and accept the quote"
+    icon="bi-currency-dollar"
+    [breadcrumbs]="breadcrumbs">
+    @if (quote()?.status === 'Offered') {
+      <button class="btn btn-sm btn-success" (click)="accept()">
+        <i class="bi bi-check-circle me-1"></i>Accept Quote
+      </button>
+    }
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading quote…</div>
+  } @else if (!quote()) {
+    <div class="alert alert-warning">Quote not found.</div>
+  } @else {
+    <div class="row g-3">
+      <div class="col-md-8">
+        <!-- Premium Breakdown -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
+            <i class="bi bi-calculator text-primary"></i>
+            <span class="fw-semibold small">Premium Breakdown</span>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+              <tbody>
+                <tr>
+                  <td class="text-muted">Base Premium</td>
+                  <td class="text-end fw-medium">{{ quote()!.basePremium | currency }}</td>
+                </tr>
+                @for (e of loadings(); track e[0]) {
+                  <tr class="table-light">
+                    <td class="text-muted ps-4 small">+ Loading: {{ e[0] }}</td>
+                    <td class="text-end small">{{ e[1] | currency }}</td>
+                  </tr>
+                }
+                @for (e of discounts(); track e[0]) {
+                  <tr class="table-light">
+                    <td class="text-success ps-4 small">- Discount: {{ e[0] }}</td>
+                    <td class="text-end text-success small">{{ e[1] | currency }}</td>
+                  </tr>
+                }
+                @for (e of taxes(); track e[0]) {
+                  <tr class="table-light">
+                    <td class="text-muted ps-4 small">Tax: {{ e[0] }}</td>
+                    <td class="text-end small">{{ e[1] | currency }}</td>
+                  </tr>
+                }
+                <tr class="table-primary fw-semibold">
+                  <td>Total Premium</td>
+                  <td class="text-end">{{ quote()!.totalPremium | currency }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Terms -->
+        @if (quote()!.termsJSON) {
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
+              <i class="bi bi-file-text text-secondary"></i>
+              <span class="fw-semibold small">Policy Terms</span>
+            </div>
+            <div class="card-body">
+              @if (quote()!.termsJSON.deductibles) {
+                <div class="mb-2">
+                  <span class="small fw-medium text-muted">Deductibles:</span>
+                  <span class="ms-2">{{ quote()!.termsJSON.deductibles | currency }}</span>
+                </div>
+              }
+              @if (quote()!.termsJSON.exclusions?.length) {
+                <div class="mb-2">
+                  <span class="small fw-medium text-muted">Exclusions:</span>
+                  <div class="d-flex flex-wrap gap-1 mt-1">
+                    @for (ex of quote()!.termsJSON.exclusions!; track ex) {
+                      <span class="badge bg-light text-dark border">{{ ex }}</span>
+                    }
+                  </div>
+                </div>
+              }
+              @if (quote()!.termsJSON.subjectivities?.length) {
+                <div>
+                  <span class="small fw-medium text-muted">Subjectivities:</span>
+                  <ul class="list-unstyled ms-3 mb-0 mt-1">
+                    @for (s of quote()!.termsJSON.subjectivities!; track s) {
+                      <li class="small"><i class="bi bi-dot me-1"></i>{{ s }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Sidebar summary -->
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="mb-3">
+              <div class="small text-muted">Status</div>
+              <span class="badge fs-6" [ngClass]="statusClass(quote()!.status)">{{ quote()!.status }}</span>
+            </div>
+            <div class="mb-3">
+              <div class="small text-muted">Submission</div>
+              <a [routerLink]="['/submissions', quote()!.submissionId]" class="small text-decoration-none">
+                {{ quote()!.submissionId }}
+              </a>
+            </div>
+            <div class="mb-3">
+              <div class="small text-muted">Version</div>
+              <span class="badge bg-light text-dark border">v{{ quote()!.versionNo }}</span>
+            </div>
+            <div class="mb-3">
+              <div class="small text-muted">Valid Until</div>
+              <span class="small">{{ quote()!.validUntil | date:'mediumDate' }}</span>
+            </div>
+            @if (quote()!.status === 'Offered') {
+              <hr />
+              <button class="btn btn-success w-100 btn-sm" (click)="accept()">
+                <i class="bi bi-check-circle me-1"></i>Accept Quote
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 </div>

@@ -1,1 +1,96 @@
-﻿
+/* Report identity box */
+.report-icon-box {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: .5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* KPI metric cards */
+.metric-card {
+  background: #fff;
+  border-radius: .375rem;
+  padding: 1.25rem 1rem .75rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  height: 100%;
+}
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.metric-sub {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #6c757d;
+  margin-top: .25rem;
+}
+
+/* Section headers inside cards */
+.detail-section-header {
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: .82rem;
+  font-weight: 600;
+  padding: .6rem 1rem;
+  display: flex;
+  align-items: center;
+}
+
+/* Key-value rows */
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .4rem 0;
+  border-bottom: 1px solid #f8f9fa;
+  font-size: .85rem;
+}
+.detail-row:last-of-type { border-bottom: none; }
+.detail-row span:first-child { color: #6c757d; }
+
+/* TAT range bar */
+.tat-bar {
+  height: 10px;
+  border-radius: .5rem;
+  background: #f0f3f7;
+}
+
+/* Risk stacked bar */
+.risk-stacked {
+  height: 32px;
+  border-radius: .4rem;
+  background: #f0f3f7;
+}
+.risk-stacked .progress-bar {
+  font-size: .73rem;
+  transition: width .5s ease;
+}
+
+/* Risk chips */
+.risk-chip {
+  border-radius: .5rem;
+  padding: .75rem .5rem;
+}
+
+/* UW Productivity stats */
+.prod-stat {
+  background: #f8f9fa;
+  border-radius: .4rem;
+  padding: 1rem .5rem;
+}
+.prod-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.prod-label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #6c757d;
+  margin-top: .25rem;
+}

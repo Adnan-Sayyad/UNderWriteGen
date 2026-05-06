@@ -1,6 +1,231 @@
-﻿<app-page-header title="Compliance Checklists" icon="bi-clipboard2-check"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Compliance Checklists" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="Compliance Checklists"
+    subtitle="Track submission-level compliance checks and their completion status"
+    icon="bi-clipboard2-check"
+    [breadcrumbs]="breadcrumbs">
+    <button class="btn btn-primary btn-sm" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i>New Checklist
+    </button>
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <!-- Filter bar -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <span class="text-muted small">Filter:</span>
+        <button class="btn btn-sm" [class.btn-primary]="!filterStatus()"
+                [class.btn-outline-secondary]="filterStatus()" (click)="filterStatus.set('')">All</button>
+        @for (s of statuses; track s) {
+          <button class="btn btn-sm"
+                  [class.btn-primary]="filterStatus()===s"
+                  [class.btn-outline-secondary]="filterStatus()!==s"
+                  (click)="filterStatus.set(s)">{{ s }}</button>
+        }
+        <span class="ms-auto text-muted small">{{ filtered().length }} record(s)</span>
+        <button class="btn btn-sm btn-outline-secondary" (click)="load()"><i class="bi bi-arrow-clockwise"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+      } @else if (!filtered().length) {
+        <app-empty-state icon="bi-clipboard2-x" title="No checklists found"
+                         message="Create a checklist for a submission to get started."></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Submission ID</th>
+                <th>Progress</th>
+                <th>Completed By</th>
+                <th>Completed Date</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th class="table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of filtered(); track c.checklistId) {
+                <tr>
+                  <td class="small text-muted font-monospace">{{ c.submissionId | slice:0:8 }}…</td>
+                  <td style="min-width:140px">
+                    @let p = progressOf(c);
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="progress flex-grow-1" style="height:6px">
+                        <div class="progress-bar" [style.width.%]="p.pct"
+                             [class.bg-success]="p.pct===100" [class.bg-primary]="p.pct<100"></div>
+                      </div>
+                      <small class="text-muted text-nowrap">{{ p.done }}/{{ p.total }}</small>
+                    </div>
+                  </td>
+                  <td class="small">{{ c.completedBy || '—' }}</td>
+                  <td class="small text-muted">{{ c.completedDate ? (c.completedDate | date:'mediumDate') : '—' }}</td>
+                  <td><app-status-badge [status]="c.status"></app-status-badge></td>
+                  <td class="small text-muted">{{ c.createdAt | date:'mediumDate' }}</td>
+                  <td class="table-actions">
+                    <div class="d-flex gap-1">
+                      <button class="btn btn-sm btn-outline-primary" title="View Items" (click)="openView(c)">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary" title="Change Status" (click)="openStatus(c)">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>
+
+<!-- ── CREATE MODAL ── -->
+@if (modalMode() === 'create') {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold"><i class="bi bi-plus-lg me-2 text-primary"></i>New Compliance Checklist</h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <form [formGroup]="createForm" novalidate>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Submission ID</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="createForm.controls.submissionId.invalid && createForm.controls.submissionId.touched"
+                   formControlName="submissionId" placeholder="UUID of the submission" />
+            <div class="invalid-feedback">Submission ID is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium">Completed By</label>
+            <input type="text" class="form-control form-control-sm"
+                   formControlName="completedBy" placeholder="Reviewer name" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Initial Status</label>
+            <select class="form-select form-select-sm" formControlName="status">
+              @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+            </select>
+          </div>
+        </div>
+        <!-- Checklist items -->
+        <div class="mt-3">
+          <label class="form-label small fw-medium">Checklist Items</label>
+          <div class="input-group input-group-sm mb-2">
+            <input type="text" class="form-control" placeholder="Add item and press Enter…"
+                   [(ngModel)]="newItemText" [ngModelOptions]="{standalone:true}"
+                   (keydown.enter)="$event.preventDefault(); addItem()" />
+            <button type="button" class="btn btn-outline-primary" (click)="addItem()">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+          @if (items().length) {
+            <ul class="list-group list-group-flush">
+              @for (it of items(); track $index) {
+                <li class="list-group-item d-flex align-items-center gap-2 px-0 py-1">
+                  <input type="checkbox" class="form-check-input mt-0 cursor-pointer"
+                         [checked]="it.checked" (change)="toggleItem($index)" />
+                  <span class="flex-grow-1 small" [class.text-decoration-line-through]="it.checked"
+                        [class.text-muted]="it.checked">{{ it.item }}</span>
+                  <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                          (click)="removeItem($index)"><i class="bi bi-x-lg"></i></button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="text-muted small mb-0">No items added yet.</p>
+          }
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="saveCreate()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Create
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ── VIEW ITEMS MODAL ── -->
+@if (modalMode() === 'view') {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold"><i class="bi bi-eye me-2 text-primary"></i>Checklist Items</h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <p class="small text-muted mb-2">Submission: <code>{{ selected()?.submissionId }}</code></p>
+      @if (items().length) {
+        <ul class="list-group">
+          @for (it of items(); track $index) {
+            <li class="list-group-item d-flex align-items-center gap-2">
+              <i class="bi fs-5"
+                 [class.bi-check-circle-fill]="it.checked" [class.text-success]="it.checked"
+                 [class.bi-circle]="!it.checked" [class.text-muted]="!it.checked"></i>
+              <span [class.text-decoration-line-through]="it.checked" [class.text-muted]="it.checked">
+                {{ it.item }}
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="text-muted small">No items defined for this checklist.</p>
+      }
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Close</button>
+      <button class="btn btn-sm btn-outline-primary" (click)="openStatus(selected()!)">
+        <i class="bi bi-pencil-square me-1"></i>Update Status
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ── STATUS MODAL ── -->
+@if (modalMode() === 'status') {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel modal-panel-sm shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold"><i class="bi bi-pencil-square me-2 text-primary"></i>Update Status</h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <form [formGroup]="statusForm">
+        @for (s of statuses; track s) {
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" [id]="'cs-'+s" [value]="s" formControlName="status" />
+            <label class="form-check-label fw-medium" [for]="'cs-'+s">{{ s }}</label>
+          </div>
+        }
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="saveStatus()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Save
+      </button>
+    </div>
+  </div>
+}

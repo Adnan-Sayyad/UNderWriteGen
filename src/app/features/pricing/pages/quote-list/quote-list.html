@@ -1,6 +1,87 @@
-﻿<app-page-header title="Quotes" icon="bi-currency-dollar"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Quotes" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="Pricing Console"
+    subtitle="Manage quotes and pricing for submissions"
+    icon="bi-calculator"
+    [breadcrumbs]="breadcrumbs">
+    <a routerLink="/pricing/params" class="btn btn-sm btn-outline-secondary me-1">
+      <i class="bi bi-sliders me-1"></i>Pricing Params
+    </a>
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
+            <option value="">All Statuses</option>
+            @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </div>
+        <div class="col text-end">
+          <small class="text-muted">{{ filtered().length }} of {{ quotes().length }} record(s)</small>
+          <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+      } @else if (!filtered().length) {
+        <app-empty-state icon="bi-calculator" title="No quotes found"
+                         message="Quotes are created from the submission detail page."></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Quote ID</th>
+                <th>Submission ID</th>
+                <th>Version</th>
+                <th>Base Premium</th>
+                <th>Total Premium</th>
+                <th>Valid Until</th>
+                <th>Status</th>
+                <th class="table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (q of filtered(); track q.quoteId) {
+                <tr>
+                  <td class="font-monospace small">{{ q.quoteId | slice:0:8 }}…</td>
+                  <td class="font-monospace small text-muted">{{ q.submissionId | slice:0:8 }}…</td>
+                  <td class="text-center"><span class="badge bg-light text-dark border">v{{ q.versionNo }}</span></td>
+                  <td class="fw-medium">{{ q.basePremium | number:'1.2-2' }}</td>
+                  <td class="fw-semibold text-primary">{{ q.totalPremium | number:'1.2-2' }}</td>
+                  <td class="small text-muted">{{ q.validUntil | date:'mediumDate' }}</td>
+                  <td><span class="badge" [ngClass]="statusClass(q.status)">{{ q.status }}</span></td>
+                  <td class="table-actions">
+                    @if (q.status === 'Offered') {
+                      <button class="btn btn-sm btn-outline-success" title="Accept" (click)="accept(q)">
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>

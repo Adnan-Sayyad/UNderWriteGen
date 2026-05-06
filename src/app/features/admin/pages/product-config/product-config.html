@@ -1,6 +1,116 @@
-﻿<app-page-header title="Product Configuration" icon="bi-boxes"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Product Configuration" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="Product Configuration"
+    subtitle="Manage insurance product lines available for underwriting"
+    icon="bi-boxes"
+    [breadcrumbs]="breadcrumbs">
+    <button class="btn btn-primary btn-sm" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i>Add Product
+    </button>
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (!products().length) {
+        <app-empty-state icon="bi-boxes" title="No products configured"></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Product Name</th>
+                <th>Code</th>
+                <th>Category</th>
+                <th>Created</th>
+                <th>Active</th>
+                <th class="table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of products(); track p.id) {
+                <tr>
+                  <td class="fw-medium">{{ p.name }}</td>
+                  <td class="font-monospace small">{{ p.code }}</td>
+                  <td><span class="badge" [ngClass]="categoryClass(p.category)">{{ p.category }}</span></td>
+                  <td class="small text-muted">{{ p.createdDate | date:'mediumDate' }}</td>
+                  <td>
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" [checked]="p.active"
+                             (change)="toggleActive(p)" role="switch" />
+                    </div>
+                  </td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(p)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>
+
+@if (modalMode()) {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-boxes me-2 text-primary"></i>
+        {{ modalMode() === 'create' ? 'Add Product' : 'Edit Product' }}
+      </h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <form [formGroup]="form" novalidate>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Product Name</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
+                   formControlName="name" />
+            <div class="invalid-feedback">Name is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Product Code</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="form.controls.code.invalid && form.controls.code.touched"
+                   formControlName="code" placeholder="e.g. LIFE-TERM" />
+            <div class="invalid-feedback">Code is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Category</label>
+            <select class="form-select form-select-sm" formControlName="category">
+              <option value="Life">Life</option>
+              <option value="Health">Health</option>
+              <option value="PnC">PnC</option>
+              <option value="Commercial">Commercial</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" formControlName="active" role="switch"
+                     id="productActive" />
+              <label class="form-check-label small" for="productActive">Active</label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="save()">Save Product</button>
+    </div>
+  </div>
+}

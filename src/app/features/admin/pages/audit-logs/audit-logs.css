@@ -1,0 +1,5 @@
+.action-badge {
+  background: var(--uwpro-secondary);
+  font-weight: 500;
+  font-size: .75rem;
+}

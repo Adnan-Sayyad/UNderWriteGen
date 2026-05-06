@@ -1,6 +1,60 @@
-﻿<app-page-header title="Endorsement" icon="bi-pencil-square"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Endorsement" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="Add Endorsement"
+    subtitle="Request a mid-term change or policy amendment"
+    icon="bi-pencil-square"
+    [breadcrumbs]="breadcrumbs">
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="alert alert-info d-flex gap-2 py-2 mb-3">
+        <i class="bi bi-info-circle-fill"></i>
+        <span>Endorsing policy <strong>{{ policyId() }}</strong>. Changes will be effective from the date specified below.</span>
+      </div>
+      <form [formGroup]="form" novalidate>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Endorsement Type</label>
+            <select class="form-select form-select-sm" formControlName="endorsementType">
+              @for (t of endorsementTypes; track t) { <option [value]="t">{{ t }}</option> }
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-medium required-mark">Effective Date</label>
+            <input type="date" class="form-control form-control-sm" formControlName="effectiveDate"
+                   [class.is-invalid]="form.controls.effectiveDate.invalid && form.controls.effectiveDate.touched" />
+            <div class="invalid-feedback">Effective date is required.</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-medium required-mark">Premium Delta ($)</label>
+            <input type="number" class="form-control form-control-sm" formControlName="premiumDelta"
+                   placeholder="+ or - amount" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Changes Summary</label>
+            <textarea class="form-control form-control-sm" formControlName="changesSummary" rows="4"
+                      [class.is-invalid]="form.controls.changesSummary.invalid && form.controls.changesSummary.touched"
+                      placeholder="Describe the changes being made…"></textarea>
+            <div class="invalid-feedback">Changes summary is required.</div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancel()">Cancel</button>
+      <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Submit Endorsement
+      </button>
+    </div>
   </div>
 </div>

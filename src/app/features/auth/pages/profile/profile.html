@@ -1,6 +1,187 @@
-﻿<app-page-header title="My Profile" icon="bi-person-circle"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="My Profile" message="This section is under development."></app-empty-state>
-  </div>
+<div class="page-container">
+  <app-page-header
+    title="My Profile"
+    subtitle="View your account details and change your password"
+    icon="bi-person-circle"
+    [breadcrumbs]="breadcrumbs">
+  </app-page-header>
+
+  <!-- Alerts -->
+  @if (successMsg()) {
+    <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3">
+      <i class="bi bi-check-circle-fill"></i><span>{{ successMsg() }}</span>
+    </div>
+  }
+  @if (errorMsg()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3">
+      <i class="bi bi-exclamation-triangle-fill"></i><span>{{ errorMsg() }}</span>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+    </div>
+  } @else {
+    <div class="row g-4">
+
+      <!-- ══ Account Info — read-only, all roles ══ -->
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-transparent border-bottom pt-3 pb-2">
+            <h6 class="mb-0 fw-semibold">
+              <i class="bi bi-person me-2 text-primary"></i>Account Information
+            </h6>
+          </div>
+          <div class="card-body">
+
+            <!-- Avatar -->
+            <div class="text-center mb-4">
+              <div class="avatar-circle mx-auto mb-3">
+                <span class="avatar-initials">
+                  {{ (profile()?.firstName ?? user()?.name)?.charAt(0)?.toUpperCase() }}{{ profile()?.lastName?.charAt(0)?.toUpperCase() }}
+                </span>
+              </div>
+              <h5 class="mb-0 fw-semibold">
+                {{ profile()?.firstName ?? user()?.name }}
+                {{ profile()?.lastName }}
+              </h5>
+              <small class="text-muted">{{ profile()?.email ?? user()?.email }}</small>
+            </div>
+
+            <!-- Info rows -->
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <span class="text-muted small">Username</span>
+                <span class="fw-medium">{{ profile()?.userName ?? '—' }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <span class="text-muted small">Role</span>
+                <span class="badge" style="background:var(--uwpro-primary)">
+                  {{ profile()?.role ?? user()?.role }}
+                </span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <span class="text-muted small">Status</span>
+                <app-status-badge [status]="profile()?.status ?? 'Active'"></app-status-badge>
+              </li>
+              @if (profile()?.phoneNumber) {
+                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <span class="text-muted small">Phone</span>
+                  <span class="fw-medium">{{ profile()?.phoneNumber }}</span>
+                </li>
+              }
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <span class="text-muted small">Member since</span>
+                <span class="fw-medium">{{ profile()?.createdAt | date:'mediumDate' }}</span>
+              </li>
+            </ul>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Change Password — all roles ══ -->
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-transparent border-bottom pt-3 pb-2">
+            <h6 class="mb-0 fw-semibold">
+              <i class="bi bi-shield-lock me-2 text-primary"></i>Change Password
+            </h6>
+          </div>
+          <div class="card-body">
+
+            <form [formGroup]="pwForm" (ngSubmit)="changePassword()" novalidate>
+
+              <!-- Current password -->
+              <div class="form-section">
+                <div class="form-section-title">Current Password</div>
+                <div class="input-group mb-3">
+                  <span class="input-group-text bg-light">
+                    <i class="bi bi-lock text-muted"></i>
+                  </span>
+                  <input [type]="showCurrentPass() ? 'text' : 'password'"
+                         class="form-control"
+                         [class.is-invalid]="currPwCtrl.invalid && currPwCtrl.touched"
+                         formControlName="currentPassword"
+                         placeholder="Enter your current password" />
+                  <button type="button" class="input-group-text bg-light"
+                          (click)="showCurrentPass.set(!showCurrentPass())">
+                    <i class="bi"
+                       [class.bi-eye]="!showCurrentPass()"
+                       [class.bi-eye-slash]="showCurrentPass()"></i>
+                  </button>
+                  @if (currPwCtrl.invalid && currPwCtrl.touched) {
+                    <div class="invalid-feedback">Current password is required.</div>
+                  }
+                </div>
+              </div>
+
+              <!-- New password -->
+              <div class="form-section">
+                <div class="form-section-title">New Password</div>
+                <div class="input-group mb-3">
+                  <span class="input-group-text bg-light">
+                    <i class="bi bi-key text-muted"></i>
+                  </span>
+                  <input [type]="showNewPass() ? 'text' : 'password'"
+                         class="form-control"
+                         [class.is-invalid]="newPwCtrl.invalid && newPwCtrl.touched"
+                         formControlName="newPassword"
+                         placeholder="Min 8 chars — upper, lower, digit, symbol" />
+                  <button type="button" class="input-group-text bg-light"
+                          (click)="showNewPass.set(!showNewPass())">
+                    <i class="bi"
+                       [class.bi-eye]="!showNewPass()"
+                       [class.bi-eye-slash]="showNewPass()"></i>
+                  </button>
+                  @if (newPwCtrl.invalid && newPwCtrl.touched) {
+                    <div class="invalid-feedback">
+                      @if (newPwCtrl.errors?.['required'])      { New password is required. }
+                      @else if (newPwCtrl.errors?.['minlength']) { Minimum 8 characters required. }
+                      @else { Must include uppercase, lowercase, digit and special character. }
+                    </div>
+                  }
+                </div>
+
+                <!-- Confirm -->
+                <div class="input-group">
+                  <span class="input-group-text bg-light">
+                    <i class="bi bi-key-fill text-muted"></i>
+                  </span>
+                  <input [type]="showConfirmPass() ? 'text' : 'password'"
+                         class="form-control"
+                         [class.is-invalid]="confirmPwCtrl.touched &&
+                                             (confirmPwCtrl.invalid || pwForm.errors?.['mismatch'])"
+                         formControlName="confirmNewPassword"
+                         placeholder="Confirm new password" />
+                  <button type="button" class="input-group-text bg-light"
+                          (click)="showConfirmPass.set(!showConfirmPass())">
+                    <i class="bi"
+                       [class.bi-eye]="!showConfirmPass()"
+                       [class.bi-eye-slash]="showConfirmPass()"></i>
+                  </button>
+                  @if (confirmPwCtrl.touched && pwForm.errors?.['mismatch']) {
+                    <div class="invalid-feedback d-block">Passwords do not match.</div>
+                  }
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end mt-3">
+                <button type="submit" class="btn btn-primary px-4" [disabled]="saving()">
+                  @if (saving()) {
+                    <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+                  } @else {
+                    <i class="bi bi-check-lg me-1"></i>Update Password
+                  }
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
 </div>

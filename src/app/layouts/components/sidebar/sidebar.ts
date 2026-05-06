@@ -49,7 +49,8 @@ export class Sidebar {
     {
       title: 'Settings',
       items: [
-        { label: 'Admin Console',   icon: 'bi-gear',              route: '/admin',          roles: ['Admin'] },
+        { label: 'Admin Console',   icon: 'bi-gear',              route: '/admin',           roles: ['Admin'] },
+        { label: 'Audit Logs',      icon: 'bi-journal-text',      route: '/admin/audit-logs',roles: ['Admin'] },
       ],
     },
   ];

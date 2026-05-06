@@ -36,6 +36,14 @@
 .badge-expired {
   background-color: var(--status-expired) !important;
 }
+.badge-locked {
+  background-color: #f59e0b !important;
+  color: #1a1a1a !important;
+}
+.badge-disabled {
+  background-color: #dc3545 !important;
+  color: #fff !important;
+}
 
 /* Table */
 .table-actions {

@@ -1,6 +1,110 @@
-﻿<app-page-header title="Template Configuration" icon="bi-file-code"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Template Configuration" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="Template Configuration"
+    subtitle="Manage questionnaire templates, document templates and notification formats"
+    icon="bi-file-code"
+    [breadcrumbs]="breadcrumbs">
+    <button class="btn btn-primary btn-sm" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i>Add Template
+    </button>
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (!templates().length) {
+        <app-empty-state icon="bi-file-code" title="No templates configured"></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Template Name</th>
+                <th>Type</th>
+                <th>Version</th>
+                <th>Last Updated</th>
+                <th>Active</th>
+                <th class="table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of templates(); track t.id) {
+                <tr>
+                  <td class="fw-medium">{{ t.name }}</td>
+                  <td><span class="badge" [ngClass]="typeClass(t.type)">{{ t.type }}</span></td>
+                  <td><span class="badge bg-light text-dark border">v{{ t.version }}</span></td>
+                  <td class="small text-muted">{{ t.updatedDate | date:'mediumDate' }}</td>
+                  <td>
+                    <span class="badge" [class.bg-success]="t.active" [class.bg-secondary]="!t.active">
+                      {{ t.active ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(t)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>
+
+@if (modalMode()) {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-file-code me-2 text-primary"></i>
+        {{ modalMode() === 'create' ? 'Add Template' : 'Edit Template' }}
+      </h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <form [formGroup]="form" novalidate>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Template Name</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
+                   formControlName="name" />
+            <div class="invalid-feedback">Name is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Type</label>
+            <select class="form-select form-select-sm" formControlName="type">
+              @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Version</label>
+            <input type="text" class="form-control form-control-sm" formControlName="version"
+                   placeholder="e.g. 1.0" />
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" formControlName="active" role="switch"
+                     id="templateActive" />
+              <label class="form-check-label small" for="templateActive">Active</label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="save()">Save Template</button>
+    </div>
+  </div>
+}

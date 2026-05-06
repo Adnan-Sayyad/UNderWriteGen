@@ -1,6 +1,71 @@
-﻿<app-page-header title="New Quote" icon="bi-plus-circle"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="New Quote" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="New Quote"
+    subtitle="Create a pricing quote for a submission"
+    icon="bi-plus-circle"
+    [breadcrumbs]="breadcrumbs">
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      @if (submissionId()) {
+        <div class="alert alert-info d-flex gap-2 py-2 mb-3">
+          <i class="bi bi-info-circle-fill"></i>
+          <span>Creating quote for submission <strong>{{ submissionId() }}</strong></span>
+        </div>
+      }
+      <form [formGroup]="form" novalidate>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label small fw-medium required-mark">Base Premium ($)</label>
+            <input type="number" class="form-control form-control-sm" formControlName="basePremium"
+                   min="0" step="0.01"
+                   [class.is-invalid]="form.controls.basePremium.invalid && form.controls.basePremium.touched" />
+            <div class="invalid-feedback">Base premium is required.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-medium required-mark">Total Premium ($)</label>
+            <input type="number" class="form-control form-control-sm" formControlName="totalPremium"
+                   min="0" step="0.01"
+                   [class.is-invalid]="form.controls.totalPremium.invalid && form.controls.totalPremium.touched" />
+            <div class="invalid-feedback">Total premium is required.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-medium required-mark">Valid Until</label>
+            <input type="date" class="form-control form-control-sm" formControlName="validUntil"
+                   [class.is-invalid]="form.controls.validUntil.invalid && form.controls.validUntil.touched" />
+            <div class="invalid-feedback">Validity date is required.</div>
+          </div>
+
+          <div class="col-12"><hr class="my-1" /><p class="small fw-semibold text-muted mb-0">Terms</p></div>
+
+          <div class="col-md-4">
+            <label class="form-label small fw-medium">Deductibles ($)</label>
+            <input type="number" class="form-control form-control-sm" formControlName="deductibles" min="0" step="0.01" />
+          </div>
+          <div class="col-md-8">
+            <label class="form-label small fw-medium">Exclusions</label>
+            <input type="text" class="form-control form-control-sm" formControlName="exclusions"
+                   placeholder="Comma-separated list of exclusions" />
+            <div class="form-text">e.g. Flood, Earthquake, War</div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary btn-sm" (click)="cancel()">Cancel</button>
+      <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Create Quote
+      </button>
+    </div>
   </div>
 </div>

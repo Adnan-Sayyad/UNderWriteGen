@@ -1,1 +1,2 @@
-﻿
+.notes-list { max-height: 320px; overflow-y: auto; }
+.note-item:last-child { border-bottom: 0 !important; }

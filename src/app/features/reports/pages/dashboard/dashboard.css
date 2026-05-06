@@ -1,1 +1,111 @@
-﻿
+/* KPI Cards */
+.kpi-card {
+  background: #fff;
+  border-radius: .375rem;
+  padding: .75rem 1rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.kpi-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.kpi-label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #6c757d;
+  margin-top: .25rem;
+}
+
+/* Chart card headers */
+.chart-header {
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .82rem;
+  font-weight: 600;
+  padding: .6rem 1rem;
+}
+
+/* Chart row layout */
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+.chart-label {
+  width: 7rem;
+  font-size: .75rem;
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+.chart-bar-wrap {
+  flex: 1;
+}
+.chart-progress {
+  height: 22px;
+  border-radius: .3rem;
+  background: #f0f3f7;
+}
+.chart-progress .progress-bar {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: 0 .4rem;
+  border-radius: .3rem;
+  min-width: 2rem;
+  transition: width .5s ease;
+}
+.chart-stat {
+  width: 5rem;
+  text-align: right;
+  font-size: .75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Risk mix stacked bar */
+.risk-progress {
+  height: 28px;
+  border-radius: .3rem;
+  background: #f0f3f7;
+}
+.risk-progress .progress-bar {
+  font-size: .7rem;
+  font-weight: 600;
+  transition: width .5s ease;
+}
+
+/* TAT range label */
+.tat-range {
+  font-size: .68rem;
+}
+
+/* Table tweaks */
+.table th {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #6c757d;
+  font-weight: 600;
+}
+.table td {
+  font-size: .82rem;
+}
+
+/* Modal backdrop z-index */
+.modal-backdrop {
+  z-index: 1040;
+}
+.modal {
+  z-index: 1050;
+}

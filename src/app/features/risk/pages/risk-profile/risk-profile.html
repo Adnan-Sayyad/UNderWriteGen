@@ -1,6 +1,82 @@
-﻿<app-page-header title="Risk Profile" icon="bi-shield-check"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="Risk Profile" message="This section is under development."></app-empty-state>
-  </div>
+<div class="page-container">
+  <app-page-header
+    title="Risk Profile"
+    subtitle="Manage risk attributes and scoring for a submission"
+    icon="bi-shield-check"
+    [breadcrumbs]="breadcrumbs">
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  @if (!submissionId()) {
+    <!-- Search by submission ID -->
+    <div class="card border-0 shadow-sm" style="max-width:480px">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3">Look up by Submission</h6>
+        <form [formGroup]="searchForm" novalidate (ngSubmit)="search()">
+          <div class="input-group">
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Enter submission UUID…"
+                   [class.is-invalid]="searchForm.controls.submissionId.invalid && searchForm.controls.submissionId.touched"
+                   formControlName="submissionId" />
+            <button class="btn btn-primary btn-sm" type="submit">
+              <i class="bi bi-search me-1"></i>Load
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  } @else {
+    @if (loading()) {
+      <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+    } @else {
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between">
+          <span class="fw-semibold small">
+            Submission: <code class="text-primary">{{ submissionId() }}</code>
+          </span>
+          @if (profile()) {
+            <small class="text-muted">Last updated: {{ profile()!.lastUpdated | date:'medium' }}</small>
+          }
+        </div>
+        <div class="card-body">
+          <form [formGroup]="form" novalidate>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-medium required-mark">Risk Type</label>
+                <select class="form-select form-select-sm" formControlName="riskType">
+                  @for (t of riskTypes; track t) { <option [value]="t">{{ t }}</option> }
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-medium">Risk Notes</label>
+                <textarea class="form-control form-control-sm" rows="4"
+                          formControlName="riskNotes"
+                          placeholder="Describe risk characteristics, concerns or observations…"></textarea>
+              </div>
+            </div>
+            <div class="d-flex gap-2 justify-content-end mt-3 border-top pt-3">
+              <button class="btn btn-sm btn-primary" (click)="save()" [disabled]="saving()">
+                @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                {{ profile() ? 'Update Profile' : 'Create Profile' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Evidence link -->
+      <div class="mt-3">
+        <a [routerLink]="['/risk/evidence', submissionId()]" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-file-earmark-medical me-1"></i>View Evidence & References
+        </a>
+      </div>
+    }
+  }
 </div>

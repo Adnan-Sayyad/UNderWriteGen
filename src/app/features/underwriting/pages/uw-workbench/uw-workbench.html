@@ -1,6 +1,82 @@
-﻿<app-page-header title="UW Workbench" icon="bi-briefcase"></app-page-header>
-<div class="card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <app-empty-state title="UW Workbench" message="This section is under development."></app-empty-state>
+<div class="page-container">
+  <app-page-header
+    title="UW Workbench"
+    subtitle="Submissions pending underwriting review"
+    icon="bi-briefcase"
+    [breadcrumbs]="breadcrumbs">
+    <div class="d-flex gap-2">
+      <a routerLink="/underwriting/subjectivities" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-list-check me-1"></i>Subjectivities
+      </a>
+      <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  </app-page-header>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-transparent"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control" placeholder="Search by submission ID or product…"
+                   [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" />
+          </div>
+        </div>
+        <div class="col text-end">
+          <small class="text-muted">{{ filtered().length }} submission(s) pending review</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+      } @else if (!filtered().length) {
+        <app-empty-state icon="bi-briefcase" title="No submissions in review"
+                         message="All submissions have been processed or none are assigned to you."></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Submission ID</th>
+                <th>Product</th>
+                <th>Party</th>
+                <th>Agent</th>
+                <th>Inception</th>
+                <th>Created</th>
+                <th class="table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of filtered(); track s.submissionId) {
+                <tr>
+                  <td class="font-monospace small">{{ s.submissionId | slice:0:8 }}…</td>
+                  <td><span class="badge" [ngClass]="productClass(s.productLine)">{{ s.productLine }}</span></td>
+                  <td class="small text-muted font-monospace">{{ s.partyId | slice:0:8 }}…</td>
+                  <td class="small text-muted font-monospace">{{ s.agentId | slice:0:8 }}…</td>
+                  <td class="small text-muted">{{ s.inceptionDate | date:'mediumDate' }}</td>
+                  <td class="small text-muted">{{ s.createdDate | date:'mediumDate' }}</td>
+                  <td class="table-actions">
+                    <a [routerLink]="['/submissions', s.submissionId]"
+                       class="btn btn-sm btn-outline-secondary me-1" title="View Submission">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a [routerLink]="['/underwriting/decision', s.submissionId]"
+                       class="btn btn-sm btn-primary" title="Make Decision">
+                      <i class="bi bi-check2-circle me-1"></i>Decide
+                    </a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   </div>
 </div>

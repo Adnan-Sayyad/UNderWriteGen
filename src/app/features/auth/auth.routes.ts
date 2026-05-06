@@ -7,11 +7,11 @@ export const AUTH_ROUTES: Routes = [
     loadComponent: () => import('./pages/login/login').then(m => m.LoginPage),
   },
   {
-    path: 'forgot-password',
-    loadComponent: () => import('./pages/forgot-password/forgot-password').then(m => m.ForgotPasswordPage),
+    path: 'register',
+    loadComponent: () => import('./pages/register/register').then(m => m.RegisterPage),
   },
   {
-    path: 'profile',
-    loadComponent: () => import('./pages/profile/profile').then(m => m.ProfilePage),
+    path: 'forgot-password',
+    loadComponent: () => import('./pages/forgot-password/forgot-password').then(m => m.ForgotPasswordPage),
   },
 ];
