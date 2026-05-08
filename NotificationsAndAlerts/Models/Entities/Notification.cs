@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NotificationsAndAlerts.Models.Entities
 {
@@ -8,9 +9,14 @@ namespace NotificationsAndAlerts.Models.Entities
         [Key]
         public string NotificationID { get; set; } = string.Empty;
 
-        // Logical FK -> User table (User entity lives in IdentityAndAccessManagement microservice)
+        // Recipient — maps to legacy "UserID" column
         [Required]
-        public string UserID { get; set; } = string.Empty;
+        [Column("UserID")]
+        public string Mail { get; set; } = string.Empty;
+
+        // Creator of the notification
+        [Required]
+        public string SenderEmail { get; set; } = string.Empty;
 
         [Required]
         public string Message { get; set; } = string.Empty;

@@ -4,10 +4,13 @@ namespace NotificationsAndAlerts.Services.Interfaces
 {
     public interface INotificationService
     {
-        Task<NotificationResponseDto> CreateAsync(CreateNotificationDto dto);
+        Task<NotificationResponseDto> CreateAsync(CreateNotificationDto dto, string senderEmail);
         Task<NotificationResponseDto?> GetByIdAsync(string id);
         Task<IEnumerable<NotificationResponseDto>> GetAllAsync();
-        Task<IEnumerable<NotificationResponseDto>> GetByUserAsync(string userId);
+
+        // Returns all notifications where the user is either sender or recipient.
+        Task<IEnumerable<NotificationResponseDto>> GetByParticipantAsync(string email);
+
         Task<bool> MarkAsReadAsync(string id);
         Task<bool> DismissAsync(string id);
         Task<bool> DeleteAsync(string id);
