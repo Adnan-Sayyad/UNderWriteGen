@@ -110,7 +110,9 @@ public class HttpDataCollectorService : IHttpDataCollectorService
 			TAT_MinHours = tatValues.Count > 0 ? tatValues.Min() : 0,
 			TAT_MaxHours = tatValues.Count > 0 ? tatValues.Max() : 0,
 			TotalDecisions = decisions.Count,
-			AvgDecisionsPerUW = decisions.Count,
+			AvgDecisionsPerUW = decisions.Count == 0 ? 0
+				: Math.Round((decimal)decisions.Count
+					/ Math.Max(decisions.Select(d => d.DecidedBy).Distinct().Count(), 1), 2),
 			RiskMix = new RiskMixMetric
 			{
 				High = riskScores.Count(r => r!.Band == "High"),
@@ -118,6 +120,15 @@ public class HttpDataCollectorService : IHttpDataCollectorService
 				Low = riskScores.Count(r => r!.Band == "Low"),
 			}
 		};
+
+		// ── Guard: skip saving if all upstream services returned empty data ──────
+		if (totalQuotes == 0 && quotes.Count == 0 && referrals.Count == 0 && decisions.Count == 0)
+		{
+			_logger.LogWarning(
+				"All upstream services returned empty data for {Scope}={ScopeValue}. Snapshot not saved.",
+				scope, scopeValue);
+			return;
+		}
 
 		// ── Save snapshot ─────────────────────────────────────────────────────
 		var existing = await _repo.GetTodaySnapshotAsync(scope, scopeValue);
