@@ -1,7 +1,7 @@
 <div class="page-container">
   <app-page-header
     title="Agents"
-    subtitle="Manage producer agents and their details"
+    subtitle="Manage producer agents and distribution channels"
     icon="bi-person-badge"
     [breadcrumbs]="breadcrumbs">
     <button class="btn btn-primary btn-sm" (click)="openCreate()">
@@ -11,8 +11,9 @@
 
   @if (alertMsg()) {
     <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
-      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
-                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      <i class="bi"
+         [class.bi-check-circle-fill]="alertMsg()!.type === 'success'"
+         [class.bi-exclamation-triangle-fill]="alertMsg()!.type === 'danger'"></i>
       {{ alertMsg()!.text }}
     </div>
   }
@@ -49,7 +50,10 @@
   <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
       @if (loading()) {
-        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-2 text-muted small">Loading agents…</p>
+        </div>
       } @else if (!filtered().length) {
         <app-empty-state icon="bi-person-badge" title="No agents found"
                          message="Add your first agent to get started."></app-empty-state>
@@ -58,27 +62,37 @@
           <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
               <tr>
+                <th>Agent ID</th>
                 <th>Name</th>
                 <th>Producer Code</th>
                 <th>Region</th>
-                <th>Email</th>
-                <th>Phone</th>
+                <th>Contact Info</th>
                 <th>Status</th>
-                <th class="table-actions">Actions</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
-              @for (a of filtered(); track a.agentId) {
+              @for (a of filtered(); track a.agentID) {
                 <tr>
+                  <td class="font-monospace small text-muted">{{ a.agentID }}</td>
                   <td class="fw-medium">{{ a.name }}</td>
                   <td class="font-monospace small">{{ a.producerCode }}</td>
-                  <td class="small text-muted">{{ a.region }}</td>
-                  <td class="small text-muted">{{ a.contactInfo?.email }}</td>
-                  <td class="small text-muted">{{ a.contactInfo?.phone }}</td>
-                  <td><span class="badge" [ngClass]="statusClass(a.status)">{{ a.status }}</span></td>
-                  <td class="table-actions">
-                    <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(a)">
+                  <td class="small text-muted">{{ a.region || '—' }}</td>
+                  <td class="small text-muted">{{ a.contactInfo || '—' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="statusClass(a.status)">{{ a.status }}</span>
+                  </td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" (click)="openEdit(a)">
                       <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm"
+                            [class.btn-outline-danger]="a.status === 'Active'"
+                            [class.btn-outline-success]="a.status !== 'Active'"
+                            [title]="a.status === 'Active' ? 'Deactivate' : 'Activate'"
+                            (click)="toggleStatus(a)">
+                      <i class="bi" [class.bi-toggle-on]="a.status === 'Active'"
+                                    [class.bi-toggle-off]="a.status !== 'Active'"></i>
                     </button>
                   </td>
                 </tr>
@@ -91,7 +105,7 @@
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Slide-in Modal -->
 @if (modalMode()) {
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
@@ -105,41 +119,86 @@
     <div class="modal-panel-body">
       <form [formGroup]="form" novalidate>
         <div class="row g-3">
+
+          <!-- Name -->
           <div class="col-md-6">
             <label class="form-label small fw-medium required-mark">Full Name</label>
             <input type="text" class="form-control form-control-sm"
                    [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
-                   formControlName="name" />
-            <div class="invalid-feedback">Name is required.</div>
+                   formControlName="name" placeholder="e.g. John Smith" />
+            @if (form.controls.name.touched && form.controls.name.errors) {
+              <div class="invalid-feedback d-block">
+                @if (form.controls.name.errors['required'])       { Name is required. }
+                @else if (form.controls.name.errors['minlength']) { Name must be at least 2 characters. }
+                @else if (form.controls.name.errors['hasDigits']) { Name must not contain numbers. }
+                @else if (form.controls.name.errors['pattern'])   { Name may only contain letters, spaces, hyphens, apostrophes, and periods. }
+                @else if (form.controls.name.errors['maxlength']) { Name must not exceed 150 characters. }
+              </div>
+            }
           </div>
+
+          <!-- Producer Code -->
           <div class="col-md-6">
             <label class="form-label small fw-medium required-mark">Producer Code</label>
             <input type="text" class="form-control form-control-sm"
                    [class.is-invalid]="form.controls.producerCode.invalid && form.controls.producerCode.touched"
-                   formControlName="producerCode" />
-            <div class="invalid-feedback">Producer code is required.</div>
+                   formControlName="producerCode" placeholder="e.g. MUM-LIF-001" />
+            @if (form.controls.producerCode.touched && form.controls.producerCode.errors) {
+              <div class="invalid-feedback d-block">
+                @if (form.controls.producerCode.errors['required'])       { Producer code is required. }
+                @else if (form.controls.producerCode.errors['minlength']) { Producer code must be at least 3 characters. }
+                @else if (form.controls.producerCode.errors['pattern'])   { Producer code may only contain letters, digits, hyphens, and underscores — no spaces. }
+                @else if (form.controls.producerCode.errors['maxlength']) { Producer code must not exceed 50 characters. }
+              </div>
+            }
           </div>
+
+          <!-- Region -->
           <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Region</label>
-            <input type="text" class="form-control form-control-sm" formControlName="region" />
+            <label class="form-label small fw-medium">Region</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="form.controls.region.invalid && form.controls.region.touched"
+                   formControlName="region" placeholder="e.g. Mumbai, North India" />
+            @if (form.controls.region.touched && form.controls.region.errors) {
+              <div class="invalid-feedback d-block">
+                @if (form.controls.region.errors['pattern']) { Region may only contain letters, spaces, and hyphens. }
+              </div>
+            }
           </div>
+
+          <!-- Status -->
           <div class="col-md-6">
             <label class="form-label small fw-medium required-mark">Status</label>
             <select class="form-select form-select-sm" formControlName="status">
               @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
             </select>
           </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Email</label>
-            <input type="email" class="form-control form-control-sm"
-                   [class.is-invalid]="form.controls.email.invalid && form.controls.email.touched"
-                   formControlName="email" />
-            <div class="invalid-feedback">Valid email required.</div>
+
+          <!-- Contact Info -->
+          <div class="col-12">
+            <label class="form-label small fw-medium">Contact Info</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="form.controls.contactInfo.invalid && form.controls.contactInfo.touched"
+                   formControlName="contactInfo"
+                   placeholder="Mobile number (e.g. 9876543210) or email (e.g. agent@example.com)" />
+            <div class="form-text text-muted" style="font-size:0.75rem">
+              10-digit mobile number (not starting with 0) or a valid email address.
+            </div>
+            @if (form.controls.contactInfo.touched && form.controls.contactInfo.errors) {
+              <div class="invalid-feedback d-block">
+                @if (form.controls.contactInfo.errors['phoneLength']) {
+                  Phone number must be exactly 10 digits — you entered {{ form.controls.contactInfo.errors['phoneLength'].actual }}.
+                } @else if (form.controls.contactInfo.errors['phoneStartsZero']) {
+                  Phone number must not start with 0.
+                } @else if (form.controls.contactInfo.errors['emailInvalid']) {
+                  Email address is invalid. Expected format: user&#64;example.com
+                } @else if (form.controls.contactInfo.errors['contactUnrecognised']) {
+                  Please enter a 10-digit mobile number (e.g. 9876543210) or an email address (e.g. agent&#64;example.com).
+                }
+              </div>
+            }
           </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Phone</label>
-            <input type="text" class="form-control form-control-sm" formControlName="phone" />
-          </div>
+
         </div>
       </form>
     </div>

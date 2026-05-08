@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import { Notification, NotificationStatus } from '../models/notification.model';
-import { PagedResponse, ApiResponse } from '../../../shared/models/api-response.model';
-import { PageRequest } from '../../../shared/models/pagination.model';
+import { Notification } from '../models/notification.model';
+import { ApiResponse } from '../../../shared/models/api-response.model';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationApiService {
@@ -11,13 +10,43 @@ export class NotificationApiService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(req: PageRequest, status?: NotificationStatus) {
-    const fromObj: Record<string, unknown> = { ...req };
-    if (status) fromObj['status'] = status;
-    return this.http.get<PagedResponse<Notification>>(this.base, { params: new HttpParams({ fromObject: fromObj as Record<string, string> }) });
+  // GET /api/notifications/my — returns notifications where the caller is sender or recipient
+  getMy() {
+    return this.http.get<ApiResponse<Notification[]>>(`${this.base}/my`);
   }
-  markRead(id: string) { return this.http.post<ApiResponse<Notification>>(`${this.base}/${id}/read`, {}); }
-  markAllRead() { return this.http.post<ApiResponse<void>>(`${this.base}/read-all`, {}); }
-  dismiss(id: string) { return this.http.post<ApiResponse<Notification>>(`${this.base}/${id}/dismiss`, {}); }
-  getUnreadCount() { return this.http.get<ApiResponse<number>>(`${this.base}/unread-count`); }
+
+  // GET /api/notifications/unread-count
+  getUnreadCount() {
+    return this.http.get<ApiResponse<number>>(`${this.base}/unread-count`);
+  }
+
+  // GET /api/notifications/{id}
+  getById(id: string) {
+    return this.http.get<ApiResponse<Notification>>(`${this.base}/${id}`);
+  }
+
+  // PUT /api/notifications/{id}/read
+  markRead(id: string) {
+    return this.http.put<ApiResponse<string>>(`${this.base}/${id}/read`, {});
+  }
+
+  // PUT /api/notifications/{id}/dismiss
+  dismiss(id: string) {
+    return this.http.put<ApiResponse<string>>(`${this.base}/${id}/dismiss`, {});
+  }
+
+  // POST /api/notifications
+  create(payload: { recipientEmail: string; message: string; category: string }) {
+    return this.http.post<ApiResponse<Notification>>(this.base, payload);
+  }
+
+  // POST /api/notifications/broadcast
+  broadcast(payload: { recipientGroup: string; message: string; category: string }) {
+    return this.http.post<ApiResponse<{ sentCount: number }>>(`${this.base}/broadcast`, payload);
+  }
+
+  // DELETE /api/notifications/{id}
+  delete(id: string) {
+    return this.http.delete<ApiResponse<void>>(`${this.base}/${id}`);
+  }
 }

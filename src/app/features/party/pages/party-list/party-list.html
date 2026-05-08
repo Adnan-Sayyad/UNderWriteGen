@@ -1,7 +1,7 @@
 <div class="page-container">
   <app-page-header
     title="Customer Parties"
-    subtitle="Manage insured parties and their contact details"
+    subtitle="Manage insured parties, individuals and corporations"
     icon="bi-people"
     [breadcrumbs]="breadcrumbs">
     <button class="btn btn-primary btn-sm" (click)="openCreate()">
@@ -11,12 +11,14 @@
 
   @if (alertMsg()) {
     <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
-      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
-                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      <i class="bi"
+         [class.bi-check-circle-fill]="alertMsg()!.type === 'success'"
+         [class.bi-exclamation-triangle-fill]="alertMsg()!.type === 'danger'"></i>
       {{ alertMsg()!.text }}
     </div>
   }
 
+  <!-- Filters -->
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
       <div class="row g-2 align-items-center">
@@ -44,10 +46,14 @@
     </div>
   </div>
 
+  <!-- Table -->
   <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
       @if (loading()) {
-        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-2 text-muted small">Loading parties…</p>
+        </div>
       } @else if (!filtered().length) {
         <app-empty-state icon="bi-people" title="No parties found"
                          message="Add a customer party to get started."></app-empty-state>
@@ -56,27 +62,37 @@
           <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
               <tr>
+                <th>Party ID</th>
                 <th>Name</th>
                 <th>Type</th>
                 <th>Segment</th>
-                <th>Email</th>
                 <th>DOB / Incorporation</th>
+                <th>Contact Info</th>
                 <th>Status</th>
-                <th class="table-actions">Actions</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
-              @for (p of filtered(); track p.partyId) {
+              @for (p of filtered(); track p.partyID) {
                 <tr>
+                  <td class="font-monospace small text-muted">{{ p.partyID }}</td>
                   <td class="fw-medium">{{ p.name }}</td>
                   <td><span class="badge bg-secondary">{{ p.partyType }}</span></td>
                   <td><span class="badge" [ngClass]="segmentClass(p.segment)">{{ p.segment }}</span></td>
-                  <td class="small text-muted">{{ p.contactInfo?.email }}</td>
-                  <td class="small text-muted">{{ p.dobIncorporation | date:'mediumDate' }}</td>
+                  <td class="small text-muted">{{ p.dOBIncorporation ? (p.dOBIncorporation | date:'dd MMM yyyy':'UTC') : '—' }}</td>
+                  <td class="small text-muted">{{ p.contactInfo || '—' }}</td>
                   <td><app-status-badge [status]="p.status"></app-status-badge></td>
-                  <td class="table-actions">
-                    <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(p)">
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" (click)="openEdit(p)">
                       <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm"
+                            [class.btn-outline-danger]="p.status === 'Active'"
+                            [class.btn-outline-success]="p.status !== 'Active'"
+                            [title]="p.status === 'Active' ? 'Deactivate' : 'Activate'"
+                            (click)="toggleStatus(p)">
+                      <i class="bi" [class.bi-toggle-on]="p.status === 'Active'"
+                                    [class.bi-toggle-off]="p.status !== 'Active'"></i>
                     </button>
                   </td>
                 </tr>
@@ -89,6 +105,7 @@
   </div>
 </div>
 
+<!-- Slide-in Modal -->
 @if (modalMode()) {
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
@@ -102,44 +119,79 @@
     <div class="modal-panel-body">
       <form [formGroup]="form" novalidate>
         <div class="row g-3">
+
+          <!-- Name -->
           <div class="col-12">
-            <label class="form-label small fw-medium required-mark">Full Name</label>
+            <label class="form-label small fw-medium required-mark">Full Name / Company Name</label>
             <input type="text" class="form-control form-control-sm"
                    [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
-                   formControlName="name" />
-            <div class="invalid-feedback">Name is required.</div>
+                   formControlName="name" placeholder="e.g. Acme Corp / Jane Doe" />
+            @if (form.controls.name.touched && form.controls.name.errors) {
+              <div class="invalid-feedback d-block">
+                @if (form.controls.name.errors['required'])       { Name is required. }
+                @else if (form.controls.name.errors['minlength']) { Name must be at least 2 characters. }
+                @else if (form.controls.name.errors['hasDigits']) { Name must not contain numbers. }
+                @else if (form.controls.name.errors['pattern'])   { Name may only contain letters, spaces, hyphens, apostrophes, periods, &amp; and commas. }
+                @else if (form.controls.name.errors['maxlength']) { Name must not exceed 200 characters. }
+              </div>
+            }
           </div>
+
+          <!-- Party Type -->
           <div class="col-md-6">
             <label class="form-label small fw-medium required-mark">Party Type</label>
             <select class="form-select form-select-sm" formControlName="partyType">
               @for (t of partyTypes; track t) { <option [value]="t">{{ t }}</option> }
             </select>
           </div>
+
+          <!-- Segment -->
           <div class="col-md-6">
             <label class="form-label small fw-medium required-mark">Segment</label>
             <select class="form-select form-select-sm" formControlName="segment">
               @for (s of segments; track s) { <option [value]="s">{{ s }}</option> }
             </select>
           </div>
+
+          <!-- DOB / Incorporation Date -->
           <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">DOB / Incorporation</label>
-            <input type="date" class="form-control form-control-sm" formControlName="dobIncorporation" />
+            <label class="form-label small fw-medium">DOB / Incorporation Date</label>
+            <input type="date" class="form-control form-control-sm" formControlName="dOBIncorporation"
+                   [class.is-invalid]="form.controls.dOBIncorporation.invalid && form.controls.dOBIncorporation.touched" />
+            @if (form.controls.dOBIncorporation.touched && form.controls.dOBIncorporation.errors) {
+              <div class="invalid-feedback d-block">
+                @if (form.controls.dOBIncorporation.errors['futureDate'])        { Date cannot be in the future. }
+                @else if (form.controls.dOBIncorporation.errors['beforeMinDate']) { Date must be on or after 1 January 1900. }
+                @else if (form.controls.dOBIncorporation.errors['invalidDate'])   { Please enter a valid date. }
+              </div>
+            }
           </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Email</label>
-            <input type="email" class="form-control form-control-sm"
-                   [class.is-invalid]="form.controls.email.invalid && form.controls.email.touched"
-                   formControlName="email" />
-            <div class="invalid-feedback">Valid email required.</div>
+
+          <!-- Contact Info -->
+          <div class="col-12">
+            <label class="form-label small fw-medium">Contact Info</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="form.controls.contactInfo.invalid && form.controls.contactInfo.touched"
+                   formControlName="contactInfo"
+                   placeholder="Mobile number (e.g. 9876543210) or email (e.g. party@example.com)" />
+            <div class="form-text text-muted" style="font-size:0.75rem">
+              10-digit mobile number (not starting with 0) or a valid email address.
+            </div>
+            @if (form.controls.contactInfo.touched && form.controls.contactInfo.errors) {
+              <div class="invalid-feedback d-block">
+                @if (form.controls.contactInfo.errors['phoneLength']) {
+                  Phone number must be exactly 10 digits — you entered {{ form.controls.contactInfo.errors['phoneLength'].actual }}.
+                } @else if (form.controls.contactInfo.errors['phoneStartsZero']) {
+                  Phone number must not start with 0.
+                } @else if (form.controls.contactInfo.errors['emailInvalid']) {
+                  Email address is invalid. Expected format: user&#64;example.com
+                } @else if (form.controls.contactInfo.errors['contactUnrecognised']) {
+                  Please enter a 10-digit mobile number (e.g. 9876543210) or an email address (e.g. party&#64;example.com).
+                }
+              </div>
+            }
           </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Phone</label>
-            <input type="text" class="form-control form-control-sm" formControlName="phone" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-medium">Address</label>
-            <input type="text" class="form-control form-control-sm" formControlName="address" />
-          </div>
+
         </div>
       </form>
     </div>

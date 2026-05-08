@@ -20,8 +20,14 @@ export class Sidebar {
     {
       title: 'Submissions',
       items: [
-        { label: 'Submissions',     icon: 'bi-file-earmark-text', route: '/submissions',   roles: [] },
-        { label: 'Parties',         icon: 'bi-people',            route: '/party',          roles: ['Agent','Underwriter','Admin','Operations'] },
+        { label: 'Submissions', icon: 'bi-file-earmark-text', route: '/submissions', roles: [] },
+      ],
+    },
+    {
+      title: 'Distribution & Party',
+      items: [
+        { label: 'Agents',           icon: 'bi-person-badge', route: '/party/agents',  roles: [] },
+        { label: 'Customer Parties', icon: 'bi-people',       route: '/party/parties', roles: [] },
       ],
     },
     {
@@ -52,8 +58,8 @@ export class Sidebar {
     {
       title: 'Settings',
       items: [
-        { label: 'Admin Console',   icon: 'bi-gear',              route: '/admin',           roles: ['Admin'] },
-        { label: 'Audit Logs',      icon: 'bi-journal-text',      route: '/admin/audit-logs',roles: ['Admin'] },
+        { label: 'Admin Console', icon: 'bi-gear',         route: '/admin',            roles: ['Admin'] },
+        { label: 'Audit Logs',    icon: 'bi-journal-text', route: '/admin/audit-logs', roles: ['Admin'] },
       ],
     },
   ];
