@@ -14,10 +14,10 @@ import { Agent } from '../../models/party.model';
   styleUrl: './agent-form.css',
 })
 export class AgentFormPage implements OnInit {
-  readonly agentId   = signal<string | null>(null);
-  readonly loading   = signal(false);
-  readonly saving    = signal(false);
-  readonly alertMsg  = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
+  readonly agentId  = signal<string | null>(null);
+  readonly loading  = signal(false);
+  readonly saving   = signal(false);
+  readonly alertMsg = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -25,18 +25,17 @@ export class AgentFormPage implements OnInit {
     { label: 'Agent Details' },
   ];
 
-  readonly statuses = ['Active', 'Inactive', 'Suspended'];
+  readonly statuses = ['Active', 'Inactive'];
 
+  // inject() at field level avoids the "used before initialization" error
   private readonly fb = inject(FormBuilder);
 
   readonly form = this.fb.group({
     name:         ['', Validators.required],
     producerCode: ['', Validators.required],
-    region:       ['', Validators.required],
+    region:       [''],
     status:       ['Active', Validators.required],
-    email:        ['', [Validators.required, Validators.email]],
-    phone:        [''],
-    address:      [''],
+    contactInfo:  [''],
   });
 
   constructor(
@@ -56,11 +55,9 @@ export class AgentFormPage implements OnInit {
           this.form.patchValue({
             name:         a.name,
             producerCode: a.producerCode,
-            region:       a.region,
+            region:       a.region ?? '',
             status:       a.status,
-            email:        a.contactInfo?.email ?? '',
-            phone:        a.contactInfo?.phone ?? '',
-            address:      a.contactInfo?.address ?? '',
+            contactInfo:  a.contactInfo ?? '',
           });
           this.loading.set(false);
         },
@@ -72,12 +69,12 @@ export class AgentFormPage implements OnInit {
   save() {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const v = this.form.value;
-    const payload = {
+    const payload: Partial<Agent> = {
       name:         v.name!,
       producerCode: v.producerCode!,
-      region:       v.region!,
+      region:       v.region ?? '',
       status:       v.status as any,
-      contactInfo:  { email: v.email!, phone: v.phone ?? '', address: v.address ?? '' },
+      contactInfo:  v.contactInfo ?? '',
     };
     this.saving.set(true);
     const req = this.agentId()

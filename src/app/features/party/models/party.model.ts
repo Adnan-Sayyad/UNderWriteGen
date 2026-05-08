@@ -1,32 +1,24 @@
-export type AgentStatus = 'Active' | 'Inactive' | 'Suspended';
-export type PartyType = 'Individual' | 'Organization';
-export type Segment = 'Retail' | 'SME' | 'Corporate';
+// Backend uses AgentID/PartyID (with capital D) → ASP.NET Core camelCase → agentID/partyID
+export type AgentStatus = 'Active' | 'Inactive';
+export type PartyType   = 'Individual' | 'Organization';
+export type Segment     = 'Retail' | 'SME' | 'Corporate';
 export type PartyStatus = 'Active' | 'Inactive';
 
 export interface Agent {
-  agentId: string;
+  agentID: string;       // AGT-yyyyMMdd-XXXX
   name: string;
   producerCode: string;
-  contactInfo: ContactInfo;
-  region: string;
+  contactInfo: string | null;  // backend stores as plain string e.g. "Phone: +91..., Email: x@y"
+  region: string | null;
   status: AgentStatus;
 }
 
 export interface CustomerParty {
-  partyId: string;
+  partyID: string;             // PTY-yyyyMMdd-XXXX
   partyType: PartyType;
   name: string;
-  dobIncorporation: string;
-  contactInfo: ContactInfo;
+  dOBIncorporation: string | null;  // backend: DOBIncorporation → camelCase: dOBIncorporation
+  contactInfo: string | null;       // backend stores as plain string
   segment: Segment;
   status: PartyStatus;
-}
-
-export interface ContactInfo {
-  email: string;
-  phone: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  pinCode?: string;
 }

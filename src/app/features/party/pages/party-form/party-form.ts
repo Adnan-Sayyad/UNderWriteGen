@@ -14,10 +14,10 @@ import { CustomerParty } from '../../models/party.model';
   styleUrl: './party-form.css',
 })
 export class PartyFormPage implements OnInit {
-  readonly partyId   = signal<string | null>(null);
-  readonly loading   = signal(false);
-  readonly saving    = signal(false);
-  readonly alertMsg  = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
+  readonly partyId  = signal<string | null>(null);
+  readonly loading  = signal(false);
+  readonly saving   = signal(false);
+  readonly alertMsg = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -29,6 +29,7 @@ export class PartyFormPage implements OnInit {
   readonly segments   = ['Retail', 'SME', 'Corporate'];
   readonly statuses   = ['Active', 'Inactive'];
 
+  // inject() at field level avoids the "used before initialization" error
   private readonly fb = inject(FormBuilder);
 
   readonly form = this.fb.group({
@@ -36,13 +37,8 @@ export class PartyFormPage implements OnInit {
     partyType:        ['Individual', Validators.required],
     segment:          ['Retail', Validators.required],
     status:           ['Active', Validators.required],
-    dobIncorporation: [''],
-    email:            ['', [Validators.required, Validators.email]],
-    phone:            [''],
-    address:          [''],
-    city:             [''],
-    state:            [''],
-    pinCode:          [''],
+    dOBIncorporation: [''],   // matches backend field name DOBIncorporation → dOBIncorporation
+    contactInfo:      [''],   // backend stores as a plain string
   });
 
   constructor(
@@ -58,19 +54,17 @@ export class PartyFormPage implements OnInit {
       this.loading.set(true);
       this.svc.getParty(id).subscribe({
         next: (res: any) => {
-          const p: CustomerParty = res?.data ?? res;
+          const p: any = res?.data ?? res;
+          // Normalize DOB: backend may return dOBIncorporation or dobIncorporation
+          const rawDob: string = p.dOBIncorporation ?? p.dobIncorporation ?? p.DOBIncorporation ?? '';
+          const dobDate = rawDob ? rawDob.split('T')[0] : '';
           this.form.patchValue({
             name:             p.name,
             partyType:        p.partyType,
             segment:          p.segment,
             status:           p.status,
-            dobIncorporation: p.dobIncorporation ?? '',
-            email:            p.contactInfo?.email ?? '',
-            phone:            p.contactInfo?.phone ?? '',
-            address:          p.contactInfo?.address ?? '',
-            city:             p.contactInfo?.city ?? '',
-            state:            p.contactInfo?.state ?? '',
-            pinCode:          p.contactInfo?.pinCode ?? '',
+            dOBIncorporation: dobDate,
+            contactInfo:      p.contactInfo ?? '',
           });
           this.loading.set(false);
         },
@@ -82,20 +76,13 @@ export class PartyFormPage implements OnInit {
   save() {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const v = this.form.value;
-    const payload = {
+    const payload: Partial<CustomerParty> = {
       name:             v.name!,
       partyType:        v.partyType as any,
       segment:          v.segment as any,
       status:           v.status as any,
-      dobIncorporation: v.dobIncorporation ?? '',
-      contactInfo: {
-        email:   v.email!,
-        phone:   v.phone ?? '',
-        address: v.address ?? '',
-        city:    v.city ?? '',
-        state:   v.state ?? '',
-        pinCode: v.pinCode ?? '',
-      },
+      dOBIncorporation: v.dOBIncorporation || null,
+      contactInfo:      v.contactInfo || null,
     };
     this.saving.set(true);
     const req = this.partyId()

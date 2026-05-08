@@ -8,14 +8,16 @@
 
   @if (alertMsg()) {
     <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
-      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
-                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type === 'success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type === 'danger'"></i>
       {{ alertMsg()!.text }}
     </div>
   }
 
   @if (loading()) {
-    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>
+    <div class="text-center py-5 text-muted">
+      <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+    </div>
   } @else {
     <div class="card border-0 shadow-sm">
       <div class="card-body">
@@ -24,22 +26,21 @@
             <div class="col-md-6">
               <label class="form-label small fw-medium required-mark">Full Name</label>
               <input type="text" class="form-control form-control-sm" formControlName="name"
-                     [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched" />
+                     [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
+                     placeholder="e.g. John Smith" />
               <div class="invalid-feedback">Name is required.</div>
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-medium required-mark">Producer Code</label>
               <input type="text" class="form-control form-control-sm" formControlName="producerCode"
                      [class.is-invalid]="form.controls.producerCode.invalid && form.controls.producerCode.touched"
-                     placeholder="e.g. AGT-001" />
+                     placeholder="e.g. MUM-LIF-001" />
               <div class="invalid-feedback">Producer code is required.</div>
             </div>
             <div class="col-md-6">
-              <label class="form-label small fw-medium required-mark">Region</label>
+              <label class="form-label small fw-medium">Region</label>
               <input type="text" class="form-control form-control-sm" formControlName="region"
-                     [class.is-invalid]="form.controls.region.invalid && form.controls.region.touched"
-                     placeholder="e.g. North" />
-              <div class="invalid-feedback">Region is required.</div>
+                     placeholder="e.g. Mumbai, North India" />
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-medium">Status</label>
@@ -47,22 +48,10 @@
                 @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
               </select>
             </div>
-
-            <div class="col-12"><hr class="my-1" /><p class="small fw-semibold text-muted mb-0">Contact Information</p></div>
-
-            <div class="col-md-6">
-              <label class="form-label small fw-medium required-mark">Email</label>
-              <input type="email" class="form-control form-control-sm" formControlName="email"
-                     [class.is-invalid]="form.controls.email.invalid && form.controls.email.touched" />
-              <div class="invalid-feedback">Valid email is required.</div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label small fw-medium">Phone</label>
-              <input type="text" class="form-control form-control-sm" formControlName="phone" placeholder="+1 555 000 0000" />
-            </div>
             <div class="col-12">
-              <label class="form-label small fw-medium">Address</label>
-              <input type="text" class="form-control form-control-sm" formControlName="address" />
+              <label class="form-label small fw-medium">Contact Info</label>
+              <textarea class="form-control form-control-sm" rows="2" formControlName="contactInfo"
+                        placeholder="e.g. Phone: +91-9876543210, Email: agent@example.com"></textarea>
             </div>
           </div>
         </form>
