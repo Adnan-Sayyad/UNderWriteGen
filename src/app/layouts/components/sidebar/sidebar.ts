@@ -27,23 +27,26 @@ export class Sidebar {
     {
       title: 'Underwriting',
       items: [
-        { label: 'UW Workbench',    icon: 'bi-briefcase',         route: '/underwriting',  roles: ['Underwriter','Assistant'] },
-        { label: 'Risk & Evidence', icon: 'bi-shield-check',      route: '/risk',           roles: ['Underwriter','Assistant'] },
+        { label: 'UW Workbench',    icon: 'bi-briefcase',         route: '/underwriting',  roles: ['Underwriter','UWAssistant'] },
+        { label: 'Risk & Evidence', icon: 'bi-shield-check',      route: '/risk',           roles: ['Underwriter','UWAssistant'] },
         { label: 'Rules & Scoring', icon: 'bi-diagram-3',         route: '/rules',          roles: ['Underwriter','Admin'] },
       ],
     },
     {
       title: 'Pricing & Policy',
       items: [
-        { label: 'Pricing Console', icon: 'bi-calculator',        route: '/pricing',        roles: ['Pricing','Underwriter','Admin'] },
+        { label: 'Pricing Console', icon: 'bi-calculator',        route: '/pricing',        roles: ['PricingAnalyst','Underwriter','Admin'] },
         { label: 'Policy Desk',     icon: 'bi-journal-bookmark',  route: '/policy',         roles: ['Operations','Underwriter','Admin'] },
       ],
     },
     {
       title: 'Compliance',
       items: [
-        { label: 'Compliance & QA', icon: 'bi-clipboard2-check',  route: '/compliance',     roles: ['Compliance','Admin'] },
-        { label: 'Reports',         icon: 'bi-bar-chart-line',    route: '/reports',        roles: ['Compliance','Pricing','Admin','Underwriter'] },
+        { label: 'Checklists',        icon: 'bi-clipboard2-check',   route: '/compliance/checklists',         roles: ['Compliance','Admin'] },
+        { label: 'Authority Breaches',icon: 'bi-shield-exclamation', route: '/compliance/authority-breaches', roles: ['Compliance','Admin'] },
+        { label: 'Exception Log',     icon: 'bi-bug',                route: '/compliance/exceptions',         roles: ['Compliance','Admin'] },
+        { label: 'Audit Log',         icon: 'bi-journal-text',       route: '/compliance/audit-log',          roles: ['Compliance','Admin'] },
+        { label: 'Reports',           icon: 'bi-bar-chart-line',     route: '/reports',                       roles: ['Compliance','PricingAnalyst','Admin','Underwriter'] },
       ],
     },
     {

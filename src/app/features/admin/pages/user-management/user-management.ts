@@ -10,7 +10,17 @@ import { AuthService } from '../../../../core/auth/auth.service';
 
 type ModalMode = 'create' | 'edit' | 'status' | 'assign-role' | null;
 
-const ROLES = ['Agent','Underwriter','Assistant','Pricing','Compliance','Operations','Admin'];
+const ROLES = ['Agent','Underwriter','UWAssistant','PricingAnalyst','Compliance','Operations','Admin'];
+
+const ROLE_DESC: Record<string, string> = {
+  Agent:         'Handles submission intake and client contact',
+  Underwriter:   'Reviews risk and makes underwriting decisions',
+  UWAssistant:   'Supports underwriters with workbench tasks',
+  PricingAnalyst:'Manages pricing parameters and quotes',
+  Compliance:    'Monitors compliance, audits and exceptions',
+  Operations:    'Manages policy issuance and operations',
+  Admin:         'Full system access and user management',
+};
 const STATUSES: ('Active'|'Locked'|'Disabled')[] = ['Active','Locked','Disabled'];
 
 @Component({
@@ -22,6 +32,7 @@ const STATUSES: ('Active'|'Locked'|'Disabled')[] = ['Active','Locked','Disabled'
 })
 export class UserManagementPage implements OnInit {
   readonly roles    = ROLES;
+  readonly roleDesc = ROLE_DESC;
   readonly statuses = STATUSES;
 
   readonly users      = signal<UserDto[]>([]);
@@ -33,6 +44,10 @@ export class UserManagementPage implements OnInit {
   readonly roleFilter = signal('');
   readonly alertMsg   = signal<{ type: 'success'|'danger'; text: string } | null>(null);
 
+  // Pagination
+  readonly currentPage = signal(1);
+  readonly pageSize    = 10;
+
   readonly filtered = computed(() => {
     const q    = this.searchTerm().toLowerCase();
     const role = this.roleFilter();
@@ -42,25 +57,58 @@ export class UserManagementPage implements OnInit {
     );
   });
 
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
+
+  readonly paged = computed(() => {
+    const page = Math.min(this.currentPage(), this.totalPages());
+    const start = (page - 1) * this.pageSize;
+    return this.filtered().slice(start, start + this.pageSize);
+  });
+
+  readonly pageNumbers = computed(() =>
+    Array.from({ length: this.totalPages() }, (_, i) => i + 1)
+  );
+
+  setSearch(val: string): void  { this.searchTerm.set(val); this.currentPage.set(1); }
+  setRoleFilter(val: string): void { this.roleFilter.set(val); this.currentPage.set(1); }
+  prevPage(): void { if (this.currentPage() > 1) this.currentPage.update(p => p - 1); }
+  nextPage(): void { if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1); }
+  goToPage(n: number): void { this.currentPage.set(n); }
+
   readonly breadcrumbs = [{ label: 'Home', route: '/' }, { label: 'Admin', route: '/admin' }, { label: 'User Management' }];
 
   private readonly fb = inject(FormBuilder);
 
+  readonly showCreatePass = signal(false);
+
+  private get createPwd(): string { return this.createForm.controls.password.value ?? ''; }
+  hasCreateLength():  boolean { return this.createPwd.length >= 8 && this.createPwd.length <= 20; }
+  hasCreateUpper():   boolean { return /[A-Z]/.test(this.createPwd); }
+  hasCreateLower():   boolean { return /[a-z]/.test(this.createPwd); }
+  hasCreateDigit():   boolean { return /\d/.test(this.createPwd); }
+  hasCreateSymbol():  boolean { return /[\W_]/.test(this.createPwd); }
+
   readonly createForm = this.fb.group({
-    firstName:   ['', [Validators.required, Validators.maxLength(100)]],
-    lastName:    ['', [Validators.required, Validators.maxLength(100)]],
-    email:       ['', [Validators.required, Validators.email]],
-    phoneNumber: [''],
-    password:    ['', [Validators.required, Validators.minLength(8),
+    firstName:   ['', [Validators.required, Validators.minLength(2), Validators.maxLength(20),
+                       Validators.pattern(/^[a-zA-Z]+$/)]],
+    lastName:    ['', [Validators.required, Validators.minLength(1), Validators.maxLength(20),
+                       Validators.pattern(/^[a-zA-Z]+$/)]],
+    email:       ['', [Validators.required,
+                       Validators.pattern(/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/)]],
+    phoneNumber: ['', [Validators.pattern(/^[6-9]\d{9}$/)]],
+    password:    ['', [Validators.required, Validators.minLength(8), Validators.maxLength(20),
                        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/)]],
     role:        ['Agent', Validators.required],
   });
 
   readonly editForm = this.fb.group({
-    firstName:   ['', [Validators.required, Validators.maxLength(100)]],
-    lastName:    ['', [Validators.required, Validators.maxLength(100)]],
-    email:       ['', [Validators.required, Validators.email]],
-    phoneNumber: [''],
+    firstName:   ['', [Validators.required, Validators.minLength(2), Validators.maxLength(20),
+                       Validators.pattern(/^[a-zA-Z]+$/)]],
+    lastName:    ['', [Validators.required, Validators.minLength(1), Validators.maxLength(20),
+                       Validators.pattern(/^[a-zA-Z]+$/)]],
+    email:       ['', [Validators.required,
+                       Validators.pattern(/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/)]],
+    phoneNumber: ['', [Validators.pattern(/^[6-9]\d{9}$/)]],
   });
 
   readonly statusForm = this.fb.group({
@@ -90,7 +138,13 @@ export class UserManagementPage implements OnInit {
 
   openCreate(): void {
     this.createForm.reset({ role: 'Agent' });
+    this.showCreatePass.set(false);
     this.modalMode.set('create');
+  }
+
+  resetCreate(): void {
+    this.createForm.reset({ role: 'Agent' });
+    this.showCreatePass.set(false);
   }
 
   openEdit(u: UserDto): void {
@@ -104,7 +158,10 @@ export class UserManagementPage implements OnInit {
 
   openAssignRole(u: UserDto): void {
     this.selected.set(u);
-    this.assignRoleForm.patchValue({ role: u.role || 'Agent' });
+    // role may be a comma-separated list — pick the first recognised role
+    const current = (u.role ?? '').split(',').map(r => r.trim())
+                      .find(r => ROLES.includes(r)) ?? 'Agent';
+    this.assignRoleForm.patchValue({ role: current });
     this.modalMode.set('assign-role');
   }
 
@@ -198,7 +255,7 @@ export class UserManagementPage implements OnInit {
   }
 
   deleteUser(u: UserDto): void {
-    if (!confirm(`Delete user "${u.firstName} ${u.lastName}"? This cannot be undone.`)) return;
+    if (!confirm(`User "${u.firstName} ${u.lastName}" is going to be deleted.`)) return;
     this.iam.deleteUser(u.id, this.adminId).subscribe({
       next: () => { this.loadUsers(); this.flash('success', 'User deleted.'); },
       error: err => this.flash('danger', err?.error?.message ?? 'Delete failed.'),

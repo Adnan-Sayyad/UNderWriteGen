@@ -26,12 +26,12 @@
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-transparent"><i class="bi bi-search text-muted"></i></span>
             <input type="text" class="form-control" placeholder="Search by name or email…"
-                   [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" />
+                   [value]="searchTerm()" (input)="setSearch($any($event.target).value)" />
           </div>
         </div>
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="roleFilter()" (change)="roleFilter.set($any($event.target).value)">
+                  [value]="roleFilter()" (change)="setRoleFilter($any($event.target).value)">
             <option value="">All Roles</option>
             @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
           </select>
@@ -68,7 +68,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (u of filtered(); track u.id) {
+              @for (u of paged(); track u.id) {
                 <tr>
                   <td>
                     <div class="d-flex align-items-center gap-2">
@@ -105,6 +105,34 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top">
+            <small class="text-muted">
+              Showing {{ (currentPage() - 1) * pageSize + 1 }}–{{ currentPage() * pageSize > filtered().length ? filtered().length : currentPage() * pageSize }} of {{ filtered().length }} users
+            </small>
+            <nav aria-label="User list pagination">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="currentPage() === 1">
+                  <button class="page-link" (click)="prevPage()" [disabled]="currentPage() === 1" title="Previous page">
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                </li>
+                @for (p of pageNumbers(); track p) {
+                  <li class="page-item" [class.active]="p === currentPage()">
+                    <button class="page-link" (click)="goToPage(p)">{{ p }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+                  <button class="page-link" (click)="nextPage()" [disabled]="currentPage() === totalPages()" title="Next page">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        }
       }
     </div>
   </div>
@@ -126,37 +154,85 @@
             <input type="text" class="form-control form-control-sm"
                    [class.is-invalid]="createForm.controls.firstName.invalid && createForm.controls.firstName.touched"
                    formControlName="firstName" placeholder="First name" />
-            <div class="invalid-feedback">Required.</div>
+            @if (createForm.controls.firstName.invalid && createForm.controls.firstName.touched) {
+              <div class="invalid-feedback d-block">
+                @if (createForm.controls.firstName.errors?.['required'])       { First name is required. }
+                @else if (createForm.controls.firstName.errors?.['minlength']) { Min 2 characters. }
+                @else if (createForm.controls.firstName.errors?.['maxlength']) { Max 20 characters. }
+                @else { Only alphabets are allowed. }
+              </div>
+            }
           </div>
           <div class="col-6">
             <label class="form-label small fw-medium required-mark">Last Name</label>
             <input type="text" class="form-control form-control-sm"
                    [class.is-invalid]="createForm.controls.lastName.invalid && createForm.controls.lastName.touched"
                    formControlName="lastName" placeholder="Last name" />
-            <div class="invalid-feedback">Required.</div>
+            @if (createForm.controls.lastName.invalid && createForm.controls.lastName.touched) {
+              <div class="invalid-feedback d-block">
+                @if (createForm.controls.lastName.errors?.['required'])       { Last name is required. }
+                @else if (createForm.controls.lastName.errors?.['maxlength']) { Max 20 characters. }
+                @else { Only alphabets are allowed. }
+              </div>
+            }
           </div>
           <div class="col-12">
             <label class="form-label small fw-medium required-mark">Email</label>
             <input type="email" class="form-control form-control-sm"
                    [class.is-invalid]="createForm.controls.email.invalid && createForm.controls.email.touched"
-                   formControlName="email" placeholder="user@company.com" />
-            <div class="invalid-feedback">Valid email required.</div>
+                   formControlName="email" placeholder="user@domain.com" />
+            @if (createForm.controls.email.invalid && createForm.controls.email.touched) {
+              <div class="invalid-feedback d-block">
+                @if (createForm.controls.email.errors?.['required']) { Email is required. }
+                @else { Enter a valid email (e.g. user&#64;domain.com). }
+              </div>
+            }
           </div>
           <div class="col-12">
-            <label class="form-label small fw-medium">Phone Number</label>
+            <label class="form-label small fw-medium">Phone Number <span class="text-muted fw-normal">(optional)</span></label>
             <input type="tel" class="form-control form-control-sm"
-                   formControlName="phoneNumber" placeholder="+1 555 000 0000" />
+                   [class.is-invalid]="createForm.controls.phoneNumber.invalid && createForm.controls.phoneNumber.touched"
+                   formControlName="phoneNumber" placeholder="9876543210" />
+            @if (createForm.controls.phoneNumber.invalid && createForm.controls.phoneNumber.touched) {
+              <div class="invalid-feedback d-block">10 digits starting with 6, 7, 8 or 9.</div>
+            }
           </div>
           <div class="col-12">
             <label class="form-label small fw-medium required-mark">Password</label>
-            <input type="password" class="form-control form-control-sm"
-                   [class.is-invalid]="createForm.controls.password.invalid && createForm.controls.password.touched"
-                   formControlName="password" placeholder="Min 8 chars, upper/lower/digit/symbol" />
+            <div class="input-group input-group-sm">
+              <input [type]="showCreatePass() ? 'text' : 'password'" class="form-control form-control-sm"
+                     [class.is-invalid]="createForm.controls.password.invalid && createForm.controls.password.touched"
+                     formControlName="password" placeholder="8–20 chars, upper/lower/digit/symbol" />
+              <button type="button" class="input-group-text bg-light"
+                      (click)="showCreatePass.set(!showCreatePass())" tabindex="-1">
+                <i class="bi" [class.bi-eye]="!showCreatePass()" [class.bi-eye-slash]="showCreatePass()"></i>
+              </button>
+            </div>
             @if (createForm.controls.password.invalid && createForm.controls.password.touched) {
               <div class="invalid-feedback d-block">
-                @if (createForm.controls.password.errors?.['required']) { Password required. }
+                @if (createForm.controls.password.errors?.['required'])   { Password required. }
                 @else if (createForm.controls.password.errors?.['minlength']) { Min 8 characters. }
+                @else if (createForm.controls.password.errors?.['maxlength']) { Max 20 characters. }
                 @else { Must include uppercase, lowercase, digit and symbol. }
+              </div>
+            }
+            @if (createForm.controls.password.value) {
+              <div class="d-flex gap-2 flex-wrap mt-1" style="font-size:.75rem">
+                <span [class.text-success]="hasCreateLength()" [class.text-muted]="!hasCreateLength()">
+                  <i class="bi" [class.bi-check-circle-fill]="hasCreateLength()" [class.bi-circle]="!hasCreateLength()"></i> 8–20 chars
+                </span>
+                <span [class.text-success]="hasCreateUpper()" [class.text-muted]="!hasCreateUpper()">
+                  <i class="bi" [class.bi-check-circle-fill]="hasCreateUpper()" [class.bi-circle]="!hasCreateUpper()"></i> Uppercase
+                </span>
+                <span [class.text-success]="hasCreateLower()" [class.text-muted]="!hasCreateLower()">
+                  <i class="bi" [class.bi-check-circle-fill]="hasCreateLower()" [class.bi-circle]="!hasCreateLower()"></i> Lowercase
+                </span>
+                <span [class.text-success]="hasCreateDigit()" [class.text-muted]="!hasCreateDigit()">
+                  <i class="bi" [class.bi-check-circle-fill]="hasCreateDigit()" [class.bi-circle]="!hasCreateDigit()"></i> Number
+                </span>
+                <span [class.text-success]="hasCreateSymbol()" [class.text-muted]="!hasCreateSymbol()">
+                  <i class="bi" [class.bi-check-circle-fill]="hasCreateSymbol()" [class.bi-circle]="!hasCreateSymbol()"></i> Symbol
+                </span>
               </div>
             }
           </div>
@@ -171,7 +247,10 @@
     </div>
     <div class="modal-panel-footer">
       <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
-      <button class="btn btn-sm btn-primary" (click)="saveCreate()" [disabled]="saving()">
+      <button class="btn btn-sm btn-outline-warning" (click)="resetCreate()" [disabled]="saving()" title="Clear all fields">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+      </button>
+      <button class="btn btn-sm btn-primary" (click)="saveCreate()" [disabled]="saving() || createForm.invalid">
         @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
         Create User
       </button>
@@ -195,26 +274,48 @@
             <input type="text" class="form-control form-control-sm"
                    [class.is-invalid]="editForm.controls.firstName.invalid && editForm.controls.firstName.touched"
                    formControlName="firstName" />
-            <div class="invalid-feedback">Required.</div>
+            @if (editForm.controls.firstName.invalid && editForm.controls.firstName.touched) {
+              <div class="invalid-feedback d-block">
+                @if (editForm.controls.firstName.errors?.['required'])       { First name is required. }
+                @else if (editForm.controls.firstName.errors?.['minlength']) { Min 2 characters. }
+                @else if (editForm.controls.firstName.errors?.['maxlength']) { Max 20 characters. }
+                @else { Only alphabets are allowed. }
+              </div>
+            }
           </div>
           <div class="col-6">
             <label class="form-label small fw-medium required-mark">Last Name</label>
             <input type="text" class="form-control form-control-sm"
                    [class.is-invalid]="editForm.controls.lastName.invalid && editForm.controls.lastName.touched"
                    formControlName="lastName" />
-            <div class="invalid-feedback">Required.</div>
+            @if (editForm.controls.lastName.invalid && editForm.controls.lastName.touched) {
+              <div class="invalid-feedback d-block">
+                @if (editForm.controls.lastName.errors?.['required'])       { Last name is required. }
+                @else if (editForm.controls.lastName.errors?.['maxlength']) { Max 20 characters. }
+                @else { Only alphabets are allowed. }
+              </div>
+            }
           </div>
           <div class="col-12">
             <label class="form-label small fw-medium required-mark">Email</label>
             <input type="email" class="form-control form-control-sm"
                    [class.is-invalid]="editForm.controls.email.invalid && editForm.controls.email.touched"
-                   formControlName="email" />
-            <div class="invalid-feedback">Valid email required.</div>
+                   formControlName="email" placeholder="user@domain.com" />
+            @if (editForm.controls.email.invalid && editForm.controls.email.touched) {
+              <div class="invalid-feedback d-block">
+                @if (editForm.controls.email.errors?.['required']) { Email is required. }
+                @else { Enter a valid email (e.g. user&#64;domain.com). }
+              </div>
+            }
           </div>
           <div class="col-12">
-            <label class="form-label small fw-medium">Phone Number</label>
+            <label class="form-label small fw-medium">Phone Number <span class="text-muted fw-normal">(optional)</span></label>
             <input type="tel" class="form-control form-control-sm"
-                   formControlName="phoneNumber" placeholder="+1 555 000 0000" />
+                   [class.is-invalid]="editForm.controls.phoneNumber.invalid && editForm.controls.phoneNumber.touched"
+                   formControlName="phoneNumber" placeholder="9876543210" />
+            @if (editForm.controls.phoneNumber.invalid && editForm.controls.phoneNumber.touched) {
+              <div class="invalid-feedback d-block">10 digits starting with 6, 7, 8 or 9.</div>
+            }
           </div>
         </div>
       </form>
@@ -256,6 +357,12 @@
         </div>
       </div>
 
+      <!-- Re-login notice -->
+      <div class="alert alert-info py-2 small d-flex gap-2 align-items-center">
+        <i class="bi bi-info-circle-fill"></i>
+        The user will be required to <strong>log out and back in</strong> for the new role to take effect.
+      </div>
+
       <!-- Role picker -->
       <form [formGroup]="assignRoleForm">
         <label class="form-label fw-medium required-mark">Select New Role</label>
@@ -269,6 +376,7 @@
                      [value]="r" formControlName="role" />
               <label class="form-check-label w-100 ms-1" [for]="'role-'+r">
                 <span class="fw-medium">{{ r }}</span>
+                <small class="d-block text-muted" style="font-size:.72rem">{{ roleDesc[r] }}</small>
               </label>
             </div>
           }
