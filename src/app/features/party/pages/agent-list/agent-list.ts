@@ -6,6 +6,11 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { PartyApiService } from '../../services/party-api.service';
 import { Agent, AgentStatus } from '../../models/party.model';
+import {
+  noDigitsValidator,
+  smartContactInfoValidator,
+  extractApiErrors,
+} from '../../../../shared/validators/custom-validators';
 
 type ModalMode = 'create' | 'edit' | null;
 const STATUSES: AgentStatus[] = ['Active', 'Inactive'];
@@ -46,11 +51,25 @@ export class AgentListPage implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   readonly form = this.fb.group({
-    name:        ['', Validators.required],
-    producerCode:['', Validators.required],
-    region:      [''],
-    contactInfo: [''],
-    status:      ['Active' as AgentStatus, Validators.required],
+    name: ['', [
+      Validators.required,
+      Validators.minLength(2),
+      Validators.maxLength(150),
+      noDigitsValidator(),
+      Validators.pattern(/^[a-zA-Z\s\-'\.]+$/),
+    ]],
+    producerCode: ['', [
+      Validators.required,
+      Validators.minLength(3),
+      Validators.maxLength(50),
+      Validators.pattern(/^[a-zA-Z0-9\-_]+$/),
+    ]],
+    region: ['', [
+      Validators.maxLength(100),
+      Validators.pattern(/^[a-zA-Z\s\-]*$/),
+    ]],
+    contactInfo: ['', [smartContactInfoValidator(), Validators.maxLength(500)]],
+    status: ['Active' as AgentStatus, Validators.required],
   });
 
   constructor(private svc: PartyApiService) {}
@@ -78,11 +97,11 @@ export class AgentListPage implements OnInit {
   openEdit(a: Agent): void {
     this.selected.set(a);
     this.form.patchValue({
-      name: a.name,
+      name:         a.name,
       producerCode: a.producerCode,
-      region: a.region ?? '',
-      contactInfo: a.contactInfo ?? '',
-      status: a.status,
+      region:       a.region ?? '',
+      contactInfo:  a.contactInfo ?? '',
+      status:       a.status,
     });
     this.modalMode.set('edit');
   }
@@ -94,11 +113,11 @@ export class AgentListPage implements OnInit {
     this.saving.set(true);
     const v = this.form.value;
     const payload: Partial<Agent> = {
-      name: v.name!,
+      name:         v.name!,
       producerCode: v.producerCode!,
-      region: v.region ?? '',
-      contactInfo: v.contactInfo ?? '',
-      status: v.status as AgentStatus,
+      region:       v.region ?? '',
+      contactInfo:  v.contactInfo || null,
+      status:       v.status as AgentStatus,
     };
     const req = this.modalMode() === 'edit'
       ? this.svc.updateAgent(this.selected()!.agentID, payload)
@@ -112,7 +131,7 @@ export class AgentListPage implements OnInit {
       },
       error: err => {
         this.saving.set(false);
-        this.flash('danger', err?.error?.message ?? 'Save failed. Please try again.');
+        this.flash('danger', extractApiErrors(err));
       },
     });
   }
@@ -130,6 +149,6 @@ export class AgentListPage implements OnInit {
 
   private flash(type: 'success' | 'danger', text: string) {
     this.alertMsg.set({ type, text });
-    setTimeout(() => this.alertMsg.set(null), 4000);
+    setTimeout(() => this.alertMsg.set(null), 5000);
   }
 }

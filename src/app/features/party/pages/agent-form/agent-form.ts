@@ -5,6 +5,11 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PartyApiService } from '../../services/party-api.service';
 import { Agent } from '../../models/party.model';
+import {
+  noDigitsValidator,
+  smartContactInfoValidator,
+  extractApiErrors,
+} from '../../../../shared/validators/custom-validators';
 
 @Component({
   selector: 'app-agent-form',
@@ -27,15 +32,28 @@ export class AgentFormPage implements OnInit {
 
   readonly statuses = ['Active', 'Inactive'];
 
-  // inject() at field level avoids the "used before initialization" error
   private readonly fb = inject(FormBuilder);
 
   readonly form = this.fb.group({
-    name:         ['', Validators.required],
-    producerCode: ['', Validators.required],
-    region:       [''],
-    status:       ['Active', Validators.required],
-    contactInfo:  [''],
+    name: ['', [
+      Validators.required,
+      Validators.minLength(2),
+      Validators.maxLength(150),
+      noDigitsValidator(),
+      Validators.pattern(/^[a-zA-Z\s\-'\.]+$/),
+    ]],
+    producerCode: ['', [
+      Validators.required,
+      Validators.minLength(3),
+      Validators.maxLength(50),
+      Validators.pattern(/^[a-zA-Z0-9\-_]+$/),
+    ]],
+    region: ['', [
+      Validators.maxLength(100),
+      Validators.pattern(/^[a-zA-Z\s\-]*$/),
+    ]],
+    status: ['Active', Validators.required],
+    contactInfo: ['', [smartContactInfoValidator(), Validators.maxLength(500)]],
   });
 
   constructor(
@@ -74,7 +92,7 @@ export class AgentFormPage implements OnInit {
       producerCode: v.producerCode!,
       region:       v.region ?? '',
       status:       v.status as any,
-      contactInfo:  v.contactInfo ?? '',
+      contactInfo:  v.contactInfo || null,
     };
     this.saving.set(true);
     const req = this.agentId()
@@ -82,7 +100,7 @@ export class AgentFormPage implements OnInit {
       : this.svc.createAgent(payload);
     req.subscribe({
       next: () => { this.saving.set(false); this.router.navigate(['/party/agents']); },
-      error: () => { this.saving.set(false); this.flash('danger', 'Save failed. Please try again.'); },
+      error: err => { this.saving.set(false); this.flash('danger', extractApiErrors(err)); },
     });
   }
 
@@ -90,6 +108,6 @@ export class AgentFormPage implements OnInit {
 
   private flash(type: 'success' | 'danger', text: string) {
     this.alertMsg.set({ type, text });
-    setTimeout(() => this.alertMsg.set(null), 4000);
+    setTimeout(() => this.alertMsg.set(null), 5000);
   }
 }

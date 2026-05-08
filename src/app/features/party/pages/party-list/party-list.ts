@@ -7,9 +7,15 @@ import { StatusBadge } from '../../../../shared/components/status-badge/status-b
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { PartyApiService } from '../../services/party-api.service';
 import { CustomerParty, PartyType, Segment, PartyStatus } from '../../models/party.model';
+import {
+  noDigitsValidator,
+  smartContactInfoValidator,
+  validDOBValidator,
+  extractApiErrors,
+} from '../../../../shared/validators/custom-validators';
 
 type ModalMode = 'create' | 'edit' | null;
-const PARTY_TYPES: PartyType[] = ['Individual', 'Organization'];
+const PARTY_TYPES: PartyType[] = ['Individual', 'Corporation'];  // backend: 'Corporation'
 const SEGMENTS: Segment[]       = ['Retail', 'SME', 'Corporate'];
 
 @Component({
@@ -48,11 +54,17 @@ export class PartyListPage implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   readonly form = this.fb.group({
-    name:             ['', Validators.required],
+    name: ['', [
+      Validators.required,
+      Validators.minLength(2),
+      Validators.maxLength(200),
+      noDigitsValidator(),
+      Validators.pattern(/^[a-zA-Z\s\-'\.&,]+$/),
+    ]],
     partyType:        ['Individual' as PartyType, Validators.required],
-    segment:          ['Retail' as Segment, Validators.required],
-    dOBIncorporation: [''],
-    contactInfo:      [''],
+    segment:          ['Retail' as Segment,       Validators.required],
+    dOBIncorporation: ['', [validDOBValidator()]],
+    contactInfo:      ['', [smartContactInfoValidator(), Validators.maxLength(500)]],
   });
 
   constructor(private svc: PartyApiService) {}
@@ -65,8 +77,6 @@ export class PartyListPage implements OnInit {
       next: res => {
         const d: any = res;
         const raw: any[] = d?.data ?? d?.content ?? [];
-        // Normalize DOB field: ASP.NET Core / Newtonsoft may serialize
-        // DOBIncorporation as dOBIncorporation OR dobIncorporation
         this.parties.set(raw.map((p: any) => ({
           ...p,
           dOBIncorporation: p.dOBIncorporation ?? p.dobIncorporation ?? p.DOBIncorporation ?? null,
@@ -85,15 +95,14 @@ export class PartyListPage implements OnInit {
 
   openEdit(p: CustomerParty): void {
     this.selected.set(p);
-    const rawDob: string = (p as any).dOBIncorporation ?? (p as any).dobIncorporation ?? (p as any).DOBIncorporation ?? '';
-    // date input expects YYYY-MM-DD — strip the time portion if present
+    const rawDob: string = (p as any).dOBIncorporation ?? (p as any).dobIncorporation ?? '';
     const dobDate = rawDob ? rawDob.split('T')[0] : '';
     this.form.patchValue({
-      name: p.name,
-      partyType: p.partyType,
-      segment: p.segment,
+      name:             p.name,
+      partyType:        p.partyType,
+      segment:          p.segment,
       dOBIncorporation: dobDate,
-      contactInfo: p.contactInfo ?? '',
+      contactInfo:      p.contactInfo ?? '',
     });
     this.modalMode.set('edit');
   }
@@ -105,11 +114,11 @@ export class PartyListPage implements OnInit {
     this.saving.set(true);
     const v = this.form.value;
     const payload: Partial<CustomerParty> = {
-      name: v.name!,
-      partyType: v.partyType as PartyType,
-      segment: v.segment as Segment,
+      name:             v.name!,
+      partyType:        v.partyType as PartyType,
+      segment:          v.segment as Segment,
       dOBIncorporation: v.dOBIncorporation || null,
-      contactInfo: v.contactInfo || null,
+      contactInfo:      v.contactInfo || null,
     };
     const req = this.modalMode() === 'edit'
       ? this.svc.updateParty(this.selected()!.partyID, payload)
@@ -123,7 +132,7 @@ export class PartyListPage implements OnInit {
       },
       error: err => {
         this.saving.set(false);
-        this.flash('danger', err?.error?.message ?? 'Save failed. Please try again.');
+        this.flash('danger', extractApiErrors(err));
       },
     });
   }
@@ -141,6 +150,6 @@ export class PartyListPage implements OnInit {
 
   private flash(type: 'success' | 'danger', text: string) {
     this.alertMsg.set({ type, text });
-    setTimeout(() => this.alertMsg.set(null), 4000);
+    setTimeout(() => this.alertMsg.set(null), 5000);
   }
 }

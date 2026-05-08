@@ -40,6 +40,11 @@ export class NotificationApiService {
     return this.http.post<ApiResponse<Notification>>(this.base, payload);
   }
 
+  // POST /api/notifications/broadcast
+  broadcast(payload: { recipientGroup: string; message: string; category: string }) {
+    return this.http.post<ApiResponse<{ sentCount: number }>>(`${this.base}/broadcast`, payload);
+  }
+
   // DELETE /api/notifications/{id}
   delete(id: string) {
     return this.http.delete<ApiResponse<void>>(`${this.base}/${id}`);

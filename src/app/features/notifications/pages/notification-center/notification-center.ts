@@ -30,8 +30,19 @@ export class NotificationCenterPage implements OnInit {
   readonly showCreate    = signal(false);
   readonly alertMsg      = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly searchQuery   = signal('');
+  readonly sendMode      = signal<'individual' | 'group'>('individual');
 
   readonly categories = CATEGORIES;
+  readonly roleGroups = [
+    { label: 'All Agents',         value: 'Agent' },
+    { label: 'All Underwriters',   value: 'Underwriter' },
+    { label: 'All UW Managers',    value: 'UWManager' },
+    { label: 'All UW Assistants',  value: 'UWAssistant' },
+    { label: 'All Compliance',     value: 'Compliance' },
+    { label: 'All Operations',     value: 'Operations' },
+    { label: 'All Admins',         value: 'Admin' },
+    { label: 'Everyone',           value: 'Everyone' },
+  ];
 
   private readonly authSvc = inject(AuthService);
   private readonly fb      = inject(FormBuilder);
@@ -93,6 +104,7 @@ export class NotificationCenterPage implements OnInit {
   // fb must be declared before form to avoid init-order errors
   readonly form = this.fb.group({
     recipientEmail: ['', [Validators.required, Validators.email]],
+    recipientGroup: ['Agent'],
     message:        ['', Validators.required],
     category:       ['Referral' as NotificationCategory, Validators.required],
   });
@@ -138,32 +150,64 @@ export class NotificationCenterPage implements OnInit {
   }
 
   openCreate(): void {
-    this.form.reset({ category: 'Referral' });
+    this.sendMode.set('individual');
+    this.form.reset({ category: 'Referral', recipientGroup: 'Agent' });
     this.showCreate.set(true);
+  }
+
+  setSendMode(mode: 'individual' | 'group'): void {
+    this.sendMode.set(mode);
   }
 
   closeCreate(): void { this.showCreate.set(false); }
 
   saveNotification(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    this.saving.set(true);
     const v = this.form.value;
-    this.svc.create({
-      recipientEmail: v.recipientEmail!,
-      message:        v.message!,
-      category:       v.category!,
-    }).subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.closeCreate();
-        this.load();
-        this.flash('success', 'Notification sent successfully.');
-      },
-      error: err => {
-        this.saving.set(false);
-        this.flash('danger', err?.error?.message ?? 'Failed to send notification.');
-      },
-    });
+    const mode = this.sendMode();
+
+    // Validate: in individual mode, email is required; in group mode, only message+category
+    if (mode === 'individual') {
+      if (!v.recipientEmail || !v.message || !v.category) {
+        this.form.markAllAsTouched();
+        return;
+      }
+    } else {
+      if (!v.message || !v.category) {
+        this.form.markAllAsTouched();
+        return;
+      }
+    }
+
+    this.saving.set(true);
+
+    const onSuccess = (res: any) => {
+      this.saving.set(false);
+      this.closeCreate();
+      this.load();
+      const msg = mode === 'group'
+        ? `Notification broadcast to ${res?.data?.sentCount ?? 'all'} user(s).`
+        : 'Notification sent successfully.';
+      this.flash('success', msg);
+    };
+
+    const onError = (err: any) => {
+      this.saving.set(false);
+      this.flash('danger', err?.error?.message ?? 'Failed to send notification.');
+    };
+
+    if (mode === 'individual') {
+      this.svc.create({
+        recipientEmail: v.recipientEmail!,
+        message:        v.message!,
+        category:       v.category!,
+      }).subscribe({ next: onSuccess, error: onError });
+    } else {
+      this.svc.broadcast({
+        recipientGroup: v.recipientGroup!,
+        message:        v.message!,
+        category:       v.category!,
+      }).subscribe({ next: onSuccess, error: onError });
+    }
   }
 
   setFilter(v: string): void { this.filterStatus.set(v as ViewFilter); }

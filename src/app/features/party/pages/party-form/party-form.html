@@ -23,40 +23,94 @@
       <div class="card-body">
         <form [formGroup]="form" novalidate>
           <div class="row g-3">
+
+            <!-- Name -->
             <div class="col-md-8">
               <label class="form-label small fw-medium required-mark">Full Name / Company Name</label>
               <input type="text" class="form-control form-control-sm" formControlName="name"
                      [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
                      placeholder="e.g. Acme Corp / Jane Doe" />
-              <div class="invalid-feedback">Name is required.</div>
+              @if (form.controls.name.touched && form.controls.name.errors) {
+                <div class="invalid-feedback d-block">
+                  @if (form.controls.name.errors['required'])       { Name is required. }
+                  @else if (form.controls.name.errors['minlength']) { Name must be at least 2 characters. }
+                  @else if (form.controls.name.errors['hasDigits']) { Name must not contain numbers. }
+                  @else if (form.controls.name.errors['pattern'])   { Name may only contain letters, spaces, hyphens, apostrophes, periods, &amp; and commas. }
+                  @else if (form.controls.name.errors['maxlength']) { Name must not exceed 200 characters. }
+                </div>
+              }
             </div>
+
+            <!-- Status -->
             <div class="col-md-4">
               <label class="form-label small fw-medium">Status</label>
               <select class="form-select form-select-sm" formControlName="status">
                 @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
               </select>
             </div>
+
+            <!-- Party Type -->
             <div class="col-md-4">
               <label class="form-label small fw-medium required-mark">Party Type</label>
-              <select class="form-select form-select-sm" formControlName="partyType">
+              <select class="form-select form-select-sm" formControlName="partyType"
+                      [class.is-invalid]="form.controls.partyType.invalid && form.controls.partyType.touched">
                 @for (t of partyTypes; track t) { <option [value]="t">{{ t }}</option> }
               </select>
+              @if (form.controls.partyType.touched && form.controls.partyType.errors) {
+                <div class="invalid-feedback d-block">Party type is required.</div>
+              }
             </div>
+
+            <!-- Segment -->
             <div class="col-md-4">
               <label class="form-label small fw-medium required-mark">Segment</label>
-              <select class="form-select form-select-sm" formControlName="segment">
+              <select class="form-select form-select-sm" formControlName="segment"
+                      [class.is-invalid]="form.controls.segment.invalid && form.controls.segment.touched">
                 @for (s of segments; track s) { <option [value]="s">{{ s }}</option> }
               </select>
+              @if (form.controls.segment.touched && form.controls.segment.errors) {
+                <div class="invalid-feedback d-block">Segment is required.</div>
+              }
             </div>
+
+            <!-- DOB / Incorporation Date -->
             <div class="col-md-4">
               <label class="form-label small fw-medium">DOB / Incorporation Date</label>
-              <input type="date" class="form-control form-control-sm" formControlName="dOBIncorporation" />
+              <input type="date" class="form-control form-control-sm" formControlName="dOBIncorporation"
+                     [class.is-invalid]="form.controls.dOBIncorporation.invalid && form.controls.dOBIncorporation.touched" />
+              @if (form.controls.dOBIncorporation.touched && form.controls.dOBIncorporation.errors) {
+                <div class="invalid-feedback d-block">
+                  @if (form.controls.dOBIncorporation.errors['futureDate'])   { Date cannot be in the future. }
+                  @else if (form.controls.dOBIncorporation.errors['beforeMinDate']) { Date must be on or after 1 January 1900. }
+                  @else if (form.controls.dOBIncorporation.errors['invalidDate'])   { Please enter a valid date. }
+                </div>
+              }
             </div>
+
+            <!-- Contact Info -->
             <div class="col-12">
               <label class="form-label small fw-medium">Contact Info</label>
-              <textarea class="form-control form-control-sm" rows="2" formControlName="contactInfo"
-                        placeholder="e.g. Phone: +91-9876543210, Email: party@example.com"></textarea>
+              <input type="text" class="form-control form-control-sm" formControlName="contactInfo"
+                     [class.is-invalid]="form.controls.contactInfo.invalid && form.controls.contactInfo.touched"
+                     placeholder="Mobile number (e.g. 9876543210) or email (e.g. party@example.com)" />
+              <div class="form-text text-muted" style="font-size:0.75rem">
+                10-digit mobile number (not starting with 0) or a valid email address.
+              </div>
+              @if (form.controls.contactInfo.touched && form.controls.contactInfo.errors) {
+                <div class="invalid-feedback d-block">
+                  @if (form.controls.contactInfo.errors['phoneLength']) {
+                    Phone number must be exactly 10 digits — you entered {{ form.controls.contactInfo.errors['phoneLength'].actual }}.
+                  } @else if (form.controls.contactInfo.errors['phoneStartsZero']) {
+                    Phone number must not start with 0.
+                  } @else if (form.controls.contactInfo.errors['emailInvalid']) {
+                    Email address is invalid. Expected format: user&#64;example.com
+                  } @else if (form.controls.contactInfo.errors['contactUnrecognised']) {
+                    Please enter a 10-digit mobile number (e.g. 9876543210) or an email address (e.g. party&#64;example.com).
+                  }
+                </div>
+              }
             </div>
+
           </div>
         </form>
       </div>
