@@ -20,37 +20,49 @@ export class Sidebar {
     {
       title: 'Submissions',
       items: [
-        { label: 'Submissions',     icon: 'bi-file-earmark-text', route: '/submissions',   roles: [] },
-        { label: 'Parties',         icon: 'bi-people',            route: '/party',          roles: ['Agent','Underwriter','Admin','Operations'] },
+        { label: 'Submissions', icon: 'bi-file-earmark-text', route: '/submissions', roles: [] },
+      ],
+    },
+    {
+      title: 'Distribution & Party',
+      items: [
+        { label: 'Agents',           icon: 'bi-person-badge', route: '/party/agents',  roles: [] },
+        { label: 'Customer Parties', icon: 'bi-people',       route: '/party/parties', roles: [] },
       ],
     },
     {
       title: 'Underwriting',
       items: [
-        { label: 'UW Workbench',    icon: 'bi-briefcase',         route: '/underwriting',  roles: ['Underwriter','Assistant'] },
-        { label: 'Risk & Evidence', icon: 'bi-shield-check',      route: '/risk',           roles: ['Underwriter','Assistant'] },
-        { label: 'Rules & Scoring', icon: 'bi-diagram-3',         route: '/rules',          roles: ['Underwriter','Admin'] },
+        { label: 'UW Workbench',    icon: 'bi-briefcase',     route: '/underwriting', roles: ['Underwriter', 'Assistant'] },
+        { label: 'Risk & Evidence', icon: 'bi-shield-check',  route: '/risk',         roles: ['Underwriter', 'Assistant'] },
+        { label: 'Rules & Scoring', icon: 'bi-diagram-3',     route: '/rules',        roles: ['Underwriter', 'Admin'] },
       ],
     },
     {
       title: 'Pricing & Policy',
       items: [
-        { label: 'Pricing Console', icon: 'bi-calculator',        route: '/pricing',        roles: ['Pricing','Underwriter','Admin'] },
-        { label: 'Policy Desk',     icon: 'bi-journal-bookmark',  route: '/policy',         roles: ['Operations','Underwriter','Admin'] },
+        { label: 'Pricing Console', icon: 'bi-calculator',        route: '/pricing', roles: ['Pricing', 'Underwriter', 'Admin'] },
+        { label: 'Policy Desk',     icon: 'bi-journal-bookmark',  route: '/policy',  roles: ['Operations', 'Underwriter', 'Admin'] },
       ],
     },
     {
       title: 'Compliance',
       items: [
-        { label: 'Compliance & QA', icon: 'bi-clipboard2-check',  route: '/compliance',     roles: ['Compliance','Admin'] },
-        { label: 'Reports',         icon: 'bi-bar-chart-line',    route: '/reports',        roles: ['Compliance','Pricing','Admin','Underwriter'] },
+        { label: 'Compliance & QA', icon: 'bi-clipboard2-check', route: '/compliance', roles: ['Compliance', 'Admin'] },
+        { label: 'Reports',         icon: 'bi-bar-chart-line',   route: '/reports',    roles: ['Compliance', 'Pricing', 'Admin', 'Underwriter'] },
+      ],
+    },
+    {
+      title: 'Alerts',
+      items: [
+        { label: 'Notifications', icon: 'bi-bell', route: '/notifications', roles: [] },
       ],
     },
     {
       title: 'Settings',
       items: [
-        { label: 'Admin Console',   icon: 'bi-gear',              route: '/admin',           roles: ['Admin'] },
-        { label: 'Audit Logs',      icon: 'bi-journal-text',      route: '/admin/audit-logs',roles: ['Admin'] },
+        { label: 'Admin Console', icon: 'bi-gear',         route: '/admin',            roles: ['Admin'] },
+        { label: 'Audit Logs',    icon: 'bi-journal-text', route: '/admin/audit-logs', roles: ['Admin'] },
       ],
     },
   ];

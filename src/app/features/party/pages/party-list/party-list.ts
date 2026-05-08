@@ -7,11 +7,10 @@ import { StatusBadge } from '../../../../shared/components/status-badge/status-b
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { PartyApiService } from '../../services/party-api.service';
 import { CustomerParty, PartyType, Segment, PartyStatus } from '../../models/party.model';
-import { DEFAULT_PAGE_REQUEST } from '../../../../shared/models/pagination.model';
 
 type ModalMode = 'create' | 'edit' | null;
 const PARTY_TYPES: PartyType[] = ['Individual', 'Organization'];
-const SEGMENTS: Segment[] = ['Retail', 'SME', 'Corporate'];
+const SEGMENTS: Segment[]       = ['Retail', 'SME', 'Corporate'];
 
 @Component({
   selector: 'app-party-list',
@@ -28,7 +27,7 @@ export class PartyListPage implements OnInit {
   readonly selected    = signal<CustomerParty | null>(null);
   readonly searchQuery = signal('');
   readonly filterType  = signal('');
-  readonly alertMsg    = signal<{ type: 'success'|'danger'; text: string } | null>(null);
+  readonly alertMsg    = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly partyTypes  = PARTY_TYPES;
   readonly segments    = SEGMENTS;
 
@@ -42,7 +41,7 @@ export class PartyListPage implements OnInit {
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
-    { label: 'Parties', route: '/party' },
+    { label: 'Distribution & Party', route: '/party' },
     { label: 'Customer Parties' },
   ];
 
@@ -51,11 +50,9 @@ export class PartyListPage implements OnInit {
   readonly form = this.fb.group({
     name:             ['', Validators.required],
     partyType:        ['Individual' as PartyType, Validators.required],
-    dobIncorporation: ['', Validators.required],
     segment:          ['Retail' as Segment, Validators.required],
-    email:            ['', [Validators.required, Validators.email]],
-    phone:            ['', Validators.required],
-    address:          [''],
+    dOBIncorporation: [''],
+    contactInfo:      [''],
   });
 
   constructor(private svc: PartyApiService) {}
@@ -64,24 +61,39 @@ export class PartyListPage implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.svc.getParties(DEFAULT_PAGE_REQUEST).subscribe({
+    this.svc.getParties().subscribe({
       next: res => {
         const d: any = res;
-        this.parties.set(d?.content ?? d?.data ?? []);
+        const raw: any[] = d?.data ?? d?.content ?? [];
+        // Normalize DOB field: ASP.NET Core / Newtonsoft may serialize
+        // DOBIncorporation as dOBIncorporation OR dobIncorporation
+        this.parties.set(raw.map((p: any) => ({
+          ...p,
+          dOBIncorporation: p.dOBIncorporation ?? p.dobIncorporation ?? p.DOBIncorporation ?? null,
+        })));
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
     });
   }
 
-  openCreate(): void { this.form.reset({ partyType: 'Individual', segment: 'Retail' }); this.modalMode.set('create'); }
+  openCreate(): void {
+    this.form.reset({ partyType: 'Individual', segment: 'Retail' });
+    this.selected.set(null);
+    this.modalMode.set('create');
+  }
 
   openEdit(p: CustomerParty): void {
     this.selected.set(p);
+    const rawDob: string = (p as any).dOBIncorporation ?? (p as any).dobIncorporation ?? (p as any).DOBIncorporation ?? '';
+    // date input expects YYYY-MM-DD — strip the time portion if present
+    const dobDate = rawDob ? rawDob.split('T')[0] : '';
     this.form.patchValue({
-      name: p.name, partyType: p.partyType, dobIncorporation: p.dobIncorporation,
-      segment: p.segment, email: p.contactInfo?.email, phone: p.contactInfo?.phone,
-      address: p.contactInfo?.address,
+      name: p.name,
+      partyType: p.partyType,
+      segment: p.segment,
+      dOBIncorporation: dobDate,
+      contactInfo: p.contactInfo ?? '',
     });
     this.modalMode.set('edit');
   }
@@ -93,24 +105,41 @@ export class PartyListPage implements OnInit {
     this.saving.set(true);
     const v = this.form.value;
     const payload: Partial<CustomerParty> = {
-      name: v.name!, partyType: v.partyType as PartyType,
-      dobIncorporation: v.dobIncorporation!, segment: v.segment as Segment,
-      contactInfo: { email: v.email!, phone: v.phone!, address: v.address ?? '' },
+      name: v.name!,
+      partyType: v.partyType as PartyType,
+      segment: v.segment as Segment,
+      dOBIncorporation: v.dOBIncorporation || null,
+      contactInfo: v.contactInfo || null,
     };
     const req = this.modalMode() === 'edit'
-      ? this.svc.updateParty(this.selected()!.partyId, payload)
+      ? this.svc.updateParty(this.selected()!.partyID, payload)
       : this.svc.createParty(payload);
     req.subscribe({
-      next: () => { this.saving.set(false); this.closeModal(); this.load(); this.flash('success', 'Party saved.'); },
-      error: err => { this.saving.set(false); this.flash('danger', err?.error?.message ?? 'Save failed.'); },
+      next: () => {
+        this.saving.set(false);
+        this.closeModal();
+        this.load();
+        this.flash('success', 'Party saved successfully.');
+      },
+      error: err => {
+        this.saving.set(false);
+        this.flash('danger', err?.error?.message ?? 'Save failed. Please try again.');
+      },
     });
+  }
+
+  toggleStatus(p: CustomerParty): void {
+    const req = p.status === 'Active'
+      ? this.svc.deactivateParty(p.partyID)
+      : this.svc.activateParty(p.partyID);
+    req.subscribe({ next: () => { this.load(); this.flash('success', 'Status updated.'); } });
   }
 
   segmentClass(s: string): string {
     return s === 'Corporate' ? 'bg-primary' : s === 'SME' ? 'bg-warning text-dark' : 'bg-secondary';
   }
 
-  private flash(type: 'success'|'danger', text: string) {
+  private flash(type: 'success' | 'danger', text: string) {
     this.alertMsg.set({ type, text });
     setTimeout(() => this.alertMsg.set(null), 4000);
   }
