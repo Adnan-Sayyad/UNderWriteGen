@@ -11,12 +11,10 @@ namespace ReportingAndPortfolioAnalytics.Controllers;
 public class ReportsController : ControllerBase
 {
 	private readonly IReportService _svc;
-	private readonly IHttpDataCollectorService _collector;
 
-	public ReportsController(IReportService svc, IHttpDataCollectorService collector)
+	public ReportsController(IReportService svc)
 	{
 		_svc = svc;
-		_collector = collector;
 	}
 
 	// GET /api/reports?page=1&pageSize=20
