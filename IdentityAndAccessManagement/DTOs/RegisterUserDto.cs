@@ -13,17 +13,19 @@ namespace IdentityAndAccessManagement.DTOs
         public string LastName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Invalid email format.")]
+        [RegularExpression(@"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$",
+            ErrorMessage = "Enter a valid email address (e.g. user@domain.com).")]
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Password is required.")]
-        [MinLength(8, ErrorMessage = "Password must be at least 8 characters.")]
+        [MinLength(8,  ErrorMessage = "Password must be at least 8 characters.")]
+        [MaxLength(20, ErrorMessage = "Password cannot exceed 20 characters.")]
         [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$",
-            ErrorMessage = "Password must have uppercase, lowercase, digit and special character.")]
+            ErrorMessage = "Password must include uppercase, lowercase, digit and special character.")]
         public string Password { get; set; } = string.Empty;
 
-        [Phone(ErrorMessage = "Invalid phone number format.")]
-        [MaxLength(20, ErrorMessage = "Phone number cannot exceed 20 characters.")]
+        [RegularExpression(@"^[6-9]\d{9}$",
+            ErrorMessage = "Phone must be 10 digits starting with 6, 7, 8 or 9.")]
         public string? PhoneNumber { get; set; }
     }
 }

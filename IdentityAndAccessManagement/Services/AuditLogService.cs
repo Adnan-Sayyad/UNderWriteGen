@@ -132,7 +132,7 @@ namespace IdentityAndAccessManagement.Services
                 Email     = log.Email,
                 Action    = log.Action,
                 Resource  = log.Resource,
-                CreatedAt = log.CreatedAt,
+                CreatedAt = DateTime.SpecifyKind(log.CreatedAt, DateTimeKind.Utc),
                 Metadata  = log.Metadata,
                 IsDeleted = log.IsDeleted
             };
