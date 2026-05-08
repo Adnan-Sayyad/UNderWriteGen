@@ -1,0 +1,190 @@
+<div class="page-container">
+
+  <app-page-header
+    title="Premium Distribution"
+    subtitle="Gross premium totals and average premium per scope value"
+    icon="bi-currency-dollar"
+    [breadcrumbs]="breadcrumbs">
+    <button class="btn btn-sm btn-outline-secondary" (click)="load()" [disabled]="loading()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </app-page-header>
+
+  <!-- Nav Tabs -->
+  <app-reports-nav></app-reports-nav>
+
+  <!-- Filter Bar -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-medium mb-1"><i class="bi bi-funnel me-1 text-primary"></i>Scope</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterScope">
+            <option value="">All Scopes</option>
+            @for (s of scopes; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-medium mb-1">From</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="filterFrom" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-medium mb-1">To</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="filterTo" />
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary btn-sm px-4" (click)="load()" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            @else { <i class="bi bi-search me-1"></i> }
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (hasError()) {
+    <div class="alert alert-danger d-flex gap-2 align-items-center mb-4">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      Failed to load premium data. Check that the Reporting service is running on port 8090.
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-success" style="width:3rem;height:3rem"></div>
+      <p class="text-muted mt-3">Loading premium distribution…</p>
+    </div>
+  }
+
+  @if (!loading()) {
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="kpi-card border-start border-4 border-success">
+          <span class="kpi-value text-success">{{ totalGross | currency:'USD':'symbol':'1.0-0' }}</span>
+          <span class="kpi-label">Gross Premium</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card border-start border-4 border-primary">
+          <span class="kpi-value text-primary">{{ overallAvg | currency:'USD':'symbol':'1.0-0' }}</span>
+          <span class="kpi-label">Overall Avg Premium</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card border-start border-4 border-info">
+          <span class="kpi-value text-info">{{ totalPolicies }}</span>
+          <span class="kpi-label">Total Policies</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card border-start border-4 border-secondary">
+          <span class="kpi-value">{{ data().length }}</span>
+          <span class="kpi-label">Scope Values</span>
+        </div>
+      </div>
+    </div>
+
+    @if (!data().length && !hasError()) {
+      <app-empty-state icon="bi-currency-dollar" title="No premium data"
+        message="Adjust filters and click Apply."></app-empty-state>
+    } @else if (data().length) {
+
+      <!-- Insights -->
+      @if (topEarner() && highestAvg()) {
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="insight-card bg-success-subtle border border-success-subtle">
+              <i class="bi bi-graph-up-arrow text-success me-2 fs-5"></i>
+              <div>
+                <div class="fw-semibold small">Highest Gross Premium</div>
+                <div class="text-success fw-bold">{{ topEarner()!.scopeValue }}</div>
+                <div class="small text-muted">
+                  {{ topEarner()!.totalGrossPremium | currency:'USD':'symbol':'1.0-0' }} across {{ topEarner()!.policyCount }} policies
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="insight-card bg-primary-subtle border border-primary-subtle">
+              <i class="bi bi-award-fill text-primary me-2 fs-5"></i>
+              <div>
+                <div class="fw-semibold small">Highest Avg Premium</div>
+                <div class="text-primary fw-bold">{{ highestAvg()!.scopeValue }}</div>
+                <div class="small text-muted">
+                  {{ highestAvg()!.avgPremium | currency:'USD':'symbol':'1.0-0' }} average per policy
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Chart -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header chart-hdr">
+          <span><i class="bi bi-bar-chart me-2 text-success"></i>Average Premium by Scope Value</span>
+          <span class="badge bg-success-subtle text-success">USD</span>
+        </div>
+        <div class="card-body">
+          <app-premium-distribution [data]="data()"></app-premium-distribution>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header chart-hdr">
+          <span><i class="bi bi-table me-2 text-secondary"></i>Detailed Breakdown</span>
+          <span class="badge bg-secondary">{{ data().length }} entries</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+              <tr>
+                <th>Scope Value</th>
+                <th class="text-end">Gross Premium</th>
+                <th class="text-end">Avg Premium</th>
+                <th class="text-end">Policies</th>
+                <th>Share of Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of data(); track row.scopeValue) {
+                <tr>
+                  <td class="fw-medium">{{ row.scopeValue }}</td>
+                  <td class="text-end fw-bold text-success">{{ row.totalGrossPremium | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="text-end">{{ row.avgPremium | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="text-end">{{ row.policyCount }}</td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="progress flex-grow-1" style="height:8px">
+                        <div class="progress-bar bg-success"
+                             [style.width.%]="totalGross > 0 ? (row.totalGrossPremium / totalGross * 100) : 0">
+                        </div>
+                      </div>
+                      <span class="small text-muted" style="width:3rem">
+                        {{ totalGross > 0 ? (row.totalGrossPremium / totalGross * 100 | number:'1.0-0') : 0 }}%
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="table-light fw-semibold">
+              <tr>
+                <td>Total</td>
+                <td class="text-end text-success">{{ totalGross | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="text-end">{{ overallAvg | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="text-end">{{ totalPolicies }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+    }
+  }
+</div>
