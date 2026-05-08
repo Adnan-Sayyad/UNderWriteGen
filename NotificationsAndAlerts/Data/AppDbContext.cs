@@ -14,7 +14,9 @@ namespace NotificationsAndAlerts.Data
             modelBuilder.Entity<Notification>(entity =>
             {
                 entity.ToTable("Notification");
-                entity.HasIndex(n => n.UserID);
+                entity.Property(n => n.Mail).HasColumnName("UserID");
+                entity.HasIndex(n => n.Mail);
+                entity.HasIndex(n => n.SenderEmail);
                 entity.HasIndex(n => n.Status);
                 entity.HasIndex(n => n.Category);
             });

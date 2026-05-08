@@ -15,16 +15,17 @@ namespace NotificationsAndAlerts.Services
             _db = db;
         }
 
-        public async Task<NotificationResponseDto> CreateAsync(CreateNotificationDto dto)
+        public async Task<NotificationResponseDto> CreateAsync(CreateNotificationDto dto, string senderEmail)
         {
             var notification = new Notification
             {
                 NotificationID = await GenerateIdAsync(),
-                UserID = dto.UserID,
-                Message = dto.Message,
-                Category = dto.Category,
-                Status = "Unread",
-                CreatedDate = DateTime.UtcNow
+                Mail           = dto.RecipientEmail,
+                SenderEmail    = senderEmail,
+                Message        = dto.Message,
+                Category       = dto.Category,
+                Status         = "Unread",
+                CreatedDate    = DateTime.UtcNow
             };
 
             _db.Notifications.Add(notification);
@@ -47,10 +48,11 @@ namespace NotificationsAndAlerts.Services
             return list.Select(ToDto);
         }
 
-        public async Task<IEnumerable<NotificationResponseDto>> GetByUserAsync(string userId)
+        // Returns every notification where the given email is either the recipient or the sender.
+        public async Task<IEnumerable<NotificationResponseDto>> GetByParticipantAsync(string email)
         {
             var list = await _db.Notifications
-                .Where(n => n.UserID == userId)
+                .Where(n => n.Mail == email || n.SenderEmail == email)
                 .OrderByDescending(n => n.CreatedDate)
                 .ToListAsync();
             return list.Select(ToDto);
@@ -83,10 +85,9 @@ namespace NotificationsAndAlerts.Services
             return true;
         }
 
-        // Generates IDs in the format NTF-yyyyMMdd-XXXX (sequential per day).
         private async Task<string> GenerateIdAsync()
         {
-            var today = DateTime.UtcNow.ToString("yyyyMMdd");
+            var today  = DateTime.UtcNow.ToString("yyyyMMdd");
             var prefix = $"NTF-{today}-";
 
             var countToday = await _db.Notifications
@@ -99,11 +100,12 @@ namespace NotificationsAndAlerts.Services
         private static NotificationResponseDto ToDto(Notification n) => new()
         {
             NotificationID = n.NotificationID,
-            UserID = n.UserID,
-            Message = n.Message,
-            Category = n.Category,
-            Status = n.Status,
-            CreatedDate = n.CreatedDate
+            RecipientEmail = n.Mail,
+            SenderEmail    = n.SenderEmail,
+            Message        = n.Message,
+            Category       = n.Category,
+            Status         = n.Status,
+            CreatedDate    = n.CreatedDate
         };
     }
 }
