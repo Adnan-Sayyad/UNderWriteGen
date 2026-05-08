@@ -41,6 +41,33 @@ namespace IdentityAndAccessManagement.Controllers
             }
         }
 
+        // ── GET /api/users/me?userId=... ─────────────────────────
+        // Accessible by: Any active user (self-profile, no admin required)
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMyProfile([FromQuery] Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return BadRequest(new { Success = false, Message = "userId query parameter is required." });
+
+            try
+            {
+                var user = await _userService.GetMyProfileAsync(userId);
+                return Ok(ApiResponseDto<UserDto>.Ok("Profile retrieved successfully.", user));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(401, new { Success = false, Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
+        }
+
         // ── GET /api/users/{userId}?adminId=... ───────────────────
         // Accessible by: Admin, Manager
         [HttpGet("{userId:guid}")]

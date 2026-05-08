@@ -61,7 +61,8 @@ namespace IdentityAndAccessManagement.Services
             // ── Step 4: Audit log ─────────────────────────────────
             await LogAuditAsync(user,
                 "UserRegistered — awaiting role assignment by Admin",
-                "Auth");
+                "Auth",
+                $"Name: {user.FirstName} {user.LastName}, Email: {user.Email}");
 
             var roles = await _userManager.GetRolesAsync(user);
             return new UserDto
@@ -135,7 +136,8 @@ namespace IdentityAndAccessManagement.Services
             // ── Step 7: Audit log ─────────────────────────────────
             await LogAuditAsync(admin,
                 $"Admin '{admin.Email}' assigned roles [{string.Join(", ", dto.Roles)}] to user '{user.Email}'",
-                "Auth");
+                "Auth",
+                $"TargetUser: {user.FirstName} {user.LastName} ({user.Email}), AssignedRoles: [{string.Join(", ", dto.Roles)}]");
 
             // ── Step 8: Read back from UserRoles table to confirm ─
             var confirmedRoles = await _userManager.GetRolesAsync(user);
@@ -196,7 +198,8 @@ namespace IdentityAndAccessManagement.Services
             await _userManager.UpdateAsync(user);
 
             // ── Step 5: Audit log ─────────────────────────────────
-            await LogAuditAsync(user, "Login", "Auth");
+            await LogAuditAsync(user, "Login", "Auth",
+                $"Name: {user.FirstName} {user.LastName}, Role: {string.Join(", ", roles)}, Status: {user.Status}");
 
             return new AuthResponseDto
             {
@@ -241,7 +244,8 @@ namespace IdentityAndAccessManagement.Services
             user.UpdatedAt          = DateTime.UtcNow;
             await _userManager.UpdateAsync(user);
 
-            await LogAuditAsync(user, "Logout", "Auth");
+            await LogAuditAsync(user, "Logout", "Auth",
+                $"Name: {user.FirstName} {user.LastName}, Email: {user.Email}");
         }
 
         // ── Refresh Token ─────────────────────────────────────────
@@ -313,7 +317,8 @@ namespace IdentityAndAccessManagement.Services
             await _userManager.UpdateAsync(user);
 
             // ── Step 11: Audit log ────────────────────────────────
-            await LogAuditAsync(user, "RefreshToken", "Auth");
+            await LogAuditAsync(user, "RefreshToken", "Auth",
+                $"Name: {user.FirstName} {user.LastName}, Email: {user.Email}");
 
             return new AuthResponseDto
             {
@@ -378,7 +383,8 @@ namespace IdentityAndAccessManagement.Services
             await _userManager.UpdateAsync(user);
 
             // ── Step 8: Audit log ─────────────────────────────────
-            await LogAuditAsync(user, "ChangePassword", "Auth");
+            await LogAuditAsync(user, "ChangePassword", "Auth",
+                $"Name: {user.FirstName} {user.LastName}, Email: {user.Email}");
         }
 
         // ── Private: Generate Access Token ────────────────────────
@@ -477,14 +483,15 @@ namespace IdentityAndAccessManagement.Services
 
         // ── Private: Audit Logger ─────────────────────────────────
         private async Task LogAuditAsync(
-            ApplicationUser user, string action, string resource)
+            ApplicationUser user, string action, string resource, string? metadata = null)
         {
             var audit = new AuditLogs
             {
-                UserId = user.Id,
-                Email = user.Email ?? string.Empty,
-                Action = action,
-                Resource = resource,
+                UserId    = user.Id,
+                Email     = user.Email ?? string.Empty,
+                Action    = action,
+                Resource  = resource,
+                Metadata  = metadata,
                 CreatedAt = DateTime.UtcNow
             };
 
