@@ -14,6 +14,18 @@ namespace NotificationsAndAlerts.Models.DTOs
         [Required] public string Category { get; set; } = string.Empty;
     }
 
+    public class BroadcastNotificationDto
+    {
+        // Role name: Agent, Underwriter, UWManager, UWAssistant, Compliance, Operations, Admin
+        // or "Everyone" to send to all active users.
+        [Required]
+        public string RecipientGroup { get; set; } = string.Empty;
+
+        [Required] public string Message { get; set; } = string.Empty;
+
+        [Required] public string Category { get; set; } = string.Empty;
+    }
+
     public class NotificationResponseDto
     {
         public string NotificationID { get; set; } = string.Empty;
