@@ -64,6 +64,45 @@ namespace NotificationsAndAlerts.Controllers
                 ApiResponse<NotificationResponseDto>.Ok(result, "Notification created."));
         }
 
+        // ── BROADCAST ────────────────────────────────────────────────────────
+        // Send the same notification to every user in a role group (or Everyone).
+        [HttpPost("broadcast")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Broadcast([FromBody] BroadcastNotificationDto dto)
+        {
+            string senderEmail;
+
+            if (IsServiceCall())
+            {
+                senderEmail = "system@uwpro.internal";
+            }
+            else if (IsAuthorizedRole())
+            {
+                var mail = GetCurrentMail();
+                if (mail is null)
+                    return Unauthorized(ApiResponse<object>.Fail("Email claim not found in token."));
+                senderEmail = mail;
+            }
+            else
+            {
+                return Unauthorized(ApiResponse<object>.Fail(
+                    "Access denied. Only authorised roles may broadcast notifications."));
+            }
+
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponse<object>.Fail("Invalid input."));
+
+            var result = await _service.BroadcastAsync(dto, senderEmail);
+            var count  = result.Count();
+
+            if (count == 0)
+                return NotFound(ApiResponse<object>.Fail($"No active users found for group '{dto.RecipientGroup}'."));
+
+            return Ok(ApiResponse<object>.Ok(
+                new { sentCount = count },
+                $"Notification broadcast to {count} user(s)."));
+        }
+
         // ── GET MY NOTIFICATIONS ─────────────────────────────────────────────
         // Returns every notification where the caller is either the recipient
         // OR the sender — so both sides of a conversation can see it.
