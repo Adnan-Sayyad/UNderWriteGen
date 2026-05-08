@@ -10,6 +10,9 @@
     </a>
   </app-page-header>
 
+  <!-- Nav Tabs -->
+  <app-reports-nav></app-reports-nav>
+
   @if (alertMsg()) {
     <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
       <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type === 'success'"
@@ -113,11 +116,11 @@
             <div class="mt-3">
               <div class="progress tat-bar">
                 <div class="progress-bar bg-success"
-                     [style.width.%]="r.tAT_MaxHours > 0 ? (r.tAT_MinHours / r.tAT_MaxHours * 100) : 0"
+                     [style.width.%]="tatMinBarPct"
                      title="Min TAT">
                 </div>
                 <div class="progress-bar bg-warning"
-                     [style.width.%]="r.tAT_MaxHours > 0 ? ((r.tAT_AvgHours - r.tAT_MinHours) / r.tAT_MaxHours * 100) : 0"
+                     [style.width.%]="tatAvgBarPct"
                      title="Avg TAT range">
                 </div>
               </div>
