@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using NotificationsAndAlerts.Data;
 using NotificationsAndAlerts.Models.DTOs;
@@ -9,22 +10,25 @@ namespace NotificationsAndAlerts.Services
     public class NotificationService : INotificationService
     {
         private readonly AppDbContext _db;
+        private readonly IConfiguration _config;
 
-        public NotificationService(AppDbContext db)
+        public NotificationService(AppDbContext db, IConfiguration config)
         {
             _db = db;
+            _config = config;
         }
 
-        public async Task<NotificationResponseDto> CreateAsync(CreateNotificationDto dto)
+        public async Task<NotificationResponseDto> CreateAsync(CreateNotificationDto dto, string senderEmail)
         {
             var notification = new Notification
             {
                 NotificationID = await GenerateIdAsync(),
-                UserID = dto.UserID,
-                Message = dto.Message,
-                Category = dto.Category,
-                Status = "Unread",
-                CreatedDate = DateTime.UtcNow
+                Mail           = dto.RecipientEmail,
+                SenderEmail    = senderEmail,
+                Message        = dto.Message,
+                Category       = dto.Category,
+                Status         = "Unread",
+                CreatedDate    = DateTime.UtcNow
             };
 
             _db.Notifications.Add(notification);
@@ -47,13 +51,89 @@ namespace NotificationsAndAlerts.Services
             return list.Select(ToDto);
         }
 
-        public async Task<IEnumerable<NotificationResponseDto>> GetByUserAsync(string userId)
+        // Returns every notification where the given email is either the recipient or the sender.
+        public async Task<IEnumerable<NotificationResponseDto>> GetByParticipantAsync(string email)
         {
             var list = await _db.Notifications
-                .Where(n => n.UserID == userId)
+                .Where(n => n.Mail == email || n.SenderEmail == email)
                 .OrderByDescending(n => n.CreatedDate)
                 .ToListAsync();
             return list.Select(ToDto);
+        }
+
+        public async Task<IEnumerable<NotificationResponseDto>> BroadcastAsync(
+            BroadcastNotificationDto dto, string senderEmail)
+        {
+            // 1. Fetch recipient emails from the IAM database by role
+            var emails = await GetEmailsByRoleAsync(dto.RecipientGroup);
+
+            if (!emails.Any())
+                return Enumerable.Empty<NotificationResponseDto>();
+
+            // 2. Get the current count once, then increment locally for each notification
+            var today  = DateTime.UtcNow.ToString("yyyyMMdd");
+            var prefix = $"NTF-{today}-";
+            var baseCount = await _db.Notifications
+                .Where(n => n.NotificationID.StartsWith(prefix))
+                .CountAsync();
+
+            // 3. Create one notification per recipient
+            var created = new List<Notification>();
+            var seq = baseCount;
+            foreach (var email in emails)
+            {
+                seq++;
+                var notification = new Notification
+                {
+                    NotificationID = $"{prefix}{seq:D4}",
+                    Mail           = email,
+                    SenderEmail    = senderEmail,
+                    Message        = dto.Message,
+                    Category       = dto.Category,
+                    Status         = "Unread",
+                    CreatedDate    = DateTime.UtcNow
+                };
+                _db.Notifications.Add(notification);
+                created.Add(notification);
+            }
+
+            await _db.SaveChangesAsync();
+            return created.Select(ToDto);
+        }
+
+        // Queries the IAM database for active user emails by role.
+        private async Task<List<string>> GetEmailsByRoleAsync(string group)
+        {
+            var connStr = _config.GetConnectionString("IamConnection");
+            var emails  = new List<string>();
+
+            using var conn = new SqlConnection(connStr);
+            await conn.OpenAsync();
+
+            string sql;
+            SqlCommand cmd;
+
+            if (group.Equals("Everyone", StringComparison.OrdinalIgnoreCase))
+            {
+                sql = "SELECT Email FROM Users WHERE IsDeleted = 0 AND Email IS NOT NULL";
+                cmd = new SqlCommand(sql, conn);
+            }
+            else
+            {
+                sql = "SELECT Email FROM Users WHERE Role = @role AND IsDeleted = 0 AND Email IS NOT NULL";
+                cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@role", group);
+            }
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var email = reader.GetString(0);
+                if (!string.IsNullOrWhiteSpace(email))
+                    emails.Add(email);
+            }
+
+            return emails;
         }
 
         public async Task<bool> MarkAsReadAsync(string id)
@@ -83,10 +163,9 @@ namespace NotificationsAndAlerts.Services
             return true;
         }
 
-        // Generates IDs in the format NTF-yyyyMMdd-XXXX (sequential per day).
         private async Task<string> GenerateIdAsync()
         {
-            var today = DateTime.UtcNow.ToString("yyyyMMdd");
+            var today  = DateTime.UtcNow.ToString("yyyyMMdd");
             var prefix = $"NTF-{today}-";
 
             var countToday = await _db.Notifications
@@ -99,11 +178,12 @@ namespace NotificationsAndAlerts.Services
         private static NotificationResponseDto ToDto(Notification n) => new()
         {
             NotificationID = n.NotificationID,
-            UserID = n.UserID,
-            Message = n.Message,
-            Category = n.Category,
-            Status = n.Status,
-            CreatedDate = n.CreatedDate
+            RecipientEmail = n.Mail,
+            SenderEmail    = n.SenderEmail,
+            Message        = n.Message,
+            Category       = n.Category,
+            Status         = n.Status,
+            CreatedDate    = n.CreatedDate
         };
     }
 }
