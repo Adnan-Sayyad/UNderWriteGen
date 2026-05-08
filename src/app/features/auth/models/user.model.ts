@@ -1,4 +1,4 @@
-export type UserRole = 'Agent' | 'Underwriter' | 'Assistant' | 'Pricing' | 'Compliance' | 'Operations' | 'Admin';
+export type UserRole = 'Agent' | 'Underwriter' | 'UWAssistant' | 'PricingAnalyst' | 'Compliance' | 'Operations' | 'Admin';
 export type UserStatus = 'Active' | 'Locked' | 'Disabled';
 
 export interface User {
