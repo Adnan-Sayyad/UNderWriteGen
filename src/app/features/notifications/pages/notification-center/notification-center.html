@@ -204,18 +204,57 @@
     <div class="notif-modal__body">
       <form [formGroup]="form" novalidate>
 
+        <!-- Send To toggle -->
         <div class="mb-3">
-          <label class="form-label fw-semibold required-mark" for="ntf-email">Recipient Email</label>
-          <input
-            id="ntf-email"
-            type="email"
-            class="form-control"
-            [class.is-invalid]="form.controls.recipientEmail.invalid && form.controls.recipientEmail.touched"
-            formControlName="recipientEmail"
-            placeholder="recipient@example.com"
-            autocomplete="off" />
-          <div class="invalid-feedback">Please enter a valid email address.</div>
+          <label class="form-label fw-semibold">Send To</label>
+          <div class="d-flex gap-2">
+            <button type="button"
+                    class="btn btn-sm flex-fill"
+                    [class.btn-primary]="sendMode() === 'individual'"
+                    [class.btn-outline-secondary]="sendMode() !== 'individual'"
+                    (click)="setSendMode('individual')">
+              <i class="bi bi-person me-1"></i>Individual
+            </button>
+            <button type="button"
+                    class="btn btn-sm flex-fill"
+                    [class.btn-primary]="sendMode() === 'group'"
+                    [class.btn-outline-secondary]="sendMode() !== 'group'"
+                    (click)="setSendMode('group')">
+              <i class="bi bi-people me-1"></i>Role Group
+            </button>
+          </div>
         </div>
+
+        <!-- Individual: email input -->
+        @if (sendMode() === 'individual') {
+          <div class="mb-3">
+            <label class="form-label fw-semibold required-mark" for="ntf-email">Recipient Email</label>
+            <input
+              id="ntf-email"
+              type="email"
+              class="form-control"
+              [class.is-invalid]="form.controls.recipientEmail.invalid && form.controls.recipientEmail.touched"
+              formControlName="recipientEmail"
+              placeholder="recipient@example.com"
+              autocomplete="off" />
+            <div class="invalid-feedback">Please enter a valid email address.</div>
+          </div>
+        }
+
+        <!-- Group: role dropdown -->
+        @if (sendMode() === 'group') {
+          <div class="mb-3">
+            <label class="form-label fw-semibold required-mark" for="ntf-group">Select Group</label>
+            <select id="ntf-group" class="form-select" formControlName="recipientGroup">
+              @for (g of roleGroups; track g.value) {
+                <option [value]="g.value">{{ g.label }}</option>
+              }
+            </select>
+            <small class="text-muted mt-1 d-block">
+              <i class="bi bi-info-circle me-1"></i>A separate notification will be sent to every active user in this group.
+            </small>
+          </div>
+        }
 
         <div class="mb-3">
           <label class="form-label fw-semibold required-mark" for="ntf-cat">Category</label>

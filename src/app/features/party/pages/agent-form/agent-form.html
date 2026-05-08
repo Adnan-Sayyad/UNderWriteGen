@@ -23,36 +23,83 @@
       <div class="card-body">
         <form [formGroup]="form" novalidate>
           <div class="row g-3">
+
+            <!-- Name -->
             <div class="col-md-6">
               <label class="form-label small fw-medium required-mark">Full Name</label>
               <input type="text" class="form-control form-control-sm" formControlName="name"
                      [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
                      placeholder="e.g. John Smith" />
-              <div class="invalid-feedback">Name is required.</div>
+              @if (form.controls.name.touched && form.controls.name.errors) {
+                <div class="invalid-feedback d-block">
+                  @if (form.controls.name.errors['required'])   { Name is required. }
+                  @else if (form.controls.name.errors['minlength']) { Name must be at least 2 characters. }
+                  @else if (form.controls.name.errors['hasDigits']) { Name must not contain numbers. }
+                  @else if (form.controls.name.errors['pattern'])   { Name may only contain letters, spaces, hyphens, apostrophes, and periods. }
+                  @else if (form.controls.name.errors['maxlength']) { Name must not exceed 150 characters. }
+                </div>
+              }
             </div>
+
+            <!-- Producer Code -->
             <div class="col-md-6">
               <label class="form-label small fw-medium required-mark">Producer Code</label>
               <input type="text" class="form-control form-control-sm" formControlName="producerCode"
                      [class.is-invalid]="form.controls.producerCode.invalid && form.controls.producerCode.touched"
                      placeholder="e.g. MUM-LIF-001" />
-              <div class="invalid-feedback">Producer code is required.</div>
+              @if (form.controls.producerCode.touched && form.controls.producerCode.errors) {
+                <div class="invalid-feedback d-block">
+                  @if (form.controls.producerCode.errors['required'])   { Producer code is required. }
+                  @else if (form.controls.producerCode.errors['minlength']) { Producer code must be at least 3 characters. }
+                  @else if (form.controls.producerCode.errors['pattern'])   { Producer code may only contain letters, digits, hyphens, and underscores — no spaces. }
+                  @else if (form.controls.producerCode.errors['maxlength']) { Producer code must not exceed 50 characters. }
+                </div>
+              }
             </div>
+
+            <!-- Region -->
             <div class="col-md-6">
               <label class="form-label small fw-medium">Region</label>
               <input type="text" class="form-control form-control-sm" formControlName="region"
+                     [class.is-invalid]="form.controls.region.invalid && form.controls.region.touched"
                      placeholder="e.g. Mumbai, North India" />
+              @if (form.controls.region.touched && form.controls.region.errors) {
+                <div class="invalid-feedback d-block">
+                  @if (form.controls.region.errors['pattern']) { Region may only contain letters, spaces, and hyphens. }
+                </div>
+              }
             </div>
+
+            <!-- Status -->
             <div class="col-md-6">
               <label class="form-label small fw-medium">Status</label>
               <select class="form-select form-select-sm" formControlName="status">
                 @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
               </select>
             </div>
+
+            <!-- Contact Info -->
             <div class="col-12">
               <label class="form-label small fw-medium">Contact Info</label>
-              <textarea class="form-control form-control-sm" rows="2" formControlName="contactInfo"
-                        placeholder="e.g. Phone: +91-9876543210, Email: agent@example.com"></textarea>
+              <input type="text" class="form-control form-control-sm" formControlName="contactInfo"
+                     [class.is-invalid]="form.controls.contactInfo.invalid && form.controls.contactInfo.touched"
+                     placeholder="Mobile number (e.g. 9876543210) or email (e.g. agent@example.com)" />
+              <div class="form-text text-muted small">Enter a 10-digit mobile number (not starting with 0) or a valid email address.</div>
+              @if (form.controls.contactInfo.touched && form.controls.contactInfo.errors) {
+                <div class="invalid-feedback d-block">
+                  @if (form.controls.contactInfo.errors['phoneLength']) {
+                    Phone number must be exactly 10 digits — you entered {{ form.controls.contactInfo.errors['phoneLength'].actual }}.
+                  } @else if (form.controls.contactInfo.errors['phoneStartsZero']) {
+                    Phone number must not start with 0.
+                  } @else if (form.controls.contactInfo.errors['emailInvalid']) {
+                    Email address is invalid. Expected format: user&#64;example.com
+                  } @else if (form.controls.contactInfo.errors['contactUnrecognised']) {
+                    Please enter a 10-digit mobile number (e.g. 9876543210) or an email address (e.g. agent&#64;example.com).
+                  }
+                </div>
+              }
             </div>
+
           </div>
         </form>
       </div>

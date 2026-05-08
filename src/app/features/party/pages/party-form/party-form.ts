@@ -5,6 +5,12 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PartyApiService } from '../../services/party-api.service';
 import { CustomerParty } from '../../models/party.model';
+import {
+  noDigitsValidator,
+  smartContactInfoValidator,
+  validDOBValidator,
+  extractApiErrors,
+} from '../../../../shared/validators/custom-validators';
 
 @Component({
   selector: 'app-party-form',
@@ -25,20 +31,25 @@ export class PartyFormPage implements OnInit {
     { label: 'Party Details' },
   ];
 
-  readonly partyTypes = ['Individual', 'Organization'];
+  readonly partyTypes = ['Individual', 'Corporation'];   // backend expects 'Corporation'
   readonly segments   = ['Retail', 'SME', 'Corporate'];
   readonly statuses   = ['Active', 'Inactive'];
 
-  // inject() at field level avoids the "used before initialization" error
   private readonly fb = inject(FormBuilder);
 
   readonly form = this.fb.group({
-    name:             ['', Validators.required],
+    name: ['', [
+      Validators.required,
+      Validators.minLength(2),
+      Validators.maxLength(200),
+      noDigitsValidator(),
+      Validators.pattern(/^[a-zA-Z\s\-'\.&,]+$/),
+    ]],
     partyType:        ['Individual', Validators.required],
-    segment:          ['Retail', Validators.required],
-    status:           ['Active', Validators.required],
-    dOBIncorporation: [''],   // matches backend field name DOBIncorporation → dOBIncorporation
-    contactInfo:      [''],   // backend stores as a plain string
+    segment:          ['Retail',     Validators.required],
+    status:           ['Active',     Validators.required],
+    dOBIncorporation: ['', [validDOBValidator()]],
+    contactInfo:      ['', [smartContactInfoValidator(), Validators.maxLength(500)]],
   });
 
   constructor(
@@ -55,7 +66,6 @@ export class PartyFormPage implements OnInit {
       this.svc.getParty(id).subscribe({
         next: (res: any) => {
           const p: any = res?.data ?? res;
-          // Normalize DOB: backend may return dOBIncorporation or dobIncorporation
           const rawDob: string = p.dOBIncorporation ?? p.dobIncorporation ?? p.DOBIncorporation ?? '';
           const dobDate = rawDob ? rawDob.split('T')[0] : '';
           this.form.patchValue({
@@ -90,7 +100,7 @@ export class PartyFormPage implements OnInit {
       : this.svc.createParty(payload);
     req.subscribe({
       next: () => { this.saving.set(false); this.router.navigate(['/party/parties']); },
-      error: () => { this.saving.set(false); this.flash('danger', 'Save failed. Please try again.'); },
+      error: err => { this.saving.set(false); this.flash('danger', extractApiErrors(err)); },
     });
   }
 
@@ -98,6 +108,6 @@ export class PartyFormPage implements OnInit {
 
   private flash(type: 'success' | 'danger', text: string) {
     this.alertMsg.set({ type, text });
-    setTimeout(() => this.alertMsg.set(null), 4000);
+    setTimeout(() => this.alertMsg.set(null), 5000);
   }
 }
