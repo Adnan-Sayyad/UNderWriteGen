@@ -51,6 +51,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Map JWT short claim names ("email","role") to ClaimTypes URIs
+        // so User.IsInRole() and ClaimTypes.Email work correctly.
+        options.MapInboundClaims = true;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

@@ -1,4 +1,4 @@
-﻿using DistributionAndPartyManagement.Middleware;
+using DistributionAndPartyManagement.Middleware;
 using DistributionAndPartyManagement.Models.DTOs;
 using DistributionAndPartyManagement.Models.Entities;
 using DistributionAndPartyManagement.Repositories.Interfaces;
@@ -42,11 +42,11 @@ namespace DistributionAndPartyManagement.Services
 			var customer = new CustomerParty
 			{
 				PartyID = await GeneratePartyIdAsync(),
-				PartyType = dto.PartyType,
-				Name = dto.Name,
+				PartyType = dto.PartyType.Trim(),
+				Name = dto.Name.Trim(),
 				DOBIncorporation = dto.DOBIncorporation,
-				ContactInfo = dto.ContactInfo,
-				Segment = dto.Segment,
+				ContactInfo = dto.ContactInfo?.Trim(),
+				Segment = dto.Segment.Trim(),
 				Status = "Active"
 			};
 
@@ -60,10 +60,10 @@ namespace DistributionAndPartyManagement.Services
 			if (customer == null)
 				throw new NotFoundException($"Customer with ID '{partyId}' not found.");
 
-			customer.Name = dto.Name;
+			customer.Name = dto.Name.Trim();
 			customer.DOBIncorporation = dto.DOBIncorporation;
-			customer.ContactInfo = dto.ContactInfo;
-			customer.Segment = dto.Segment;
+			customer.ContactInfo = dto.ContactInfo?.Trim();
+			customer.Segment = dto.Segment.Trim();
 
 			await _repo.SaveChangesAsync();
 			return MapToDto(customer);
@@ -97,7 +97,6 @@ namespace DistributionAndPartyManagement.Services
 			return MapToDto(customer);
 		}
 
-		// Auto-generate ID like PTY-20260415-0001
 		private async Task<string> GeneratePartyIdAsync()
 		{
 			var count = await _repo.GetCountAsync();

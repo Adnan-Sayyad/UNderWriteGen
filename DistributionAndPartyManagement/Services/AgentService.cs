@@ -1,4 +1,4 @@
-﻿using DistributionAndPartyManagement.Middleware;
+using DistributionAndPartyManagement.Middleware;
 using DistributionAndPartyManagement.Models.DTOs;
 using DistributionAndPartyManagement.Models.Entities;
 using DistributionAndPartyManagement.Repositories.Interfaces;
@@ -47,10 +47,10 @@ namespace DistributionAndPartyManagement.Services
 			var agent = new Agent
 			{
 				AgentID = await GenerateAgentIdAsync(),
-				Name = dto.Name,
-				ProducerCode = dto.ProducerCode,
-				ContactInfo = dto.ContactInfo,
-				Region = dto.Region,
+				Name = dto.Name.Trim(),
+				ProducerCode = dto.ProducerCode.Trim(),
+				ContactInfo = dto.ContactInfo?.Trim(),
+				Region = dto.Region?.Trim(),
 				Status = "Active"
 			};
 
@@ -64,9 +64,9 @@ namespace DistributionAndPartyManagement.Services
 			if (agent == null)
 				throw new NotFoundException($"Agent with ID '{agentId}' not found.");
 
-			agent.Name = dto.Name;
-			agent.ContactInfo = dto.ContactInfo;
-			agent.Region = dto.Region;
+			agent.Name = dto.Name.Trim();
+			agent.ContactInfo = dto.ContactInfo?.Trim();
+			agent.Region = dto.Region?.Trim();
 
 			await _repo.SaveChangesAsync();
 			return MapToDto(agent);
@@ -100,7 +100,6 @@ namespace DistributionAndPartyManagement.Services
 			return MapToDto(agent);
 		}
 
-		// Auto-generate ID like AGT-20260415-0001
 		private async Task<string> GenerateAgentIdAsync()
 		{
 			var count = await _repo.GetCountAsync();
