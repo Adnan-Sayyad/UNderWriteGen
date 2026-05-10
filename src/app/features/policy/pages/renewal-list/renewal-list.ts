@@ -6,7 +6,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 import { PolicyApiService } from '../../services/policy-api.service';
 import { Renewal, RenewalStatus } from '../../models/policy.model';
 
-const DEFAULT_PAGE = { page: 0, size: 20, sort: 'offeredDate', direction: 'desc' as const };
+const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-renewal-list',
@@ -16,10 +16,13 @@ const DEFAULT_PAGE = { page: 0, size: 20, sort: 'offeredDate', direction: 'desc'
   styleUrl: './renewal-list.css',
 })
 export class RenewalListPage implements OnInit {
-  readonly renewals    = signal<Renewal[]>([]);
-  readonly loading     = signal(true);
-  readonly filterStatus = signal<RenewalStatus | ''>('');
-  readonly alertMsg    = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
+  readonly renewals      = signal<Renewal[]>([]);
+  readonly loading       = signal(true);
+  readonly filterStatus  = signal<RenewalStatus | ''>('');
+  readonly alertMsg      = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
+  readonly currentPage   = signal(0);
+  readonly totalPages    = signal(0);
+  readonly totalElements = signal(0);
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -27,23 +30,37 @@ export class RenewalListPage implements OnInit {
     { label: 'Renewals' },
   ];
 
-  readonly statuses: (RenewalStatus | '')[] = ['', 'Offered', 'Accepted', 'Declined'];
-
   readonly filtered = computed(() => {
     const s = this.filterStatus();
     return s ? this.renewals().filter(r => r.status === s) : this.renewals();
   });
 
+  readonly pageNumbers = computed(() =>
+    Array.from({ length: this.totalPages() }, (_, i) => i)
+  );
+
   constructor(private svc: PolicyApiService) {}
 
-  ngOnInit() {
-    this.svc.getRenewals(DEFAULT_PAGE).subscribe({
+  ngOnInit() { this.load(); }
+
+  load(page = 0) {
+    this.loading.set(true);
+    const req: any = { page, size: PAGE_SIZE, sort: 'offeredDate', direction: 'desc' };
+    this.svc.getRenewals(req).subscribe({
       next: (res: any) => {
         this.renewals.set(res?.content ?? res?.data ?? []);
+        this.totalPages.set(res?.totalPages ?? 1);
+        this.totalElements.set(res?.totalElements ?? 0);
+        this.currentPage.set(page);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  goToPage(page: number) {
+    if (page < 0 || page >= this.totalPages()) return;
+    this.load(page);
   }
 
   updateStatus(r: Renewal, status: RenewalStatus) {

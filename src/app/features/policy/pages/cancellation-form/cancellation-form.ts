@@ -54,7 +54,7 @@ export class CancellationFormPage implements OnInit {
     };
     this.saving.set(true);
     this.svc.requestCancellation(this.policyId(), payload).subscribe({
-      next: () => { this.saving.set(false); this.router.navigate(['/policy']); },
+      next: () => { this.saving.set(false); this.router.navigate(['/policy', this.policyId()]); },
       error: () => { this.saving.set(false); this.flash('danger', 'Failed to submit cancellation request.'); },
     });
   }

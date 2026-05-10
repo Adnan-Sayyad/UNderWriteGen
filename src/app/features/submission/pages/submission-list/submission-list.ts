@@ -7,10 +7,9 @@ import { StatusBadge } from '../../../../shared/components/status-badge/status-b
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { SubmissionApiService } from '../../services/submission-api.service';
 import { Submission, SubmissionStatus, ProductLine } from '../../models/submission.model';
-import { DEFAULT_PAGE_REQUEST } from '../../../../shared/models/pagination.model';
-
 const STATUSES: SubmissionStatus[] = ['Draft', 'IntakeComplete', 'UnderReview', 'Quoted', 'Declined', 'Expired'];
 const PRODUCT_LINES: ProductLine[] = ['Life', 'Health', 'PnC', 'Commercial'];
+const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-submission-list',
@@ -20,11 +19,18 @@ const PRODUCT_LINES: ProductLine[] = ['Life', 'Health', 'PnC', 'Commercial'];
   styleUrl: './submission-list.css',
 })
 export class SubmissionListPage implements OnInit {
-  readonly submissions  = signal<Submission[]>([]);
-  readonly loading      = signal(false);
-  readonly searchQuery  = signal('');
-  readonly filterStatus = signal('');
+  readonly submissions   = signal<Submission[]>([]);
+  readonly loading       = signal(false);
+  readonly searchQuery   = signal('');
+  readonly filterStatus  = signal('');
   readonly filterProduct = signal('');
+  readonly currentPage   = signal(0);
+  readonly totalPages    = signal(0);
+  readonly totalElements = signal(0);
+
+  readonly pageNumbers = computed(() =>
+    Array.from({ length: this.totalPages() }, (_, i) => i)
+  );
 
   readonly statuses    = STATUSES;
   readonly productLines = PRODUCT_LINES;
@@ -49,16 +55,24 @@ export class SubmissionListPage implements OnInit {
 
   ngOnInit(): void { this.load(); }
 
-  load(): void {
+  load(page = 0): void {
     this.loading.set(true);
-    this.svc.getAll(DEFAULT_PAGE_REQUEST).subscribe({
+    const req: any = { page, size: PAGE_SIZE, sort: 'createdDate', direction: 'desc' };
+    this.svc.getAll(req).subscribe({
       next: res => {
-        const data: any = res;
-        this.submissions.set(data?.content ?? data?.data ?? []);
+        this.submissions.set(res.content ?? []);
+        this.totalPages.set(res.totalPages ?? 1);
+        this.totalElements.set(res.totalElements ?? 0);
+        this.currentPage.set(page);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages()) return;
+    this.load(page);
   }
 
   statusClass(status: string): string {

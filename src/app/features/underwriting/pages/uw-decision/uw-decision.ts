@@ -7,11 +7,11 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 import { UnderwritingApiService } from '../../services/underwriting-api.service';
 import { UWDecision, UWNote, DecisionType } from '../../models/underwriting.model';
 
-const DECISIONS: { value: DecisionType; label: string; css: string }[] = [
-  { value: 'Approve',  label: 'Approve',      css: 'btn-success' },
-  { value: 'Decline',  label: 'Decline',      css: 'btn-danger' },
-  { value: 'Refer',    label: 'Refer to UW',  css: 'btn-warning' },
-  { value: 'MoreInfo', label: 'Request Info', css: 'btn-outline-secondary' },
+const DECISIONS: { value: DecisionType; label: string; css: string; outlineCss: string }[] = [
+  { value: 'Approve',  label: 'Approve',      css: 'btn-success',          outlineCss: 'btn-outline-success' },
+  { value: 'Decline',  label: 'Decline',      css: 'btn-danger',           outlineCss: 'btn-outline-danger' },
+  { value: 'Refer',    label: 'Refer to UW',  css: 'btn-warning',          outlineCss: 'btn-outline-warning' },
+  { value: 'MoreInfo', label: 'Request Info', css: 'btn-outline-secondary', outlineCss: 'btn-outline-secondary' },
 ];
 
 @Component({
@@ -24,13 +24,16 @@ const DECISIONS: { value: DecisionType; label: string; css: string }[] = [
 export class UwDecisionPage implements OnInit {
   private readonly fb = inject(FormBuilder);
 
-  readonly existingDecision = signal<UWDecision | null>(null);
-  readonly notes            = signal<UWNote[]>([]);
-  readonly loading          = signal(false);
-  readonly saving           = signal(false);
-  readonly submissionId     = signal('');
-  readonly alertMsg         = signal<{ type: 'success'|'danger'; text: string } | null>(null);
-  readonly decisions        = DECISIONS;
+  readonly existingDecision  = signal<UWDecision | null>(null);
+  readonly notes             = signal<UWNote[]>([]);
+  readonly loading           = signal(false);
+  readonly saving            = signal(false);
+  readonly addingNote        = signal(false);
+  readonly deletingNoteId    = signal<string | null>(null);
+  readonly submissionId      = signal('');
+  readonly alertMsg          = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
+  readonly showOverwriteWarn = signal(false);
+  readonly decisions         = DECISIONS;
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -61,52 +64,100 @@ export class UwDecisionPage implements OnInit {
 
   private loadDecision(id: string): void {
     this.svc.getDecision(id).subscribe({
-      next: res => { const d: any = res; this.existingDecision.set(d?.data ?? null); },
+      next: (res: any) => {
+        const d = res?.data ?? null;
+        this.existingDecision.set(d);
+        if (d) {
+          this.decisionForm.patchValue({ decision: d.decision, reason: d.reason });
+        }
+      },
       error: () => {},
     });
   }
 
   private loadNotes(id: string): void {
     this.svc.getNotes(id).subscribe({
-      next: res => { const d: any = res; this.notes.set(d?.data ?? []); },
+      next: (res: any) => this.notes.set(res?.data ?? []),
       error: () => {},
     });
   }
 
-  submitDecision(): void {
+  requestSubmit(): void {
     if (this.decisionForm.invalid) { this.decisionForm.markAllAsTouched(); return; }
+    if (this.existingDecision()) {
+      this.showOverwriteWarn.set(true);
+    } else {
+      this.doSubmit();
+    }
+  }
+
+  cancelOverwrite(): void { this.showOverwriteWarn.set(false); }
+
+  confirmOverwrite(): void {
+    this.showOverwriteWarn.set(false);
+    this.doSubmit();
+  }
+
+  private doSubmit(): void {
     this.saving.set(true);
     const v = this.decisionForm.value;
     this.svc.submitDecision(this.submissionId(), {
-      decision: v.decision as DecisionType, reason: v.reason!,
+      decision: v.decision as DecisionType,
+      reason:   v.reason!,
     }).subscribe({
-      next: res => {
-        const d: any = res;
-        this.existingDecision.set(d?.data ?? null);
+      next: (res: any) => {
+        this.existingDecision.set(res?.data ?? null);
         this.saving.set(false);
         this.flash('success', 'Decision submitted.');
         this.router.navigate(['/underwriting/workbench']);
       },
-      error: err => { this.saving.set(false); this.flash('danger', err?.error?.message ?? 'Submit failed.'); },
+      error: (err: any) => {
+        this.saving.set(false);
+        this.flash('danger', err?.error?.message ?? 'Submit failed.');
+      },
     });
   }
 
   addNote(): void {
     if (this.noteForm.invalid) { this.noteForm.markAllAsTouched(); return; }
+    this.addingNote.set(true);
     this.svc.addNote(this.submissionId(), { noteText: this.noteForm.value.noteText! }).subscribe({
-      next: () => { this.noteForm.reset(); this.loadNotes(this.submissionId()); },
-      error: err => this.flash('danger', err?.error?.message ?? 'Note save failed.'),
+      next: () => {
+        this.noteForm.reset();
+        this.addingNote.set(false);
+        this.loadNotes(this.submissionId());
+      },
+      error: (err: any) => {
+        this.addingNote.set(false);
+        this.flash('danger', err?.error?.message ?? 'Note save failed.');
+      },
+    });
+  }
+
+  deleteNote(noteId: string): void {
+    this.deletingNoteId.set(noteId);
+    this.svc.deleteNote(this.submissionId(), noteId).subscribe({
+      next: () => {
+        this.deletingNoteId.set(null);
+        this.notes.update(list => list.filter(n => n.noteId !== noteId));
+      },
+      error: () => { this.deletingNoteId.set(null); this.flash('danger', 'Failed to delete note.'); },
     });
   }
 
   decisionClass(d: string): string {
     const map: Record<string, string> = {
-      Approve: 'bg-success', Decline: 'bg-danger', Refer: 'bg-warning text-dark', MoreInfo: 'bg-secondary',
+      Approve: 'bg-success', Decline: 'bg-danger',
+      Refer: 'bg-warning text-dark', MoreInfo: 'bg-secondary',
     };
     return map[d] ?? 'bg-secondary';
   }
 
-  private flash(type: 'success'|'danger', text: string) {
+  shortId(id: string): string {
+    return id ? id.slice(0, 8) + '…' : '—';
+  }
+
+  private flash(type: 'success' | 'danger', text: string) {
     this.alertMsg.set({ type, text });
     setTimeout(() => this.alertMsg.set(null), 4000);
   }

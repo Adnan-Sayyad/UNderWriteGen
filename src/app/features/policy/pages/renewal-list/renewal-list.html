@@ -23,11 +23,17 @@
         <option value="Accepted">Accepted</option>
         <option value="Declined">Declined</option>
       </select>
-      <span class="text-muted small ms-auto">{{ filtered().length }} renewal(s)</span>
+      <span class="text-muted small ms-auto">{{ filtered().length }} of {{ totalElements() }} renewal(s)</span>
+      <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
     </div>
+
     <div class="card-body p-0">
       @if (loading()) {
-        <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading renewals…</div>
+        <div class="text-center py-5 text-muted">
+          <span class="spinner-border spinner-border-sm me-2"></span>Loading renewals…
+        </div>
       } @else if (!filtered().length) {
         <app-empty-state icon="bi-arrow-repeat" title="No renewals found"></app-empty-state>
       } @else {
@@ -68,6 +74,27 @@
             </tbody>
           </table>
         </div>
+
+        @if (totalPages() > 1) {
+          <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+            <small class="text-muted">Page {{ currentPage() + 1 }} of {{ totalPages() }}</small>
+            <nav>
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="currentPage() === 0">
+                  <button class="page-link" (click)="goToPage(currentPage() - 1)">‹</button>
+                </li>
+                @for (p of pageNumbers(); track p) {
+                  <li class="page-item" [class.active]="p === currentPage()">
+                    <button class="page-link" (click)="goToPage(p)">{{ p + 1 }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="currentPage() >= totalPages() - 1">
+                  <button class="page-link" (click)="goToPage(currentPage() + 1)">›</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        }
       }
     </div>
   </div>

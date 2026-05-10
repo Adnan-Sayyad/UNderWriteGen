@@ -72,7 +72,7 @@ export class RiskProfilePage implements OnInit {
         }
         this.loading.set(false);
       },
-      error: () => { this.profile.set(null); this.loading.set(false); },
+      error: () => { this.profile.set(null); this.form.patchValue({ submissionId: id }); this.loading.set(false); },
     });
   }
 
@@ -80,9 +80,13 @@ export class RiskProfilePage implements OnInit {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving.set(true);
     const v = this.form.value;
-    this.svc.saveRiskProfile(v.submissionId!, {
-      riskType: v.riskType as RiskType, riskNotes: v.riskNotes ?? '', attributesJSON: {},
-    }).subscribe({
+    const payload = { riskType: v.riskType as RiskType, riskNotes: v.riskNotes ?? '', attributesJSON: {} };
+    const existing = this.profile();
+    const call$ = existing?.riskId
+      ? this.svc.updateRiskProfile(existing.riskId, payload)
+      : this.svc.createRiskProfile(v.submissionId!, payload);
+
+    call$.subscribe({
       next: res => {
         const d: any = res;
         this.profile.set(d?.data ?? null);

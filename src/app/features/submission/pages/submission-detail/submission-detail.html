@@ -7,12 +7,23 @@
       <span class="badge fs-6 me-2" [ngClass]="statusClass(submission()!.status)">
         {{ submission()!.status }}
       </span>
+      <a [routerLink]="['/risk/profiles', submission()!.submissionId]"
+         class="btn btn-sm btn-outline-secondary me-1">
+        <i class="bi bi-shield-check me-1"></i>Risk Profile
+      </a>
       <a [routerLink]="['/underwriting/decision', submission()!.submissionId]"
          class="btn btn-sm btn-outline-primary me-1">
         <i class="bi bi-briefcase me-1"></i>UW Decision
       </a>
     }
   </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} alert-dismissible py-2 mb-3" role="alert">
+      {{ alertMsg()!.text }}
+      <button type="button" class="btn-close btn-sm" (click)="alertMsg.set(null)"></button>
+    </div>
+  }
 
   @if (loading()) {
     <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
@@ -24,6 +35,11 @@
       <li class="nav-item">
         <button class="nav-link" [class.active]="activeTab()==='overview'" (click)="setTab('overview')">
           <i class="bi bi-info-circle me-1"></i>Overview
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" [class.active]="activeTab()==='questionnaire'" (click)="setTab('questionnaire')">
+          <i class="bi bi-list-check me-1"></i>Questionnaire
         </button>
       </li>
       <li class="nav-item">
@@ -41,8 +57,10 @@
       </li>
     </ul>
 
+    <!-- ── Overview Tab ───────────────────────────────────────────────────── -->
     @if (activeTab() === 'overview') {
-      <div class="card border-0 shadow-sm">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold">Submission Details</div>
         <div class="card-body">
           <div class="row g-3">
             <div class="col-md-4">
@@ -90,9 +108,128 @@
           </div>
         </div>
       </div>
+
+      <!-- Status Update -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">Update Status</div>
+        <div class="card-body">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-4">
+              <select class="form-select form-select-sm"
+                      [value]="submission()!.status"
+                      (change)="updateStatus($any($event.target).value)"
+                      [disabled]="updatingStatus()">
+                @for (s of allStatuses; track s) {
+                  <option [value]="s">{{ s }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-auto">
+              @if (updatingStatus()) {
+                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
     }
 
+    <!-- ── Questionnaire Tab ────────────────────────────────────────────────── -->
+    @if (activeTab() === 'questionnaire') {
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold"><i class="bi bi-list-check me-2"></i>Risk Questionnaire</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Occupation Type <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" placeholder="e.g. Salaried, Business"
+                     [value]="qOccupationType()" (input)="qOccupationType.set($any($event.target).value)" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Sum Insured (₹) <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" min="0"
+                     [value]="qSumInsured()" (input)="qSumInsured.set(+$any($event.target).value)" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Existing Conditions</label>
+              <select class="form-select" [value]="qExistingConditions()" (change)="qExistingConditions.set($any($event.target).value)">
+                <option>None</option>
+                <option>Diabetes</option>
+                <option>Hypertension</option>
+                <option>Heart Disease</option>
+                <option>Cancer</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Smoking Status</label>
+              <select class="form-select" [value]="qSmokingStatus()" (change)="qSmokingStatus.set($any($event.target).value)">
+                <option>Non-Smoker</option>
+                <option>Smoker</option>
+                <option>Ex-Smoker</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Annual Income (₹)</label>
+              <input type="number" class="form-control" min="0"
+                     [value]="qAnnualIncome()" (input)="qAnnualIncome.set(+$any($event.target).value)" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Additional Notes</label>
+              <textarea class="form-control" rows="3" [value]="qAdditionalNotes()"
+                        (input)="qAdditionalNotes.set($any($event.target).value)"></textarea>
+            </div>
+          </div>
+          <div class="mt-3">
+            <button class="btn btn-primary" (click)="saveQuestionnaire()" [disabled]="savingQuestionnaire()">
+              @if (savingQuestionnaire()) {
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+              } @else {
+                <i class="bi bi-save me-1"></i>
+              }
+              Save Questionnaire
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ── Attachments Tab ────────────────────────────────────────────────── -->
     @if (activeTab() === 'attachments') {
+      <!-- Upload Form -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold">Upload Document</div>
+        <div class="card-body">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label form-label-sm mb-1">Document Type</label>
+              <select class="form-select form-select-sm"
+                      [value]="selectedDocType()"
+                      (change)="selectedDocType.set($any($event.target).value)">
+                @for (dt of docTypes; track dt) {
+                  <option [value]="dt">{{ dt }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label form-label-sm mb-1">File</label>
+              <input type="file" class="form-control form-control-sm" (change)="onFileChange($event)" />
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-sm btn-primary"
+                      (click)="uploadAttachment()"
+                      [disabled]="!selectedFile() || uploading()">
+                @if (uploading()) {
+                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                }
+                <i class="bi bi-upload me-1"></i>Upload
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attachments Table -->
       <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
           @if (!attachments().length) {
@@ -102,7 +239,12 @@
             <div class="table-responsive">
               <table class="table table-hover mb-0 align-middle">
                 <thead class="table-light">
-                  <tr><th>Type</th><th>Uploaded By</th><th>Date</th><th class="table-actions">Actions</th></tr>
+                  <tr>
+                    <th>Type</th>
+                    <th>Uploaded By</th>
+                    <th>Date</th>
+                    <th class="table-actions">Actions</th>
+                  </tr>
                 </thead>
                 <tbody>
                   @for (a of attachments(); track a.attachmentId) {
@@ -111,9 +253,18 @@
                       <td class="small font-monospace">{{ a.uploadedBy | slice:0:8 }}…</td>
                       <td class="small text-muted">{{ a.uploadedDate | date:'mediumDate' }}</td>
                       <td class="table-actions">
-                        <a [href]="a.fileUri" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <a [href]="a.fileUri" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Download">
                           <i class="bi bi-download"></i>
                         </a>
+                        <button class="btn btn-sm btn-outline-danger" title="Delete"
+                                (click)="deleteAttachment(a.attachmentId)"
+                                [disabled]="deletingId() === a.attachmentId">
+                          @if (deletingId() === a.attachmentId) {
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                          } @else {
+                            <i class="bi bi-trash"></i>
+                          }
+                        </button>
                       </td>
                     </tr>
                   }
@@ -125,16 +276,77 @@
       </div>
     }
 
+    <!-- ── Completeness Tab ───────────────────────────────────────────────── -->
     @if (activeTab() === 'completeness') {
       <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex align-items-center justify-content-between">
+          <span class="fw-semibold">Completeness Check</span>
+          <div class="d-flex gap-2">
+            <a [routerLink]="['/submissions', submission()!.submissionId, 'questionnaire']"
+               class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-list-check me-1"></i>View Questionnaire
+            </a>
+            <button class="btn btn-sm btn-primary" (click)="runCompletenessCheck()" [disabled]="runningCheck()">
+              @if (runningCheck()) {
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+              } @else {
+                <i class="bi bi-play-circle me-1"></i>
+              }
+              Run Check
+            </button>
+          </div>
+        </div>
         <div class="card-body">
-          <a [routerLink]="['/submissions', submission()!.submissionId, 'questionnaire']"
-             class="btn btn-sm btn-outline-primary mb-3">
-            <i class="bi bi-list-check me-1"></i>View Questionnaire
-          </a>
-          <p class="text-muted small">
-            Completeness status tracks whether all required documentation and questionnaire responses have been provided.
-          </p>
+          @if (loadingCompleteness()) {
+            <div class="text-center py-4">
+              <div class="spinner-border text-primary" role="status"></div>
+            </div>
+          } @else if (!completeness()) {
+            <div class="text-center text-muted py-4">
+              <i class="bi bi-question-circle fs-2 d-block mb-2"></i>
+              No completeness check has been run yet. Click <strong>Run Check</strong> to start.
+            </div>
+          } @else {
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <div class="detail-item">
+                  <span class="detail-label">Check Status</span>
+                  <span class="fw-semibold" [class]="completenessClass(completeness()!.status)">
+                    <i class="bi" [class.bi-check-circle-fill]="completeness()!.status === 'Complete'"
+                                  [class.bi-clock-fill]="completeness()!.status !== 'Complete'"></i>
+                    {{ completeness()!.status }}
+                  </span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="detail-item">
+                  <span class="detail-label">Checked Date</span>
+                  <span>{{ completeness()!.checkedDate | date:'medium' }}</span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="detail-item">
+                  <span class="detail-label">Missing Items</span>
+                  <span class="fw-semibold">{{ completeness()!.missingItemsJSON.length }}</span>
+                </div>
+              </div>
+            </div>
+
+            @if (completeness()!.missingItemsJSON.length) {
+              <div class="alert alert-warning py-2 mb-0">
+                <p class="fw-semibold mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Missing Items</p>
+                <ul class="mb-0 ps-3 small">
+                  @for (item of completeness()!.missingItemsJSON; track item) {
+                    <li>{{ item }}</li>
+                  }
+                </ul>
+              </div>
+            } @else {
+              <div class="alert alert-success py-2 mb-0">
+                <i class="bi bi-check-circle me-1"></i>All required items are present. Submission is complete.
+              </div>
+            }
+          }
         </div>
       </div>
     }

@@ -1,7 +1,7 @@
 <div class="page-container">
   <app-page-header
     title="Policy Detail"
-    subtitle="View policy information, coverage, and actions"
+    subtitle="View policy information, coverage, endorsements and cancellations"
     icon="bi-journal-bookmark"
     [breadcrumbs]="breadcrumbs">
     @if (policy()) {
@@ -23,80 +23,256 @@
   }
 
   @if (loading()) {
-    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading policy…</div>
+    <div class="text-center py-5 text-muted">
+      <span class="spinner-border spinner-border-sm me-2"></span>Loading policy…
+    </div>
   } @else if (!policy()) {
     <div class="alert alert-warning">Policy not found.</div>
   } @else {
     <div class="row g-3">
+
+      <!-- Left: Tabs -->
       <div class="col-md-8">
-        <div class="card border-0 shadow-sm mb-3">
-          <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
-            <i class="bi bi-info-circle text-primary"></i>
-            <span class="fw-semibold small">Policy Overview</span>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <div class="detail-item">
-                  <span class="detail-label">Policy Number</span>
-                  <span class="fw-semibold">{{ policy()!.policyNumber }}</span>
+        <ul class="nav nav-tabs mb-3">
+          <li class="nav-item">
+            <button class="nav-link" [class.active]="activeTab() === 'overview'" (click)="selectTab('overview')">
+              <i class="bi bi-info-circle me-1"></i>Overview
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" [class.active]="activeTab() === 'coverage'" (click)="selectTab('coverage')">
+              <i class="bi bi-shield-check me-1"></i>Coverage
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" [class.active]="activeTab() === 'endorsements'" (click)="selectTab('endorsements')">
+              <i class="bi bi-pencil-square me-1"></i>Endorsements
+              @if (endorsements().length) {
+                <span class="badge bg-secondary ms-1">{{ endorsements().length }}</span>
+              }
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" [class.active]="activeTab() === 'cancellations'" (click)="selectTab('cancellations')">
+              <i class="bi bi-x-circle me-1"></i>Cancellations
+              @if (cancellations().length) {
+                <span class="badge bg-secondary ms-1">{{ cancellations().length }}</span>
+              }
+            </button>
+          </li>
+        </ul>
+
+        <!-- Overview Tab -->
+        @if (activeTab() === 'overview') {
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
+              <i class="bi bi-info-circle text-primary"></i>
+              <span class="fw-semibold small">Policy Overview</span>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="detail-item">
+                    <span class="detail-label">Policy Number</span>
+                    <span class="fw-semibold">{{ policy()!.policyNumber }}</span>
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-6">
-                <div class="detail-item">
-                  <span class="detail-label">Submission ID</span>
-                  <a [routerLink]="['/submissions', policy()!.submissionId]" class="text-decoration-none">
-                    {{ policy()!.submissionId }}
-                  </a>
+                <div class="col-md-6">
+                  <div class="detail-item">
+                    <span class="detail-label">Submission ID</span>
+                    <a [routerLink]="['/submissions', policy()!.submissionId]" class="text-decoration-none">
+                      {{ policy()!.submissionId }}
+                    </a>
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-4">
-                <div class="detail-item">
-                  <span class="detail-label">Product Line</span>
-                  <span class="badge bg-primary">{{ policy()!.productLine }}</span>
+                <div class="col-md-4">
+                  <div class="detail-item">
+                    <span class="detail-label">Product Line</span>
+                    <span class="badge bg-primary">{{ policy()!.productLine }}</span>
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-4">
-                <div class="detail-item">
-                  <span class="detail-label">Inception Date</span>
-                  <span>{{ policy()!.inceptionDate | date:'mediumDate' }}</span>
+                <div class="col-md-4">
+                  <div class="detail-item">
+                    <span class="detail-label">Inception Date</span>
+                    <span>{{ policy()!.inceptionDate | date:'mediumDate' }}</span>
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-4">
-                <div class="detail-item">
-                  <span class="detail-label">Expiry Date</span>
-                  <span>{{ policy()!.expiryDate | date:'mediumDate' }}</span>
+                <div class="col-md-4">
+                  <div class="detail-item">
+                    <span class="detail-label">Expiry Date</span>
+                    <span>{{ policy()!.expiryDate | date:'mediumDate' }}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        }
 
-        @if (coverageEntries().length) {
+        <!-- Coverage Tab -->
+        @if (activeTab() === 'coverage') {
           <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
               <i class="bi bi-shield-check text-success"></i>
               <span class="fw-semibold small">Coverage Details</span>
             </div>
-            <div class="card-body p-0">
-              <table class="table table-sm mb-0">
-                <thead class="table-light">
-                  <tr><th>Field</th><th>Value</th></tr>
-                </thead>
-                <tbody>
-                  @for (e of coverageEntries(); track e.key) {
-                    <tr>
-                      <td class="fw-medium text-capitalize">{{ e.key }}</td>
-                      <td>{{ e.value }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+            @if (!coverageEntries().length) {
+              <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-shield-slash fs-2 d-block mb-2"></i>No coverage details available.
+              </div>
+            } @else {
+              <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                  <thead class="table-light">
+                    <tr><th>Field</th><th>Value</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (e of coverageEntries(); track e.key) {
+                      <tr>
+                        <td class="fw-medium text-capitalize">{{ e.key }}</td>
+                        <td>{{ e.value }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Endorsements Tab -->
+        @if (activeTab() === 'endorsements') {
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-pencil-square text-primary"></i>
+                <span class="fw-semibold small">Endorsements</span>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" (click)="goEndorsement()">
+                <i class="bi bi-plus me-1"></i>New Endorsement
+              </button>
             </div>
+            @if (loadingEndorsements()) {
+              <div class="card-body text-center py-4">
+                <span class="spinner-border spinner-border-sm text-primary"></span>
+              </div>
+            } @else if (!endorsements().length) {
+              <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-pencil-square fs-2 d-block mb-2"></i>No endorsements found.
+              </div>
+            } @else {
+              <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Type</th>
+                      <th>Effective Date</th>
+                      <th>Premium Delta</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (e of endorsements(); track e.endorsementId) {
+                      <tr>
+                        <td class="small">{{ e.endorsementType }}</td>
+                        <td class="small text-muted">{{ e.effectiveDate | date:'mediumDate' }}</td>
+                        <td class="small fw-medium"
+                            [class.text-success]="e.premiumDelta > 0"
+                            [class.text-danger]="e.premiumDelta < 0">
+                          {{ e.premiumDelta >= 0 ? '+' : '' }}{{ e.premiumDelta | number:'1.2-2' }}
+                        </td>
+                        <td>
+                          <span class="badge" [ngClass]="statusClass(e.status)">{{ e.status }}</span>
+                        </td>
+                        <td>
+                          @if (e.status === 'Proposed') {
+                            <button class="btn btn-sm btn-success"
+                                    [disabled]="approvingId() === e.endorsementId"
+                                    (click)="approveEndorsement(e.endorsementId)">
+                              @if (approvingId() === e.endorsementId) {
+                                <span class="spinner-border spinner-border-sm"></span>
+                              } @else {
+                                <i class="bi bi-check-lg me-1"></i>Approve
+                              }
+                            </button>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Cancellations Tab -->
+        @if (activeTab() === 'cancellations') {
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-x-circle text-danger"></i>
+                <span class="fw-semibold small">Cancellation Requests</span>
+              </div>
+              @if (policy()!.status === 'Active') {
+                <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
+                  <i class="bi bi-x-circle me-1"></i>Request Cancellation
+                </button>
+              }
+            </div>
+            @if (loadingCancellations()) {
+              <div class="card-body text-center py-4">
+                <span class="spinner-border spinner-border-sm text-danger"></span>
+              </div>
+            } @else if (!cancellations().length) {
+              <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-x-circle fs-2 d-block mb-2"></i>No cancellation requests found.
+              </div>
+            } @else {
+              <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Reason</th>
+                      <th>Cancel Date</th>
+                      <th>Refund ($)</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (c of cancellations(); track c.cancellationId) {
+                      <tr>
+                        <td class="small">{{ c.cancelReason }}</td>
+                        <td class="small text-muted">{{ c.cancelDate | date:'mediumDate' }}</td>
+                        <td class="small">{{ c.refundPremium | number:'1.2-2' }}</td>
+                        <td>
+                          <span class="badge" [ngClass]="statusClass(c.status)">{{ c.status }}</span>
+                        </td>
+                        <td>
+                          @if (c.status === 'Requested') {
+                            <button class="btn btn-sm btn-warning"
+                                    [disabled]="approvingId() === c.cancellationId"
+                                    (click)="approveCancellation(c.cancellationId)">
+                              @if (approvingId() === c.cancellationId) {
+                                <span class="spinner-border spinner-border-sm"></span>
+                              } @else {
+                                <i class="bi bi-check-lg me-1"></i>Approve
+                              }
+                            </button>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
           </div>
         }
       </div>
 
+      <!-- Right: Status Card -->
       <div class="col-md-4">
         <div class="card border-0 shadow-sm">
           <div class="card-body">
@@ -123,6 +299,7 @@
           </div>
         </div>
       </div>
+
     </div>
   }
 </div>
