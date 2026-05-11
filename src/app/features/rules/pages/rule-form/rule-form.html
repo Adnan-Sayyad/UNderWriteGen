@@ -1,7 +1,7 @@
 <div class="page-container">
   <app-page-header
     [title]="ruleId() ? 'Edit Rule' : 'New Rule'"
-    subtitle="Define underwriting rule expression, severity and product scope"
+    subtitle="Build a rule visually — pick fields and operators, no code required"
     icon="bi-diagram-3"
     [breadcrumbs]="breadcrumbs">
   </app-page-header>
@@ -15,55 +15,248 @@
   }
 
   @if (loading()) {
-    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>
+    <div class="text-center py-5 text-muted">
+      <span class="spinner-border spinner-border-sm me-2"></span>Loading rule…
+    </div>
   } @else {
-    <div class="card border-0 shadow-sm">
-      <div class="card-body">
-        <form [formGroup]="form" novalidate>
+    <form [formGroup]="form" novalidate>
+      <!-- ─── Rule details ──────────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent border-0 pt-3 pb-0">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-card-list me-2 text-primary"></i>Rule Details</h6>
+        </div>
+        <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-6">
+              <label class="form-label small fw-medium required-mark">Rule Name</label>
+              <input type="text" class="form-control form-control-sm"
+                     [class.is-invalid]="form.controls.ruleName.invalid && form.controls.ruleName.touched"
+                     formControlName="ruleName" placeholder="e.g. Block applicants over 70" />
+              <div class="invalid-feedback">A short rule name (min 3 chars) is required.</div>
+            </div>
+            <div class="col-md-3">
               <label class="form-label small fw-medium required-mark">Product Line</label>
               <select class="form-select form-select-sm" formControlName="productLine">
                 @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
               </select>
             </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-medium required-mark">Severity</label>
-              <select class="form-select form-select-sm" formControlName="severity">
-                @for (s of severities; track s) { <option [value]="s">{{ s }}</option> }
-              </select>
-              <div class="form-text">
-                <span class="badge bg-danger me-1">Block</span>
-                <span class="badge bg-warning text-dark me-1">Refer</span>
-                <span class="badge bg-info text-dark me-1">Load</span>
-                <span class="badge bg-secondary">Info</span>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-medium">Status</label>
+            <div class="col-md-3">
+              <label class="form-label small fw-medium required-mark">Status</label>
               <select class="form-select form-select-sm" formControlName="status">
                 @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
               </select>
             </div>
-            <div class="col-12">
-              <label class="form-label small fw-medium required-mark">Expression (JSON)</label>
-              <textarea class="form-control form-control-sm font-monospace" formControlName="expressionJSON"
-                        rows="8"
-                        [class.is-invalid]="form.controls.expressionJSON.invalid && form.controls.expressionJSON.touched"
-                        placeholder='e.g. { "field": "age", "operator": "gt", "value": 65 }'></textarea>
-              <div class="invalid-feedback">Expression is required.</div>
-              <div class="form-text">Enter a valid JSON object representing the rule condition.</div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-medium required-mark">Severity / Action</label>
+              <div class="severity-picker">
+                @for (s of severities; track s) {
+                  <label class="sev-chip" [class.active]="form.controls.severity.value === s" [attr.data-sev]="s">
+                    <input type="radio" formControlName="severity" [value]="s" hidden />
+                    <i class="bi me-1"
+                       [class.bi-x-circle-fill]="s==='Block'"
+                       [class.bi-arrow-up-right-circle-fill]="s==='Refer'"
+                       [class.bi-plus-circle-fill]="s==='Load'"
+                       [class.bi-info-circle-fill]="s==='Info'"></i>{{ s }}
+                  </label>
+                }
+              </div>
+              <div class="form-text small text-muted">
+                <strong>Block</strong> stops the submission · <strong>Refer</strong> routes to a higher authority ·
+                <strong>Load</strong> applies a loading · <strong>Info</strong> just records a note.
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-medium">Description <span class="text-muted">(optional)</span></label>
+              <input type="text" class="form-control form-control-sm" formControlName="description"
+                     placeholder="Explain why this rule exists" />
             </div>
           </div>
-        </form>
+        </div>
       </div>
-      <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
-        <button class="btn btn-outline-secondary btn-sm" (click)="cancel()">Cancel</button>
-        <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving()">
+
+      <!-- ─── Condition builder ────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-funnel me-2 text-primary"></i>Conditions</h6>
+          <div class="d-flex align-items-center gap-3">
+            <div class="logic-toggle">
+              <label class="logic-opt" [class.active]="form.controls.logic.value === 'AND'">
+                <input type="radio" formControlName="logic" value="AND" hidden /> Match ALL (AND)
+              </label>
+              <label class="logic-opt" [class.active]="form.controls.logic.value === 'OR'">
+                <input type="radio" formControlName="logic" value="OR" hidden /> Match ANY (OR)
+              </label>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="addCondition()">
+              <i class="bi bi-plus-lg me-1"></i>Add Condition
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div formArrayName="conditions">
+            @for (row of conditions.controls; track $index; let i = $index, last = $last) {
+              <div class="condition-row" [formGroupName]="i">
+                <!-- Field -->
+                <div class="cond-field">
+                  <label class="form-label small fw-medium mb-1">Field</label>
+                  <select class="form-select form-select-sm"
+                          [value]="row.controls['field'].value"
+                          (change)="onFieldChange(i, $any($event.target).value)">
+                    @for (f of availableFields(); track f.key) {
+                      <option [value]="f.key">{{ f.label }}{{ f.unit ? ' (' + f.unit + ')' : '' }}</option>
+                    }
+                  </select>
+                  @if (fieldHelp(row); as help) {
+                    <div class="form-text small text-muted">{{ help }}</div>
+                  }
+                </div>
+
+                <!-- Operator -->
+                <div class="cond-op">
+                  <label class="form-label small fw-medium mb-1">Is</label>
+                  <select class="form-select form-select-sm" formControlName="operator">
+                    @for (op of operatorsFor(row.controls['type'].value); track op.value) {
+                      <option [value]="op.value">{{ op.label }}</option>
+                    }
+                  </select>
+                </div>
+
+                <!-- Value -->
+                <div class="cond-value">
+                  <label class="form-label small fw-medium mb-1">Value</label>
+
+                  @switch (row.controls['type'].value) {
+                    @case ('boolean') {
+                      <select class="form-select form-select-sm" formControlName="value">
+                        <option [ngValue]="true">Yes / True</option>
+                        <option [ngValue]="false">No / False</option>
+                      </select>
+                    }
+
+                    @case ('enum') {
+                      @if (isMultiSelect(row)) {
+                        <div class="multi-chips">
+                          @for (opt of row.controls['options'].value; track opt) {
+                            <label class="chip-check" [class.active]="isMultiChecked(row, opt)">
+                              <input type="checkbox" [checked]="isMultiChecked(row, opt)"
+                                     (change)="toggleMulti(row, opt, $any($event.target).checked)" hidden />
+                              {{ opt }}
+                            </label>
+                          }
+                        </div>
+                      } @else {
+                        <select class="form-select form-select-sm" formControlName="value">
+                          @for (opt of row.controls['options'].value; track opt) {
+                            <option [value]="opt">{{ opt }}</option>
+                          }
+                        </select>
+                      }
+                    }
+
+                    @case ('number') {
+                      @if (isBetween(row)) {
+                        <div class="d-flex gap-2 align-items-center">
+                          <input type="number" class="form-control form-control-sm" formControlName="value" placeholder="min" />
+                          <span class="text-muted small">and</span>
+                          <input type="number" class="form-control form-control-sm" formControlName="value2" placeholder="max" />
+                          @if (row.controls['unit'].value) {
+                            <span class="text-muted small">{{ row.controls['unit'].value }}</span>
+                          }
+                        </div>
+                      } @else {
+                        <div class="input-group input-group-sm">
+                          @if (row.controls['unit'].value === '$') { <span class="input-group-text">$</span> }
+                          <input type="number" class="form-control" formControlName="value" />
+                          @if (row.controls['unit'].value && row.controls['unit'].value !== '$') {
+                            <span class="input-group-text">{{ row.controls['unit'].value }}</span>
+                          }
+                        </div>
+                      }
+                    }
+
+                    @default {
+                      @if (row.controls['options'].value?.length) {
+                        @if (isMultiSelect(row)) {
+                          <div class="multi-chips">
+                            @for (opt of row.controls['options'].value; track opt) {
+                              <label class="chip-check" [class.active]="isMultiChecked(row, opt)">
+                                <input type="checkbox" [checked]="isMultiChecked(row, opt)"
+                                       (change)="toggleMulti(row, opt, $any($event.target).checked)" hidden />
+                                {{ opt }}
+                              </label>
+                            }
+                          </div>
+                        } @else {
+                          <select class="form-select form-select-sm" formControlName="value">
+                            @for (opt of row.controls['options'].value; track opt) {
+                              <option [value]="opt">{{ opt }}</option>
+                            }
+                          </select>
+                        }
+                      } @else {
+                        <input type="text" class="form-control form-control-sm" formControlName="value" placeholder="value" />
+                      }
+                    }
+                  }
+                </div>
+
+                <!-- Remove -->
+                <div class="cond-action">
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeCondition(i)" title="Remove">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+
+                @if (!last) {
+                  <div class="cond-joiner">
+                    <span class="joiner-chip">{{ form.controls.logic.value }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (!conditions.length) {
+              <div class="text-center text-muted small py-3">
+                No conditions yet — click "Add Condition" to start.
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Live preview ─────────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-3">
+          <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-eye text-primary fs-5 mt-1"></i>
+            <div>
+              <div class="small text-muted fw-medium">Plain English Preview</div>
+              <div class="preview-text">
+                If <strong>{{ preview() }}</strong>,
+                then
+                <span class="badge"
+                      [class.bg-danger]="form.controls.severity.value==='Block'"
+                      [class.bg-warning]="form.controls.severity.value==='Refer'"
+                      [class.text-dark]="form.controls.severity.value==='Refer' || form.controls.severity.value==='Load'"
+                      [class.bg-info]="form.controls.severity.value==='Load'"
+                      [class.bg-secondary]="form.controls.severity.value==='Info'">
+                  {{ form.controls.severity.value }}
+                </span>
+                the submission.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancel()">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving()">
           @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          Save Rule
+          {{ ruleId() ? 'Update Rule' : 'Create Rule' }}
         </button>
       </div>
-    </div>
+    </form>
   }
 </div>

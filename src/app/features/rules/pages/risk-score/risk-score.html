@@ -1,0 +1,180 @@
+<div class="page-container">
+  <app-page-header
+    title="Risk Scoring"
+    subtitle="Calculate and review submission risk scores and band distribution"
+    icon="bi-speedometer2"
+    [breadcrumbs]="breadcrumbs">
+    <div class="d-flex gap-2">
+      <a routerLink="/rules/list" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Rules
+      </a>
+    </div>
+  </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <form [formGroup]="searchForm" novalidate (ngSubmit)="search()" class="row g-2 align-items-end">
+        <div class="col-md-7">
+          <label class="form-label small fw-medium required-mark">Submission ID</label>
+          <input type="text" class="form-control form-control-sm font-monospace"
+                 [class.is-invalid]="searchForm.controls.submissionId.invalid && searchForm.controls.submissionId.touched"
+                 formControlName="submissionId" placeholder="3f1c2a90-…" />
+        </div>
+        <div class="col-md-5 d-flex gap-2">
+          <button type="submit" class="btn btn-sm btn-primary" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            <i class="bi bi-search me-1" *ngIf="!loading()"></i>Load Score
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary"
+                  (click)="calculate()" [disabled]="!submissionId() || calculating()">
+            @if (calculating()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            <i class="bi bi-calculator me-1" *ngIf="!calculating()"></i>Calculate Score
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  @if (submissionId()) {
+    <div class="row g-3 mb-3">
+      <!-- Latest score card -->
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-transparent border-0 pt-3 pb-0">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-speedometer2 me-2 text-primary"></i>Latest Score</h6>
+          </div>
+          <div class="card-body">
+            @if (latest(); as s) {
+              <div class="text-center mb-3">
+                <div class="score-circle" [style.--score-color]="scoreGaugeColor(s.scoreValue)"
+                     [style.--score-percent.%]="scorePercent(s.scoreValue)">
+                  <div class="score-inner">
+                    <div class="score-value">{{ s.scoreValue | number:'1.0-1' }}</div>
+                    <small class="text-muted">/ 100</small>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <span class="badge fs-6" [ngClass]="bandClass(s.band)">{{ s.band }} Risk</span>
+                </div>
+              </div>
+              <dl class="row small mb-0">
+                <dt class="col-5 text-muted">Score ID</dt>
+                <dd class="col-7 font-monospace">{{ s.riskScoreID | slice:0:8 }}…</dd>
+                <dt class="col-5 text-muted">Submission</dt>
+                <dd class="col-7 font-monospace">{{ s.submissionID | slice:0:8 }}…</dd>
+                <dt class="col-5 text-muted">Model Version</dt>
+                <dd class="col-7">{{ s.modelVersion || '—' }}</dd>
+                <dt class="col-5 text-muted">Scored At</dt>
+                <dd class="col-7">{{ s.scoredDate | date:'medium' }}</dd>
+              </dl>
+            } @else if (loading()) {
+              <div class="text-center py-5 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+              </div>
+            } @else {
+              <app-empty-state icon="bi-speedometer2" title="No score yet"
+                               message="Click 'Calculate Score' to score this submission."></app-empty-state>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- History card -->
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-transparent border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-clock-history me-2 text-primary"></i>Scoring History</h6>
+            <span class="small text-muted">{{ history().length }} entry(ies)</span>
+          </div>
+          <div class="card-body p-0">
+            @if (!history().length) {
+              <app-empty-state icon="bi-clock-history" title="No history"
+                               message="Calculate a score to start the history trail."></app-empty-state>
+            } @else {
+              <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle small">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Score</th>
+                      <th>Band</th>
+                      <th>Model</th>
+                      <th>Scored</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (h of history(); track h.riskScoreID) {
+                      <tr>
+                        <td class="fw-semibold">{{ h.scoreValue | number:'1.0-1' }}</td>
+                        <td><span class="badge" [ngClass]="bandClass(h.band)">{{ h.band }}</span></td>
+                        <td class="text-muted">{{ h.modelVersion || '—' }}</td>
+                        <td class="text-muted">{{ h.scoredDate | date:'short' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Band filter -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 fw-semibold"><i class="bi bi-funnel me-2 text-primary"></i>Browse by Risk Band</h6>
+      <div class="d-flex gap-2 align-items-center">
+        <select class="form-select form-select-sm w-auto"
+                [value]="bandFilter()" (change)="bandFilter.set($any($event.target).value); filterByBand()">
+          <option value="">— Choose Band —</option>
+          @for (b of bands; track b) { <option [value]="b">{{ b }}</option> }
+        </select>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      @if (!bandFilter()) {
+        <div class="text-center py-4 text-muted small">Select a band to view submissions in that risk segment.</div>
+      } @else if (bandLoading()) {
+        <div class="text-center py-4 text-muted">
+          <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+        </div>
+      } @else if (!bandScores().length) {
+        <app-empty-state icon="bi-funnel" title="No submissions in this band"></app-empty-state>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Submission</th>
+                <th>Score</th>
+                <th>Band</th>
+                <th>Model</th>
+                <th>Scored</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of bandScores(); track s.riskScoreID) {
+                <tr>
+                  <td class="font-monospace small">{{ s.submissionID | slice:0:8 }}…</td>
+                  <td class="fw-semibold">{{ s.scoreValue | number:'1.0-1' }}</td>
+                  <td><span class="badge" [ngClass]="bandClass(s.band)">{{ s.band }}</span></td>
+                  <td class="small text-muted">{{ s.modelVersion || '—' }}</td>
+                  <td class="small text-muted">{{ s.scoredDate | date:'short' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</div>

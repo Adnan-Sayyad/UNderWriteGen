@@ -6,11 +6,11 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { RulesApiService } from '../../services/rules-api.service';
-import { UWRule, RuleSeverity, RuleStatus } from '../../models/rules.model';
-import { DEFAULT_PAGE_REQUEST } from '../../../../shared/models/pagination.model';
-
-type ModalMode = 'create' | 'edit' | null;
-const SEVERITIES: RuleSeverity[] = ['Block', 'Refer', 'Load', 'Info'];
+import {
+  UWRule, RuleSeverity, UWStatus, EvaluateRulesResponse,
+  SEVERITIES, UW_STATUSES, PRODUCT_LINES,
+  parseExpression, describeExpression,
+} from '../../models/rules.model';
 
 @Component({
   selector: 'app-rule-list',
@@ -24,19 +24,20 @@ export class RuleListPage implements OnInit {
 
   readonly rules        = signal<UWRule[]>([]);
   readonly loading      = signal(false);
-  readonly saving       = signal(false);
-  readonly modalMode    = signal<ModalMode>(null);
-  readonly selected     = signal<UWRule | null>(null);
-  readonly filterSev    = signal('');
-  readonly filterStatus = signal('');
-  readonly alertMsg     = signal<{ type: 'success'|'danger'; text: string } | null>(null);
-  readonly severities   = SEVERITIES;
+  readonly toggling     = signal<string | null>(null);
+  readonly deleting     = signal<string | null>(null);
+  readonly filterSev    = signal<RuleSeverity | ''>('');
+  readonly filterStatus = signal<UWStatus | ''>('');
+  readonly filterProd   = signal('');
+  readonly alertMsg     = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
 
-  readonly filtered = computed(() => {
-    const sev = this.filterSev();
-    const st  = this.filterStatus();
-    return this.rules().filter(r => (!sev || r.severity === sev) && (!st || r.status === st));
-  });
+  readonly evaluateOpen   = signal(false);
+  readonly evaluating     = signal(false);
+  readonly evaluation     = signal<EvaluateRulesResponse | null>(null);
+
+  readonly severities   = SEVERITIES;
+  readonly statuses     = UW_STATUSES;
+  readonly productLines = PRODUCT_LINES;
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -44,11 +45,18 @@ export class RuleListPage implements OnInit {
     { label: 'UW Rules' },
   ];
 
-  readonly form = this.fb.group({
-    productLine: ['', Validators.required],
-    severity:    ['Refer' as RuleSeverity, Validators.required],
-    status:      ['Active' as RuleStatus, Validators.required],
-    expression:  ['', Validators.required],
+  readonly filtered = computed(() => {
+    const sev = this.filterSev();
+    const st  = this.filterStatus();
+    const pl  = this.filterProd();
+    return this.rules().filter(r =>
+      (!sev || r.severity === sev) &&
+      (!st  || r.status   === st)  &&
+      (!pl  || r.productLine === pl));
+  });
+
+  readonly evalForm = this.fb.group({
+    submissionId: ['', [Validators.required, Validators.minLength(8)]],
   });
 
   constructor(private svc: RulesApiService) {}
@@ -57,56 +65,75 @@ export class RuleListPage implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.svc.getRules(DEFAULT_PAGE_REQUEST).subscribe({
-      next: res => {
-        const d: any = res;
-        this.rules.set(d?.content ?? d?.data ?? []);
-        this.loading.set(false);
+    this.svc.getRules().subscribe({
+      next: r => { this.rules.set(r); this.loading.set(false); },
+      error: () => { this.loading.set(false); this.flash('danger', 'Failed to load rules.'); },
+    });
+  }
+
+  toggleStatus(r: UWRule): void {
+    const next: UWStatus = r.status === 'Active' ? 'Inactive' : 'Active';
+    this.toggling.set(r.uwRuleID);
+    this.svc.updateRuleStatus(r.uwRuleID, next).subscribe({
+      next: updated => {
+        this.toggling.set(null);
+        this.rules.update(list => list.map(x => x.uwRuleID === r.uwRuleID ? updated : x));
+        this.flash('success', `Rule marked ${next}.`);
       },
-      error: () => this.loading.set(false),
+      error: () => { this.toggling.set(null); this.flash('danger', 'Status update failed.'); },
     });
   }
 
-  openCreate(): void { this.form.reset({ severity: 'Refer', status: 'Active' }); this.selected.set(null); this.modalMode.set('create'); }
-
-  openEdit(r: UWRule): void {
-    this.selected.set(r);
-    this.form.patchValue({
-      productLine: r.productLine, severity: r.severity, status: r.status,
-      expression: JSON.stringify(r.expressionJSON),
-    });
-    this.modalMode.set('edit');
-  }
-
-  closeModal(): void { this.modalMode.set(null); this.selected.set(null); }
-
-  save(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    this.saving.set(true);
-    const v = this.form.value;
-    let expressionJSON: Record<string, unknown> = {};
-    try { expressionJSON = JSON.parse(v.expression ?? '{}'); } catch { expressionJSON = { raw: v.expression }; }
-    const payload: Partial<UWRule> = {
-      productLine: v.productLine!, severity: v.severity as RuleSeverity,
-      status: v.status as RuleStatus, expressionJSON,
-    };
-    const req = this.modalMode() === 'edit'
-      ? this.svc.updateRule(this.selected()!.ruleId, payload)
-      : this.svc.createRule(payload);
-    req.subscribe({
-      next: () => { this.saving.set(false); this.closeModal(); this.load(); this.flash('success', 'Rule saved.'); },
-      error: err => { this.saving.set(false); this.flash('danger', err?.error?.message ?? 'Save failed.'); },
+  remove(r: UWRule): void {
+    if (!confirm(`Delete rule for ${r.productLine}? This cannot be undone.`)) return;
+    this.deleting.set(r.uwRuleID);
+    this.svc.deleteRule(r.uwRuleID).subscribe({
+      next: () => {
+        this.deleting.set(null);
+        this.rules.update(list => list.filter(x => x.uwRuleID !== r.uwRuleID));
+        this.flash('success', 'Rule deleted.');
+      },
+      error: () => { this.deleting.set(null); this.flash('danger', 'Delete failed.'); },
     });
   }
 
-  severityClass(s: string): string {
-    const map: Record<string, string> = {
-      Block: 'bg-danger', Refer: 'bg-warning text-dark', Load: 'bg-info text-dark', Info: 'bg-secondary',
+  openEvaluate(): void {
+    this.evaluation.set(null);
+    this.evalForm.reset({ submissionId: '' });
+    this.evaluateOpen.set(true);
+  }
+
+  closeEvaluate(): void { this.evaluateOpen.set(false); }
+
+  runEvaluate(): void {
+    if (this.evalForm.invalid) { this.evalForm.markAllAsTouched(); return; }
+    this.evaluating.set(true);
+    this.svc.evaluateRules(this.evalForm.value.submissionId!).subscribe({
+      next: res => { this.evaluation.set(res); this.evaluating.set(false); },
+      error: () => { this.evaluating.set(false); this.flash('danger', 'Evaluation failed.'); },
+    });
+  }
+
+  severityClass(s: RuleSeverity): string {
+    const map: Record<RuleSeverity, string> = {
+      Block: 'bg-danger', Refer: 'bg-warning text-dark',
+      Load:  'bg-info text-dark', Info: 'bg-secondary',
     };
     return map[s] ?? 'bg-secondary';
   }
 
-  private flash(type: 'success'|'danger', text: string) {
+  exprPreview(r: UWRule): string {
+    const expr = parseExpression(r.expressionJSON);
+    if (!expr.conditions.length) return '—';
+    const text = describeExpression(expr);
+    return text.length > 100 ? `${text.slice(0, 100)}…` : text;
+  }
+
+  ruleTitle(r: UWRule): string {
+    return r.ruleName?.trim() || `Rule ${r.uwRuleID.slice(0, 8)}…`;
+  }
+
+  private flash(type: 'success' | 'danger', text: string): void {
     this.alertMsg.set({ type, text });
     setTimeout(() => this.alertMsg.set(null), 4000);
   }
