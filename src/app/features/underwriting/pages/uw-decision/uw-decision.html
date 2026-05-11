@@ -14,6 +14,22 @@
     </div>
   }
 
+  <!-- Overwrite confirmation banner -->
+  @if (showOverwriteWarn()) {
+    <div class="alert alert-warning d-flex align-items-center justify-content-between gap-2 py-2 mb-3">
+      <span>
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        A decision already exists for this submission. <strong>Overwrite it?</strong>
+      </span>
+      <div class="d-flex gap-2 flex-shrink-0">
+        <button class="btn btn-sm btn-outline-secondary" (click)="cancelOverwrite()">Cancel</button>
+        <button class="btn btn-sm btn-warning" (click)="confirmOverwrite()">
+          Yes, Overwrite
+        </button>
+      </div>
+    </div>
+  }
+
   <div class="mb-2">
     <small class="text-muted">
       Submission: <code class="text-primary">{{ submissionId() }}</code>
@@ -21,35 +37,48 @@
   </div>
 
   <div class="row g-3">
-    <!-- Decision form -->
+    <!-- Left: Decision form -->
     <div class="col-md-7">
+
+      <!-- Existing decision card -->
       @if (existingDecision()) {
-        <div class="card border-0 shadow-sm mb-3">
-          <div class="card-body">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <span class="fw-semibold">Existing Decision:</span>
+        <div class="card border-warning border-2 shadow-sm mb-3">
+          <div class="card-header bg-warning bg-opacity-10 border-0 py-2 d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history text-warning"></i>
+            <span class="fw-semibold small">Current Decision</span>
+          </div>
+          <div class="card-body py-2">
+            <div class="d-flex align-items-center gap-2 mb-1">
               <span class="badge fs-6" [ngClass]="decisionClass(existingDecision()!.decision)">
                 {{ existingDecision()!.decision }}
               </span>
+              <small class="text-muted">
+                by <code class="small">{{ shortId(existingDecision()!.decidedBy) }}</code>
+                on {{ existingDecision()!.decidedDate | date:'mediumDate' }}
+              </small>
             </div>
-            <p class="small text-muted mb-1">{{ existingDecision()!.reason }}</p>
-            <small class="text-muted">By {{ existingDecision()!.decidedBy }} on {{ existingDecision()!.decidedDate | date:'medium' }}</small>
+            <p class="small text-muted mb-0">{{ existingDecision()!.reason }}</p>
           </div>
         </div>
       }
 
+      <!-- Decision form -->
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 fw-semibold small py-2">
+        <div class="card-header bg-white border-0 fw-semibold small py-2 d-flex align-items-center gap-2">
+          <i class="bi bi-pencil-square text-primary"></i>
           {{ existingDecision() ? 'Update Decision' : 'Submit Decision' }}
+          @if (existingDecision()) {
+            <span class="badge bg-warning text-dark ms-1">Will overwrite</span>
+          }
         </div>
         <div class="card-body">
           <form [formGroup]="decisionForm" novalidate>
             <div class="mb-3">
-              <label class="form-label small fw-medium required-mark">Decision</label>
+              <label class="form-label small fw-medium">Decision <span class="text-danger">*</span></label>
               <div class="d-flex flex-wrap gap-2">
                 @for (d of decisions; track d.value) {
                   <button type="button" class="btn btn-sm"
-                          [class]="decisionForm.value.decision === d.value ? d.css : 'btn-outline-secondary'"
+                          [class]="decisionForm.value.decision === d.value ? d.css : d.outlineCss"
                           (click)="decisionForm.patchValue({ decision: d.value })">
                     {{ d.label }}
                   </button>
@@ -57,7 +86,7 @@
               </div>
             </div>
             <div class="mb-3">
-              <label class="form-label small fw-medium required-mark">Reason / Rationale</label>
+              <label class="form-label small fw-medium">Reason / Rationale <span class="text-danger">*</span></label>
               <textarea class="form-control form-control-sm" rows="5"
                         [class.is-invalid]="decisionForm.controls.reason.invalid && decisionForm.controls.reason.touched"
                         formControlName="reason"
@@ -67,9 +96,9 @@
               }
             </div>
             <div class="d-flex justify-content-end">
-              <button class="btn btn-primary btn-sm" (click)="submitDecision()" [disabled]="saving()">
+              <button class="btn btn-primary btn-sm" (click)="requestSubmit()" [disabled]="saving()">
                 @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-                Submit Decision
+                {{ existingDecision() ? 'Update Decision' : 'Submit Decision' }}
               </button>
             </div>
           </form>
@@ -77,18 +106,36 @@
       </div>
     </div>
 
-    <!-- Notes panel -->
+    <!-- Right: Notes panel -->
     <div class="col-md-5">
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 fw-semibold small py-2">
-          UW Notes <span class="badge bg-secondary ms-1">{{ notes().length }}</span>
+        <div class="card-header bg-white border-0 fw-semibold small py-2 d-flex align-items-center gap-2">
+          <i class="bi bi-chat-left-text text-secondary"></i>
+          UW Notes
+          <span class="badge bg-secondary ms-1">{{ notes().length }}</span>
         </div>
         <div class="card-body p-0">
-          <div class="notes-list">
+          <div class="notes-list" style="max-height:320px;overflow-y:auto">
             @for (n of notes(); track n.noteId) {
-              <div class="note-item border-bottom px-3 py-2">
-                <p class="small mb-1">{{ n.noteText }}</p>
-                <small class="text-muted">{{ n.createdDate | date:'medium' }}</small>
+              <div class="note-item border-bottom px-3 py-2 d-flex justify-content-between align-items-start gap-2">
+                <div class="flex-grow-1">
+                  <p class="small mb-1">{{ n.noteText }}</p>
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-circle text-muted" style="font-size:.75rem"></i>
+                    <small class="text-muted font-monospace">{{ shortId(n.authorId) }}</small>
+                    <small class="text-muted">· {{ n.createdDate | date:'MMM d, h:mm a' }}</small>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-link text-danger p-0 flex-shrink-0"
+                        title="Delete note"
+                        [disabled]="deletingNoteId() === n.noteId"
+                        (click)="deleteNote(n.noteId)">
+                  @if (deletingNoteId() === n.noteId) {
+                    <span class="spinner-border spinner-border-sm"></span>
+                  } @else {
+                    <i class="bi bi-trash3"></i>
+                  }
+                </button>
               </div>
             } @empty {
               <div class="px-3 py-4 text-center text-muted small">No notes yet.</div>
@@ -99,8 +146,12 @@
               <div class="input-group input-group-sm">
                 <input type="text" class="form-control" placeholder="Add a note…"
                        formControlName="noteText" />
-                <button class="btn btn-outline-primary" type="submit">
-                  <i class="bi bi-send"></i>
+                <button class="btn btn-outline-primary" type="submit" [disabled]="addingNote()">
+                  @if (addingNote()) {
+                    <span class="spinner-border spinner-border-sm"></span>
+                  } @else {
+                    <i class="bi bi-send"></i>
+                  }
                 </button>
               </div>
             </form>

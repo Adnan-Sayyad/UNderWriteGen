@@ -70,19 +70,15 @@ export class QuestionnairePage implements OnInit {
   save() {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const v = this.form.value;
-    const payload = {
-      submissionId: this.submissionId(),
-      responsesJSON: {
-        occupationType:     v.occupationType,
-        sumInsured:         v.sumInsured,
-        existingConditions: v.existingConditions,
-        smokingStatus:      v.smokingStatus,
-        annualIncome:       v.annualIncome,
-        additionalNotes:    v.additionalNotes,
-      },
-    };
     this.saving.set(true);
-    this.svc.saveQuestionnaire(this.submissionId(), payload).subscribe({
+    this.svc.saveQuestionnaire(this.submissionId(), {
+      occupationType:     v.occupationType,
+      sumInsured:         v.sumInsured,
+      existingConditions: v.existingConditions,
+      smokingStatus:      v.smokingStatus,
+      annualIncome:       v.annualIncome,
+      additionalNotes:    v.additionalNotes,
+    }).subscribe({
       next: () => { this.saving.set(false); this.flash('success', 'Questionnaire saved.'); },
       error: () => { this.saving.set(false); this.flash('danger', 'Save failed.'); },
     });

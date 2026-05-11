@@ -52,7 +52,7 @@ export class EndorsementFormPage implements OnInit {
       endorsementType: v.endorsementType as any,
       effectiveDate:   v.effectiveDate!,
       premiumDelta:    v.premiumDelta!,
-      changesJSON:     { summary: v.changesSummary },
+      changesJSON:     { summary: v.changesSummary } as any,
     };
     this.saving.set(true);
     this.svc.createEndorsement(this.policyId(), payload).subscribe({

@@ -3,7 +3,9 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PolicyApiService } from '../../services/policy-api.service';
-import { Policy } from '../../models/policy.model';
+import { Policy, Endorsement, Cancellation } from '../../models/policy.model';
+
+type Tab = 'overview' | 'coverage' | 'endorsements' | 'cancellations';
 
 @Component({
   selector: 'app-policy-detail',
@@ -13,11 +15,16 @@ import { Policy } from '../../models/policy.model';
   styleUrl: './policy-detail.css',
 })
 export class PolicyDetailPage implements OnInit {
-  readonly policyId  = signal<string>('');
-  readonly policy    = signal<Policy | null>(null);
-  readonly loading   = signal(true);
-  readonly alertMsg  = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
-  readonly activeTab = signal<'overview' | 'coverage'>('overview');
+  readonly policyId             = signal<string>('');
+  readonly policy               = signal<Policy | null>(null);
+  readonly loading              = signal(true);
+  readonly alertMsg             = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
+  readonly activeTab            = signal<Tab>('overview');
+  readonly endorsements         = signal<Endorsement[]>([]);
+  readonly cancellations        = signal<Cancellation[]>([]);
+  readonly loadingEndorsements  = signal(false);
+  readonly loadingCancellations = signal(false);
+  readonly approvingId          = signal<string | null>(null);
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -44,9 +51,49 @@ export class PolicyDetailPage implements OnInit {
     });
   }
 
+  selectTab(tab: Tab) {
+    this.activeTab.set(tab);
+    if (tab === 'endorsements' && !this.endorsements().length) this.loadEndorsements();
+    if (tab === 'cancellations' && !this.cancellations().length) this.loadCancellations();
+  }
+
+  loadEndorsements() {
+    this.loadingEndorsements.set(true);
+    this.svc.getEndorsements(this.policyId()).subscribe({
+      next: (res: any) => { this.endorsements.set(res?.content ?? res?.data ?? []); this.loadingEndorsements.set(false); },
+      error: () => this.loadingEndorsements.set(false),
+    });
+  }
+
+  loadCancellations() {
+    this.loadingCancellations.set(true);
+    this.svc.getCancellations(this.policyId()).subscribe({
+      next: (res: any) => { this.cancellations.set(res?.content ?? res?.data ?? []); this.loadingCancellations.set(false); },
+      error: () => this.loadingCancellations.set(false),
+    });
+  }
+
+  approveEndorsement(id: string) {
+    this.approvingId.set(id);
+    this.svc.approveEndorsement(id).subscribe({
+      next: () => { this.approvingId.set(null); this.endorsements.set([]); this.loadEndorsements(); this.flash('success', 'Endorsement approved.'); },
+      error: () => { this.approvingId.set(null); this.flash('danger', 'Failed to approve endorsement.'); },
+    });
+  }
+
+  approveCancellation(id: string) {
+    this.approvingId.set(id);
+    this.svc.approveCancellation(id).subscribe({
+      next: () => { this.approvingId.set(null); this.cancellations.set([]); this.loadCancellations(); this.flash('success', 'Cancellation approved.'); },
+      error: () => { this.approvingId.set(null); this.flash('danger', 'Failed to approve cancellation.'); },
+    });
+  }
+
   statusClass(status: string): string {
     const map: Record<string, string> = {
       Active: 'bg-success', Cancelled: 'bg-danger', Expired: 'bg-secondary',
+      Proposed: 'bg-warning text-dark', Approved: 'bg-success', Posted: 'bg-info text-dark',
+      Requested: 'bg-warning text-dark',
     };
     return map[status] ?? 'bg-secondary';
   }
