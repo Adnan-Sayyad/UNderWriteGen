@@ -9,6 +9,7 @@ import { AuthService } from '../../../../core/auth/auth.service';
 import { Notification, NotificationCategory, NotificationStatus } from '../../models/notification.model';
 
 const CATEGORIES: NotificationCategory[] = ['Referral', 'SLA', 'Subjectivity', 'Quote', 'Compliance'];
+const PAGE_SIZE = 10;
 
 // Roles that may create/send notifications.
 const CREATOR_ROLES = ['Admin', 'Underwriter', 'UWManager', 'UWAssistant', 'Compliance', 'Operations'];
@@ -31,6 +32,8 @@ export class NotificationCenterPage implements OnInit {
   readonly alertMsg      = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly searchQuery   = signal('');
   readonly sendMode      = signal<'individual' | 'group'>('individual');
+  readonly currentPage   = signal(0);
+  readonly pageSize      = PAGE_SIZE;
 
   readonly categories = CATEGORIES;
   readonly roleGroups = [
@@ -86,6 +89,12 @@ export class NotificationCenterPage implements OnInit {
   readonly sentCount = computed(() =>
     this.notifications().filter(n => n.senderEmail === this.currentUserEmail()).length
   );
+
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
+  readonly paginated  = computed(() => {
+    const page = Math.min(this.currentPage(), this.totalPages() - 1);
+    return this.filtered().slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  });
 
   readonly filterOptions: Array<{ label: string; value: ViewFilter }> = [
     { label: 'All',       value: '' },
@@ -210,13 +219,18 @@ export class NotificationCenterPage implements OnInit {
     }
   }
 
-  setFilter(v: string): void { this.filterStatus.set(v as ViewFilter); }
+  goToPage(n: number): void {
+    this.currentPage.set(Math.max(0, Math.min(n, this.totalPages() - 1)));
+  }
+
+  setFilter(v: string): void { this.filterStatus.set(v as ViewFilter); this.currentPage.set(0); }
 
   onSearch(event: Event): void {
     this.searchQuery.set((event.target as HTMLInputElement).value);
+    this.currentPage.set(0);
   }
 
-  clearSearch(): void { this.searchQuery.set(''); }
+  clearSearch(): void { this.searchQuery.set(''); this.currentPage.set(0); }
 
   categoryIcon(cat: string): string {
     const map: Record<string, string> = {

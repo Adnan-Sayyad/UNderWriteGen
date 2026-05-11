@@ -92,7 +92,7 @@ export class AgentFormPage implements OnInit {
       producerCode: v.producerCode!,
       region:       v.region ?? '',
       status:       v.status as any,
-      contactInfo:  v.contactInfo || null,
+      contactInfo:  v.contactInfo ?? undefined,
     };
     this.saving.set(true);
     const req = this.agentId()

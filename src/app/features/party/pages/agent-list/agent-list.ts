@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -14,6 +14,7 @@ import {
 
 type ModalMode = 'create' | 'edit' | null;
 const STATUSES: AgentStatus[] = ['Active', 'Inactive'];
+const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-agent-list',
@@ -32,6 +33,7 @@ export class AgentListPage implements OnInit {
   readonly filterStatus = signal('');
   readonly alertMsg     = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly statuses     = STATUSES;
+  readonly currentPage  = signal(0);
 
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
@@ -40,6 +42,12 @@ export class AgentListPage implements OnInit {
       (!q || a.name.toLowerCase().includes(q) || a.producerCode.toLowerCase().includes(q)) &&
       (!s || a.status === s)
     );
+  });
+
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
+  readonly paginated  = computed(() => {
+    const page = Math.min(this.currentPage(), this.totalPages() - 1);
+    return this.filtered().slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
   });
 
   readonly breadcrumbs = [
@@ -72,9 +80,14 @@ export class AgentListPage implements OnInit {
     status: ['Active' as AgentStatus, Validators.required],
   });
 
-  constructor(private svc: PartyApiService) {}
+  constructor(private svc: PartyApiService) {
+    effect(() => { this.filtered(); this.currentPage.set(0); });
+  }
 
   ngOnInit(): void { this.load(); }
+
+  goToPage(n: number): void { this.currentPage.set(Math.max(0, Math.min(n, this.totalPages() - 1))); }
+  readonly pageSize = PAGE_SIZE;
 
   load(): void {
     this.loading.set(true);
@@ -116,7 +129,7 @@ export class AgentListPage implements OnInit {
       name:         v.name!,
       producerCode: v.producerCode!,
       region:       v.region ?? '',
-      contactInfo:  v.contactInfo || null,
+      contactInfo:  v.contactInfo ?? undefined,
       status:       v.status as AgentStatus,
     };
     const req = this.modalMode() === 'edit'

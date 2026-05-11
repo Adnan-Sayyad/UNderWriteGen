@@ -4,7 +4,6 @@ import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { UnderwritingApiService } from '../../services/underwriting-api.service';
 import { Subjectivity, SubjectivityStatus } from '../../models/underwriting.model';
@@ -14,7 +13,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-subjectivity-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, PageHeader, EmptyState],
   templateUrl: './subjectivity-list.html',
   styleUrl: './subjectivity-list.css',
 })
