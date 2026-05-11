@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { PricingApiService } from '../../services/pricing-api.service';
 import { Quote, QuoteStatus } from '../../models/pricing.model';
@@ -14,7 +13,7 @@ const STATUSES: QuoteStatus[] = ['Draft', 'Offered', 'Accepted', 'Expired'];
 @Component({
   selector: 'app-quote-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
   templateUrl: './quote-list.html',
   styleUrl: './quote-list.css',
 })

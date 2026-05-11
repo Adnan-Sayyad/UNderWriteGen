@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { SubmissionApiService } from '../../services/submission-api.service';
 import { Submission, SubmissionStatus, ProductLine } from '../../models/submission.model';
@@ -14,7 +13,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-submission-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
   templateUrl: './submission-list.html',
   styleUrl: './submission-list.css',
 })

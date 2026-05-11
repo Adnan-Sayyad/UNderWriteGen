@@ -68,11 +68,11 @@
                 <th>Region</th>
                 <th>Contact Info</th>
                 <th>Status</th>
-                <th class="text-end">Actions</th>
+                <th class="text-end table-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
-              @for (a of filtered(); track a.agentID) {
+              @for (a of paginated(); track a.agentID) {
                 <tr>
                   <td class="font-monospace small text-muted">{{ a.agentID }}</td>
                   <td class="fw-medium">{{ a.name }}</td>
@@ -82,24 +82,53 @@
                   <td>
                     <span class="badge" [ngClass]="statusClass(a.status)">{{ a.status }}</span>
                   </td>
-                  <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" (click)="openEdit(a)">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm"
-                            [class.btn-outline-danger]="a.status === 'Active'"
-                            [class.btn-outline-success]="a.status !== 'Active'"
-                            [title]="a.status === 'Active' ? 'Deactivate' : 'Activate'"
-                            (click)="toggleStatus(a)">
-                      <i class="bi" [class.bi-toggle-on]="a.status === 'Active'"
-                                    [class.bi-toggle-off]="a.status !== 'Active'"></i>
-                    </button>
+                  <td class="text-end table-actions">
+                    <div class="d-flex justify-content-end gap-1">
+                      <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(a)">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm"
+                              [class.btn-outline-danger]="a.status === 'Active'"
+                              [class.btn-outline-success]="a.status !== 'Active'"
+                              [title]="a.status === 'Active' ? 'Deactivate' : 'Activate'"
+                              (click)="toggleStatus(a)">
+                        <i class="bi" [class.bi-toggle-on]="a.status === 'Active'"
+                                      [class.bi-toggle-off]="a.status !== 'Active'"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top">
+            <small class="text-muted">
+              Showing {{ currentPage() * pageSize + 1 }}–{{ currentPage() * pageSize + paginated().length }} of {{ filtered().length }}
+            </small>
+            <nav>
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="currentPage() === 0">
+                  <button class="page-link" (click)="goToPage(currentPage() - 1)">
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                </li>
+                @for (p of [].constructor(totalPages()); track $index) {
+                  <li class="page-item" [class.active]="$index === currentPage()">
+                    <button class="page-link" (click)="goToPage($index)">{{ $index + 1 }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="currentPage() === totalPages() - 1">
+                  <button class="page-link" (click)="goToPage(currentPage() + 1)">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        }
       }
     </div>
   </div>

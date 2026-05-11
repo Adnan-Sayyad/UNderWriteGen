@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { PolicyApiService } from '../../services/policy-api.service';
 import { Policy, PolicyStatus } from '../../models/policy.model';
@@ -15,7 +14,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-policy-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
   templateUrl: './policy-list.html',
   styleUrl: './policy-list.css',
 })

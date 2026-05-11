@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { PricingApiService } from '../../services/pricing-api.service';
 import { PricingParam, ParamStatus } from '../../models/pricing.model';
@@ -13,7 +12,7 @@ type ModalMode = 'create' | 'edit' | null;
 @Component({
   selector: 'app-pricing-params',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
   templateUrl: './pricing-params.html',
   styleUrl: './pricing-params.css',
 })

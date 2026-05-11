@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { SubmissionApiService } from '../../services/submission-api.service';
 import { Submission, Attachment, CompletenessCheck, Questionnaire, SubmissionStatus, DocType } from '../../models/submission.model';
@@ -16,7 +15,7 @@ const DOC_TYPES: DocType[] = ['KYC', 'Financial', 'Medical', 'Inspection', 'Phot
 @Component({
   selector: 'app-submission-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
   templateUrl: './submission-detail.html',
   styleUrl: './submission-detail.css',
 })

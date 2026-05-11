@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -17,6 +17,7 @@ import {
 type ModalMode = 'create' | 'edit' | null;
 const PARTY_TYPES: PartyType[] = ['Individual', 'Corporation'];  // backend: 'Corporation'
 const SEGMENTS: Segment[]       = ['Retail', 'SME', 'Corporate'];
+const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-party-list',
@@ -36,6 +37,7 @@ export class PartyListPage implements OnInit {
   readonly alertMsg    = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly partyTypes  = PARTY_TYPES;
   readonly segments    = SEGMENTS;
+  readonly currentPage = signal(0);
 
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
@@ -43,6 +45,12 @@ export class PartyListPage implements OnInit {
     return this.parties().filter(p =>
       (!q || p.name.toLowerCase().includes(q)) && (!t || p.partyType === t)
     );
+  });
+
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
+  readonly paginated  = computed(() => {
+    const page = Math.min(this.currentPage(), this.totalPages() - 1);
+    return this.filtered().slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
   });
 
   readonly breadcrumbs = [
@@ -67,9 +75,14 @@ export class PartyListPage implements OnInit {
     contactInfo:      ['', [smartContactInfoValidator(), Validators.maxLength(500)]],
   });
 
-  constructor(private svc: PartyApiService) {}
+  constructor(private svc: PartyApiService) {
+    effect(() => { this.filtered(); this.currentPage.set(0); });
+  }
 
   ngOnInit(): void { this.load(); }
+
+  goToPage(n: number): void { this.currentPage.set(Math.max(0, Math.min(n, this.totalPages() - 1))); }
+  readonly pageSize = PAGE_SIZE;
 
   load(): void {
     this.loading.set(true);
@@ -118,7 +131,7 @@ export class PartyListPage implements OnInit {
       partyType:        v.partyType as PartyType,
       segment:          v.segment as Segment,
       dOBIncorporation: v.dOBIncorporation || null,
-      contactInfo:      v.contactInfo || null,
+      contactInfo:      v.contactInfo ?? undefined,
     };
     const req = this.modalMode() === 'edit'
       ? this.svc.updateParty(this.selected()!.partyID, payload)
