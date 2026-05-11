@@ -1,71 +1,223 @@
 <div class="page-container">
+
   <app-page-header
-    title="New Quote"
-    subtitle="Create a pricing quote for a submission"
+    title="Create Quote"
+    subtitle="Run the pricing engine to generate a quote for a submission"
     icon="bi-plus-circle"
     [breadcrumbs]="breadcrumbs">
   </app-page-header>
 
+  <!-- Alert -->
   @if (alertMsg()) {
     <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
-      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
-                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      <i class="bi flex-shrink-0"
+         [class.bi-info-circle-fill]="alertMsg()!.type==='info'"
+         [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+         [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
       {{ alertMsg()!.text }}
     </div>
   }
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-body">
-      @if (submissionId()) {
-        <div class="alert alert-info d-flex gap-2 py-2 mb-3">
-          <i class="bi bi-info-circle-fill"></i>
-          <span>Creating quote for submission <strong>{{ submissionId() }}</strong></span>
-        </div>
-      }
-      <form [formGroup]="form" novalidate>
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label small fw-medium required-mark">Base Premium ($)</label>
-            <input type="number" class="form-control form-control-sm" formControlName="basePremium"
-                   min="0" step="0.01"
-                   [class.is-invalid]="form.controls.basePremium.invalid && form.controls.basePremium.touched" />
-            <div class="invalid-feedback">Base premium is required.</div>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label small fw-medium required-mark">Total Premium ($)</label>
-            <input type="number" class="form-control form-control-sm" formControlName="totalPremium"
-                   min="0" step="0.01"
-                   [class.is-invalid]="form.controls.totalPremium.invalid && form.controls.totalPremium.touched" />
-            <div class="invalid-feedback">Total premium is required.</div>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label small fw-medium required-mark">Valid Until</label>
-            <input type="date" class="form-control form-control-sm" formControlName="validUntil"
-                   [class.is-invalid]="form.controls.validUntil.invalid && form.controls.validUntil.touched" />
-            <div class="invalid-feedback">Validity date is required.</div>
-          </div>
+  <div class="row g-3">
 
-          <div class="col-12"><hr class="my-1" /><p class="small fw-semibold text-muted mb-0">Terms</p></div>
+    <!-- ── Main form ── -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
 
-          <div class="col-md-4">
-            <label class="form-label small fw-medium">Deductibles ($)</label>
-            <input type="number" class="form-control form-control-sm" formControlName="deductibles" min="0" step="0.01" />
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-lightning-charge-fill text-primary me-2"></i>
+            Quote Generation Request
+          </h6>
+        </div>
+
+        <div class="card-body">
+          <form [formGroup]="form" novalidate>
+            <div class="row g-3">
+
+              <!-- Submission ID -->
+              <div class="col-12">
+                <label class="form-label fw-medium small required-mark">Submission ID</label>
+
+                @if (submissionFromRoute()) {
+                  <!-- Read-only banner when navigated from a submission -->
+                  <div class="submission-banner">
+                    <div class="d-flex align-items-start gap-3">
+                      <i class="bi bi-file-earmark-text fs-3 text-primary flex-shrink-0"></i>
+                      <div>
+                        <div class="fw-semibold mb-1">Submission</div>
+                        <code class="text-primary user-select-all">
+                          {{ form.getRawValue().submissionId }}
+                        </code>
+                        <div class="form-text mt-1">
+                          Pre-filled from the submission you navigated from.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <!-- Manual entry when opening directly from sidebar -->
+                  <div class="input-group">
+                    <span class="input-group-text bg-light">
+                      <i class="bi bi-file-earmark-text text-muted"></i>
+                    </span>
+                    <input
+                      type="text"
+                      class="form-control font-monospace"
+                      formControlName="submissionId"
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      [class.is-invalid]="form.controls.submissionId.invalid && form.controls.submissionId.touched" />
+                    <div class="invalid-feedback">
+                      A valid Submission GUID is required (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).
+                    </div>
+                  </div>
+                  <div class="form-text">
+                    Enter the Submission GUID you want to price. The pricing engine will fetch
+                    its risk score, product line, and attributes automatically.
+                  </div>
+                }
+              </div>
+
+              <!-- Requested By -->
+              <div class="col-12">
+                <label class="form-label fw-medium small required-mark">Requested By</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="requestedBy"
+                  placeholder="Your name or agent code"
+                  [class.is-invalid]="form.controls.requestedBy.invalid && form.controls.requestedBy.touched" />
+                <div class="invalid-feedback">
+                  Requester name is required (max 100 characters).
+                </div>
+                <div class="form-text">Logged with this quote for audit trail purposes.</div>
+              </div>
+
+              <!-- Pricing Options -->
+              <div class="col-12">
+                <label class="form-label fw-medium small">Pricing Options</label>
+                <div class="options-grid">
+
+                  <label class="option-card" [class.option-card--active]="form.controls.applyDiscounts.value">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="flex-grow-1">
+                        <div class="fw-medium">Apply Discounts</div>
+                        <div class="text-muted" style="font-size:.8rem; margin-top:.15rem">
+                          Tenure, loyalty, and preferred-agent discounts applied when eligible.
+                        </div>
+                      </div>
+                      <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               formControlName="applyDiscounts" id="chkDiscounts" />
+                        <label class="form-check-label visually-hidden" for="chkDiscounts">Apply discounts</label>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label class="option-card" [class.option-card--active]="form.controls.applyTaxes.value">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="flex-grow-1">
+                        <div class="fw-medium">Apply Taxes (GST 18%)</div>
+                        <div class="text-muted" style="font-size:.8rem; margin-top:.15rem">
+                          18% GST is added on top of the gross premium.
+                        </div>
+                      </div>
+                      <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               formControlName="applyTaxes" id="chkTaxes" />
+                        <label class="form-check-label visually-hidden" for="chkTaxes">Apply taxes</label>
+                      </div>
+                    </div>
+                  </label>
+
+                </div>
+              </div>
+
+            </div>
+          </form>
+        </div>
+
+        <div class="card-footer bg-transparent border-top d-flex justify-content-between align-items-center">
+          <button class="btn btn-outline-secondary" (click)="cancel()">
+            <i class="bi bi-arrow-left me-1"></i>Cancel
+          </button>
+          <button class="btn btn-primary px-4"
+                  (click)="generate()"
+                  [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>Generating…
+            } @else {
+              <i class="bi bi-lightning-charge-fill me-1"></i>Generate Quote
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── How it works sidebar ── -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-info-circle text-secondary me-2"></i>How the Pricing Engine Works
+          </h6>
+        </div>
+        <div class="card-body">
+          <ol class="engine-steps">
+            <li>
+              <strong>Submission data</strong> is fetched — sum insured, product line,
+              tenure, occupation type, and inception date.
+            </li>
+            <li>
+              <strong>Risk score</strong> from the rules engine determines the risk band
+              (Low / Medium / High / Unacceptable) and the corresponding loading %.
+            </li>
+            <li>
+              <strong>Base premium</strong> is computed:
+              <code class="d-block p-2 bg-light rounded mt-1" style="font-size:.78rem">
+                SumInsured × BaseRate × TenureFactor
+              </code>
+            </li>
+            <li>
+              <strong>Loadings</strong> (risk, occupation) are added on top of the base.
+            </li>
+            <li>
+              <strong>Discounts</strong> (tenure, loyalty, preferred agent) are subtracted
+              — only when <em>Apply Discounts</em> is enabled.
+            </li>
+            <li>
+              <strong>GST at 18%</strong> is applied — only when <em>Apply Taxes</em>
+              is enabled.
+            </li>
+            <li>
+              The quote is saved in <span class="badge bg-secondary">Draft</span> status.
+              Change status to <span class="badge bg-primary">Presented</span> before
+              the client can accept it.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Quote lifecycle -->
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-body">
+          <div class="small fw-semibold text-muted mb-2 text-uppercase" style="letter-spacing:.05em">
+            Quote Lifecycle
           </div>
-          <div class="col-md-8">
-            <label class="form-label small fw-medium">Exclusions</label>
-            <input type="text" class="form-control form-control-sm" formControlName="exclusions"
-                   placeholder="Comma-separated list of exclusions" />
-            <div class="form-text">e.g. Flood, Earthquake, War</div>
+          <div class="d-flex align-items-center gap-1 flex-wrap">
+            <span class="badge bg-secondary">Draft</span>
+            <i class="bi bi-arrow-right text-muted small"></i>
+            <span class="badge bg-primary">Presented</span>
+            <i class="bi bi-arrow-right text-muted small"></i>
+            <span class="badge bg-success">Accepted</span>
+          </div>
+          <div class="mt-2 d-flex gap-1 flex-wrap">
+            <span class="badge bg-danger">Declined</span>
+            <span class="badge bg-dark">Expired</span>
           </div>
         </div>
-      </form>
+      </div>
     </div>
-    <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary btn-sm" (click)="cancel()">Cancel</button>
-      <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving()">
-        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-        Create Quote
-      </button>
-    </div>
+
   </div>
 </div>

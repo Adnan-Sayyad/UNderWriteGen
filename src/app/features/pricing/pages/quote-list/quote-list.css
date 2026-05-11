@@ -1,1 +1,41 @@
-/* Quote list – no custom styles needed beyond globals */
+/* ── Stats bar ─────────────────────────────────────────────────────────── */
+.stats-bar {
+  display: flex;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  flex: 1 1 90px;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: .5rem;
+  padding: .75rem 1rem;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+.stat-value  { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+.stat-label  { font-size: .68rem; font-weight: 600; text-transform: uppercase;
+               letter-spacing: .07em; color: #6c757d; margin-top: .15rem; }
+
+.stat-card--draft      { border-top: 3px solid #6c757d; }
+.stat-card--draft .stat-value { color: #6c757d; }
+.stat-card--presented  { border-top: 3px solid #0d6efd; }
+.stat-card--presented .stat-value { color: #0d6efd; }
+.stat-card--accepted   { border-top: 3px solid #198754; }
+.stat-card--accepted .stat-value  { color: #198754; }
+.stat-card--declined   { border-top: 3px solid #dc3545; }
+.stat-card--declined .stat-value  { color: #dc3545; }
+.stat-card--expired    { border-top: 3px solid #212529; }
+.stat-card--expired .stat-value   { color: #212529; }
+
+/* ── Search result highlight ──────────────────────────────────────────── */
+.search-result {
+  background: #f0f7ff;
+  border: 1px solid #b8d4f5;
+  border-radius: .5rem;
+  padding: 1rem;
+}
+
+.ls-wide { letter-spacing: .07em; }

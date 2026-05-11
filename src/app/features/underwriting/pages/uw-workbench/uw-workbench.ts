@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { SubmissionApiService } from '../../../submission/services/submission-api.service';
 import { Submission } from '../../../submission/models/submission.model';
@@ -12,7 +11,7 @@ import { DEFAULT_PAGE_REQUEST } from '../../../../shared/models/pagination.model
 @Component({
   selector: 'app-uw-workbench',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
   templateUrl: './uw-workbench.html',
   styleUrl: './uw-workbench.css',
 })

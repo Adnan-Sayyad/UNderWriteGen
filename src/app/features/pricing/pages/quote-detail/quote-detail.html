@@ -1,141 +1,436 @@
 <div class="page-container">
+
   <app-page-header
     title="Quote Detail"
-    subtitle="Review premium breakdown, terms and accept the quote"
+    subtitle="Premium breakdown, quote terms, and quotation management"
     icon="bi-currency-dollar"
     [breadcrumbs]="breadcrumbs">
-    @if (quote()?.status === 'Offered') {
-      <button class="btn btn-sm btn-success" (click)="accept()">
-        <i class="bi bi-check-circle me-1"></i>Accept Quote
+    @if (quote()?.status === 'Presented' && !isExpiredDate()) {
+      <button class="btn btn-sm btn-success" (click)="accept()" [disabled]="accepting()">
+        @if (accepting()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        @else { <i class="bi bi-check-circle me-1"></i> }
+        Accept Quote
       </button>
     }
   </app-page-header>
 
+  <!-- Alert -->
   @if (alertMsg()) {
     <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
-      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
-                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      <i class="bi flex-shrink-0"
+         [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+         [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"
+         [class.bi-exclamation-circle-fill]="alertMsg()!.type==='warning'"></i>
       {{ alertMsg()!.text }}
     </div>
   }
 
+  <!-- Loading -->
   @if (loading()) {
-    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading quote…</div>
-  } @else if (!quote()) {
-    <div class="alert alert-warning">Quote not found.</div>
-  } @else {
+    <div class="text-center py-5 text-muted">
+      <span class="spinner-border spinner-border-sm me-2"></span>Loading quote…
+    </div>
+  }
+
+  <!-- Not found -->
+  @else if (!quote()) {
+    <div class="alert alert-warning d-flex gap-2 py-3">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      Quote not found or could not be loaded.
+    </div>
+  }
+
+  @else {
     <div class="row g-3">
-      <div class="col-md-8">
-        <!-- Premium Breakdown -->
+
+      <!-- ═══════════════ LEFT COLUMN ═══════════════ -->
+      <div class="col-lg-8">
+
+        <!-- ── Premium Breakdown ── -->
         <div class="card border-0 shadow-sm mb-3">
-          <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
+          <div class="card-header bg-white border-bottom py-2 d-flex align-items-center gap-2">
             <i class="bi bi-calculator text-primary"></i>
             <span class="fw-semibold small">Premium Breakdown</span>
           </div>
           <div class="card-body p-0">
             <table class="table table-sm mb-0">
               <tbody>
-                <tr>
-                  <td class="text-muted">Base Premium</td>
-                  <td class="text-end fw-medium">{{ quote()!.basePremium | currency }}</td>
+
+                <!-- Base -->
+                <tr class="breakdown-base">
+                  <td class="ps-3">Base Premium</td>
+                  <td class="text-end pe-3 fw-medium">{{ quote()!.basePremium | currency }}</td>
                 </tr>
+
+                <!-- Loadings -->
                 @for (e of loadings(); track e[0]) {
-                  <tr class="table-light">
-                    <td class="text-muted ps-4 small">+ Loading: {{ e[0] }}</td>
-                    <td class="text-end small">{{ e[1] | currency }}</td>
+                  <tr class="breakdown-loading">
+                    <td class="ps-4 small">
+                      <i class="bi bi-plus text-warning me-1"></i>{{ fmtKey(e[0]) }}
+                    </td>
+                    <td class="text-end pe-3 small text-warning">+ {{ e[1] | currency }}</td>
                   </tr>
                 }
-                @for (e of discounts(); track e[0]) {
-                  <tr class="table-light">
-                    <td class="text-success ps-4 small">- Discount: {{ e[0] }}</td>
-                    <td class="text-end text-success small">{{ e[1] | currency }}</td>
+                @if (!loadings().length) {
+                  <tr class="breakdown-loading">
+                    <td class="ps-4 small text-muted">No loadings applied</td>
+                    <td class="text-end pe-3 small text-muted">—</td>
                   </tr>
                 }
-                @for (e of taxes(); track e[0]) {
-                  <tr class="table-light">
-                    <td class="text-muted ps-4 small">Tax: {{ e[0] }}</td>
-                    <td class="text-end small">{{ e[1] | currency }}</td>
-                  </tr>
-                }
-                <tr class="table-primary fw-semibold">
-                  <td>Total Premium</td>
-                  <td class="text-end">{{ quote()!.totalPremium | currency }}</td>
+
+                <!-- Gross sub-total -->
+                <tr class="breakdown-subtotal">
+                  <td class="ps-3 small text-muted">Gross Premium (after loadings)</td>
+                  <td class="text-end pe-3 small fw-medium">{{ grossPremium() | currency }}</td>
                 </tr>
+
+                <!-- Discounts -->
+                @for (e of discounts(); track e[0]) {
+                  <tr class="breakdown-discount">
+                    <td class="ps-4 small text-success">
+                      <i class="bi bi-dash text-success me-1"></i>{{ fmtKey(e[0]) }}
+                    </td>
+                    <td class="text-end pe-3 small text-success">
+                      - {{ (e[1] < 0 ? -e[1] : e[1]) | currency }}
+                    </td>
+                  </tr>
+                }
+                @if (!discounts().length) {
+                  <tr class="breakdown-discount">
+                    <td class="ps-4 small text-muted">No discounts applied</td>
+                    <td class="text-end pe-3 small text-muted">—</td>
+                  </tr>
+                }
+
+                <!-- Taxes -->
+                @for (e of taxes(); track e[0]) {
+                  <tr class="breakdown-tax">
+                    <td class="ps-4 small text-muted">
+                      <i class="bi bi-percent text-secondary me-1"></i>{{ fmtKey(e[0]) }}
+                    </td>
+                    <td class="text-end pe-3 small">{{ e[1] | currency }}</td>
+                  </tr>
+                }
+                @if (!taxes().length) {
+                  <tr class="breakdown-tax">
+                    <td class="ps-4 small text-muted">No taxes applied</td>
+                    <td class="text-end pe-3 small text-muted">—</td>
+                  </tr>
+                }
+
+                <!-- Total -->
+                <tr class="breakdown-total">
+                  <td class="ps-3 fw-bold">Total Premium (Payable)</td>
+                  <td class="text-end pe-3 fw-bold fs-5 text-primary">
+                    {{ quote()!.totalPremium | currency }}
+                  </td>
+                </tr>
+
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Terms -->
-        @if (quote()!.termsJSON) {
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
+        <!-- ── Quote Terms ── -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-2 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
               <i class="bi bi-file-text text-secondary"></i>
-              <span class="fw-semibold small">Policy Terms</span>
-            </div>
-            <div class="card-body">
-              @if (quote()!.termsJSON.deductibles) {
-                <div class="mb-2">
-                  <span class="small fw-medium text-muted">Deductibles:</span>
-                  <span class="ms-2">{{ quote()!.termsJSON.deductibles | currency }}</span>
-                </div>
-              }
-              @if (quote()!.termsJSON.exclusions?.length) {
-                <div class="mb-2">
-                  <span class="small fw-medium text-muted">Exclusions:</span>
-                  <div class="d-flex flex-wrap gap-1 mt-1">
-                    @for (ex of quote()!.termsJSON.exclusions!; track ex) {
-                      <span class="badge bg-light text-dark border">{{ ex }}</span>
-                    }
-                  </div>
-                </div>
-              }
-              @if (quote()!.termsJSON.subjectivities?.length) {
-                <div>
-                  <span class="small fw-medium text-muted">Subjectivities:</span>
-                  <ul class="list-unstyled ms-3 mb-0 mt-1">
-                    @for (s of quote()!.termsJSON.subjectivities!; track s) {
-                      <li class="small"><i class="bi bi-dot me-1"></i>{{ s }}</li>
-                    }
-                  </ul>
-                </div>
+              <span class="fw-semibold small">Quote Terms</span>
+              @if (terms()) {
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Attached</span>
+              } @else {
+                <span class="badge bg-light text-muted border">Not set</span>
               }
             </div>
-          </div>
-        }
-      </div>
-
-      <!-- Sidebar summary -->
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <div class="mb-3">
-              <div class="small text-muted">Status</div>
-              <span class="badge fs-6" [ngClass]="statusClass(quote()!.status)">{{ quote()!.status }}</span>
-            </div>
-            <div class="mb-3">
-              <div class="small text-muted">Submission</div>
-              <a [routerLink]="['/submissions', quote()!.submissionId]" class="small text-decoration-none">
-                {{ quote()!.submissionId }}
-              </a>
-            </div>
-            <div class="mb-3">
-              <div class="small text-muted">Version</div>
-              <span class="badge bg-light text-dark border">v{{ quote()!.versionNo }}</span>
-            </div>
-            <div class="mb-3">
-              <div class="small text-muted">Valid Until</div>
-              <span class="small">{{ quote()!.validUntil | date:'mediumDate' }}</span>
-            </div>
-            @if (quote()!.status === 'Offered') {
-              <hr />
-              <button class="btn btn-success w-100 btn-sm" (click)="accept()">
-                <i class="bi bi-check-circle me-1"></i>Accept Quote
+            @if (isEditable()) {
+              <button class="btn btn-xs btn-outline-primary"
+                      (click)="togglePanel(activePanel()==='terms' ? null : 'terms')">
+                <i class="bi me-1"
+                   [class.bi-pencil]="activePanel()!=='terms'"
+                   [class.bi-x-lg]="activePanel()==='terms'"></i>
+                {{ activePanel()==='terms' ? 'Cancel' : 'Edit Terms' }}
               </button>
             }
           </div>
+          <div class="card-body">
+
+            <!-- Terms Edit Form -->
+            @if (activePanel() === 'terms') {
+              <form [formGroup]="termsForm" novalidate class="mb-4">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label small fw-medium">Deductibles ($)</label>
+                    <input type="number" class="form-control form-control-sm"
+                           formControlName="deductibles" min="0" step="0.01"
+                           placeholder="0.00" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-medium">Coverage Limits (JSON)</label>
+                    <textarea class="form-control form-control-sm font-monospace"
+                              formControlName="limitsJson" rows="3"
+                              placeholder='{ "property": 500000, "liability": 1000000 }'></textarea>
+                    <div class="form-text">Key-value JSON — key: coverage name, value: limit amount.</div>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small fw-medium">Exclusions</label>
+                    <input type="text" class="form-control form-control-sm"
+                           formControlName="exclusions"
+                           placeholder="Flood, Earthquake, War (comma-separated)" />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small fw-medium">Subjectivities</label>
+                    <textarea class="form-control form-control-sm" rows="3"
+                              formControlName="subjectivities"
+                              placeholder="One subjectivity per line&#10;e.g. Submit fire-safety inspection report within 30 days"></textarea>
+                  </div>
+                </div>
+                <div class="d-flex gap-2 justify-content-end mt-3">
+                  <button type="button" class="btn btn-sm btn-outline-secondary"
+                          (click)="togglePanel(null)">Cancel</button>
+                  <button type="button" class="btn btn-sm btn-primary"
+                          (click)="saveTerms()" [disabled]="saving()">
+                    @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Save Terms
+                  </button>
+                </div>
+              </form>
+              <hr />
+            }
+
+            <!-- Terms Display -->
+            @if (!terms()) {
+              <p class="text-muted small mb-0">
+                <i class="bi bi-info-circle me-1"></i>
+                No quote terms attached.
+                @if (isEditable()) {
+                  Use <strong>Edit Terms</strong> to attach deductibles, limits, exclusions, and subjectivities.
+                }
+              </p>
+            } @else {
+              <div class="row g-3">
+                @if (terms()!.deductibles != null) {
+                  <div class="col-md-6">
+                    <div class="terms-block">
+                      <div class="terms-label">Deductibles</div>
+                      <div class="terms-value">{{ terms()!.deductibles | currency }}</div>
+                    </div>
+                  </div>
+                }
+                @if (terms()!.limits && (terms()!.limits | keyvalue)!.length) {
+                  <div class="col-md-6">
+                    <div class="terms-block">
+                      <div class="terms-label">Coverage Limits</div>
+                      @for (kv of (terms()!.limits | keyvalue); track kv.key) {
+                        <div class="d-flex justify-content-between small py-1 border-bottom">
+                          <span class="text-muted">{{ fmtKey(kv.key) }}</span>
+                          <span class="fw-medium">{{ kv.value | currency }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (terms()!.exclusions?.length) {
+                  <div class="col-12">
+                    <div class="terms-label">Exclusions</div>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                      @for (ex of terms()!.exclusions!; track ex) {
+                        <span class="badge bg-light text-dark border">{{ ex }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (terms()!.subjectivities?.length) {
+                  <div class="col-12">
+                    <div class="terms-label mb-2">Subjectivities</div>
+                    <ul class="subjectivities-list mb-0">
+                      @for (s of terms()!.subjectivities!; track s) {
+                        <li>{{ s }}</li>
+                      }
+                    </ul>
+                  </div>
+                }
+              </div>
+            }
+          </div>
         </div>
-      </div>
+
+        <!-- ── Status Management (managers / underwriters) ── -->
+        @if (canManage()) {
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-2 d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-repeat text-secondary"></i>
+                <span class="fw-semibold small">Update Quote Status</span>
+              </div>
+              <button class="btn btn-xs btn-outline-secondary"
+                      (click)="togglePanel(activePanel()==='status' ? null : 'status')">
+                <i class="bi me-1"
+                   [class.bi-gear]="activePanel()!=='status'"
+                   [class.bi-x-lg]="activePanel()==='status'"></i>
+                {{ activePanel()==='status' ? 'Cancel' : 'Change Status' }}
+              </button>
+            </div>
+            @if (activePanel() === 'status') {
+              <div class="card-body">
+                <form [formGroup]="statusForm" novalidate>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label small fw-medium required-mark">New Status</label>
+                      <select class="form-select form-select-sm" formControlName="status"
+                              [class.is-invalid]="statusForm.controls.status.invalid && statusForm.controls.status.touched">
+                        <option value="" disabled>Select status…</option>
+                        @for (s of ALL_STATUSES; track s) {
+                          <option [value]="s">{{ s }}</option>
+                        }
+                      </select>
+                      <div class="invalid-feedback">Status is required.</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-medium">Reason (optional, max 250)</label>
+                      <input type="text" class="form-control form-control-sm"
+                             formControlName="reason"
+                             placeholder="Brief reason for status change"
+                             maxlength="250" />
+                    </div>
+                  </div>
+                  <div class="d-flex gap-2 justify-content-end mt-3">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            (click)="togglePanel(null)">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-primary"
+                            (click)="saveStatus()" [disabled]="saving()">
+                      @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                      Update Status
+                    </button>
+                  </div>
+                </form>
+              </div>
+            }
+          </div>
+        }
+
+      </div><!-- /left col -->
+
+      <!-- ═══════════════ RIGHT SIDEBAR ═══════════════ -->
+      <div class="col-lg-4">
+
+        <!-- Quote summary card -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-2">
+            <span class="fw-semibold small">
+              <i class="bi bi-info-circle me-2 text-secondary"></i>Quote Summary
+            </span>
+          </div>
+          <div class="card-body">
+
+            <div class="summary-row">
+              <div class="summary-key">Status</div>
+              <span class="badge fs-6" [ngClass]="statusClass(quote()!.status)">
+                {{ quote()!.status }}
+              </span>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-key">Quote ID</div>
+              <code class="small text-break">{{ quote()!.quoteId }}</code>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-key">Submission</div>
+              <a [routerLink]="['/submissions', quote()!.submissionId]"
+                 class="small font-monospace text-decoration-none">
+                {{ quote()!.submissionId | slice:0:12 }}…
+              </a>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-key">Version</div>
+              <span class="badge bg-light text-dark border">v{{ quote()!.versionNo }}</span>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-key">Valid Until</div>
+              <span class="small" [class.text-danger]="isExpiredDate()">
+                {{ quote()!.validUntil | date:'mediumDate' }}
+                @if (isExpiredDate()) {
+                  <span class="badge bg-danger ms-1 small">Expired</span>
+                }
+              </span>
+            </div>
+
+            <hr class="my-2" />
+
+            <div class="summary-row">
+              <div class="summary-key">Base Premium</div>
+              <span class="fw-medium">{{ quote()!.basePremium | currency }}</span>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-key">Total Premium</div>
+              <span class="fw-bold text-primary fs-5">{{ quote()!.totalPremium | currency }}</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Accept CTA -->
+        @if (quote()!.status === 'Presented' && !isExpiredDate()) {
+          <div class="card border-0 shadow-sm border-success mb-3">
+            <div class="card-body text-center py-3">
+              <i class="bi bi-patch-check-fill text-success fs-2 d-block mb-1"></i>
+              <div class="fw-semibold mb-1">Ready to Accept</div>
+              <div class="text-muted small mb-3">
+                This quote has been presented to the client.
+              </div>
+              <button class="btn btn-success w-100" (click)="accept()" [disabled]="accepting()">
+                @if (accepting()) {
+                  <span class="spinner-border spinner-border-sm me-1"></span>Accepting…
+                } @else {
+                  <i class="bi bi-check-circle me-1"></i>Accept Quote
+                }
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Accepted — Quote finalised within Pricing & Quotation module -->
+        @if (quote()!.status === 'Accepted') {
+          <div class="card border-0 shadow-sm" style="border-left: 4px solid #198754 !important;">
+            <div class="card-body py-3">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                <span class="fw-semibold">Quote Accepted</span>
+              </div>
+              <div class="text-muted small mb-3">
+                This quotation has been accepted. You can generate a new version for this
+                submission or view all quote versions below.
+              </div>
+              <div class="d-flex flex-column gap-2">
+                <a [routerLink]="['/pricing/quotes/new', quote()!.submissionId]"
+                   class="btn btn-sm btn-outline-primary w-100">
+                  <i class="bi bi-plus-circle me-1"></i>Generate New Quote Version
+                </a>
+                <a [routerLink]="['/submissions', quote()!.submissionId]"
+                   class="btn btn-sm btn-outline-secondary w-100">
+                  <i class="bi bi-file-earmark-text me-1"></i>Back to Submission
+                </a>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Generate new quote -->
+        <div class="card border-0 shadow-sm mt-3">
+          <div class="card-body py-2 text-center">
+            <a [routerLink]="['/pricing/quotes/new', quote()!.submissionId]"
+               class="btn btn-sm btn-outline-primary w-100">
+              <i class="bi bi-plus-circle me-1"></i>Generate New Quote Version
+            </a>
+          </div>
+        </div>
+
+      </div><!-- /right col -->
+
     </div>
   }
 </div>

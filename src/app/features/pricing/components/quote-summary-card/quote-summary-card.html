@@ -1,0 +1,63 @@
+<div class="quote-card card border-0 shadow-sm h-100">
+  <div class="quote-card__header">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="quote-card__label">Quote ID</div>
+        <code class="quote-card__id">{{ quote.quoteId | slice:0:8 }}…</code>
+      </div>
+      <span class="badge fs-xs" [ngClass]="statusClass">{{ quote.status }}</span>
+    </div>
+  </div>
+
+  <div class="card-body py-2 px-3">
+    <!-- Submission reference -->
+    <div class="detail-row">
+      <span class="detail-key">Submission</span>
+      <a [routerLink]="['/submissions', quote.submissionId]"
+         class="detail-val font-monospace text-decoration-none small">
+        {{ quote.submissionId | slice:0:8 }}…
+      </a>
+    </div>
+
+    <!-- Version -->
+    <div class="detail-row">
+      <span class="detail-key">Version</span>
+      <span class="badge bg-light text-dark border fs-xs">v{{ quote.versionNo }}</span>
+    </div>
+
+    <!-- Premium highlight -->
+    <div class="premium-block my-2">
+      <div class="premium-block__label">Total Premium</div>
+      <div class="premium-block__value">{{ quote.totalPremium | currency }}</div>
+      <div class="premium-block__base">Base: {{ quote.basePremium | currency }}</div>
+    </div>
+
+    <!-- Validity -->
+    <div class="detail-row">
+      <span class="detail-key">Valid Until</span>
+      <span class="detail-val small"
+            [class.text-danger]="isExpired"
+            [class.text-warning]="!isExpired && daysUntilExpiry <= 7">
+        {{ quote.validUntil | date:'mediumDate' }}
+        @if (isExpired) { <i class="bi bi-exclamation-circle ms-1"></i> }
+        @else if (daysUntilExpiry <= 7) { <span class="ms-1">({{ daysUntilExpiry }}d left)</span> }
+      </span>
+    </div>
+  </div>
+
+  @if (showActions) {
+    <div class="card-footer bg-transparent border-top py-2 px-3 d-flex gap-2 justify-content-end">
+      <a [routerLink]="['/pricing/quotes', quote.quoteId]"
+         class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-eye me-1"></i>View
+      </a>
+      @if (quote.status === 'Presented') {
+        <button class="btn btn-sm btn-success" (click)="onAccept()" [disabled]="accepting">
+          @if (accepting) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          @else { <i class="bi bi-check-circle me-1"></i> }
+          Accept
+        </button>
+      }
+    </div>
+  }
+</div>

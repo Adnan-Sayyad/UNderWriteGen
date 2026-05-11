@@ -1,1 +1,39 @@
-﻿
+/* Submission banner */
+.submission-banner {
+  background: #eef4ff;
+  border: 1px solid #c7dbff;
+  border-radius: .5rem;
+  padding: 1rem 1.25rem;
+}
+
+/* Pricing option toggle cards */
+.options-grid  { display: flex; flex-direction: column; gap: .625rem; }
+
+.option-card {
+  display: block;
+  cursor: pointer;
+  border: 1px solid #dee2e6;
+  border-radius: .5rem;
+  padding: .875rem 1rem;
+  transition: border-color .15s ease, background .15s ease;
+}
+
+.option-card--active {
+  border-color: #0d6efd;
+  background: #f0f5ff;
+}
+
+/* Engine steps list */
+.engine-steps {
+  font-size: .85rem;
+  color: #495057;
+  padding-left: 1.2rem;
+  margin: 0;
+}
+
+.engine-steps li {
+  margin-bottom: .875rem;
+  line-height: 1.5;
+}
+
+.engine-steps li:last-child { margin-bottom: 0; }
