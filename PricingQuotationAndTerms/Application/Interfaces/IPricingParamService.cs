@@ -10,4 +10,5 @@ public interface IPricingParamService
     Task<PricingParamResponse>              UpdateAsync(Guid paramId, UpdatePricingParamRequest request, CancellationToken ct = default);
     Task<IEnumerable<PricingParamResponse>> GetByProductLineAsync(string productLine, CancellationToken ct = default);
     Task<IEnumerable<PricingParamResponse>> GetByEffectiveDateAsync(DateTime date, CancellationToken ct = default);
+    Task DeleteAsync(Guid paramId, CancellationToken ct = default);
 }

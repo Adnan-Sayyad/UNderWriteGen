@@ -45,7 +45,11 @@ public static class DependencyInjection
         // ── Public Contracts ──────────────────────────────────────────
         services.AddScoped<IPricingApi, PricingApiAdapter>();
 
-        // ── External Services (REST HTTP clients) ─────────────────────
+        // ── External Services — real HTTP clients ─────────────────────
+        // Calls the live microservices using base URLs from appsettings.json:
+        //   Services:SubmissionApi  → http://localhost:8083/api/
+        //   Services:RulesApi       → http://localhost:8085/api/
+        //   Services:AgentApi       → http://localhost:8082/api/
         services.AddHttpClient<ISubmissionApi, HttpSubmissionApi>(c =>
             c.BaseAddress = new Uri(configuration["Services:SubmissionApi"]!));
         services.AddHttpClient<IRulesApi, HttpRulesApi>(c =>

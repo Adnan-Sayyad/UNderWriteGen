@@ -18,10 +18,7 @@ public class QuoteController : ControllerBase
         _logger       = logger;
     }
 
-    // ═══════════════════════════════════════════════════════
-    // POST /api/quotes
-    // Generate a new quote — triggers the pricing engine
-    // ═══════════════════════════════════════════════════════
+    
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -59,10 +56,30 @@ public class QuoteController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetQuote(Guid quoteId, CancellationToken ct)
     {
-        var quote = await _quoteService.GetQuoteByIdAsync(quoteId, ct);
-        return quote is null
-            ? NotFound(new { error = $"Quote '{quoteId}' not found." })
-            : Ok(quote);
+        try
+        {
+            var quote = await _quoteService.GetQuoteByIdAsync(quoteId, ct);
+            return quote is null
+                ? NotFound(new { error = $"Quote '{quoteId}' not found." })
+                : Ok(quote);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error fetching quote {QuoteId}", quoteId);
+            return StatusCode(500, new { error = "Failed to retrieve quote. See backend logs for details.", detail = ex.Message });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // GET /api/quotes/submission/{submissionId}
+    // Get ALL quote versions for a submission (newest first)
+    // ═══════════════════════════════════════════════════════
+    [HttpGet("submission/{submissionId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetQuotesBySubmission(Guid submissionId, CancellationToken ct)
+    {
+        var quotes = await _quoteService.GetQuotesBySubmissionIdAsync(submissionId, ct);
+        return Ok(quotes);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -74,10 +91,18 @@ public class QuoteController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetLatestQuote(Guid submissionId, CancellationToken ct)
     {
-        var quote = await _quoteService.GetLatestQuoteAsync(submissionId, ct);
-        return quote is null
-            ? NotFound(new { error = $"No quotes found for submission '{submissionId}'." })
-            : Ok(quote);
+        try
+        {
+            var quote = await _quoteService.GetLatestQuoteAsync(submissionId, ct);
+            return quote is null
+                ? NotFound(new { error = $"No quotes found for submission '{submissionId}'." })
+                : Ok(quote);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error fetching latest quote for submission {SubId}", submissionId);
+            return StatusCode(500, new { error = "Failed to retrieve quote. See backend logs for details.", detail = ex.Message });
+        }
     }
 
     // ═══════════════════════════════════════════════════════

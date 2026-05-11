@@ -15,8 +15,6 @@ public class HttpSubmissionApi : ISubmissionApi
     private readonly HttpClient _http;
     private readonly ILogger<HttpSubmissionApi> _logger;
 
-    // ProductLine enum values from SubmissionAndIntake service
-    private static readonly string[] ProductLineNames = ["Life", "Health", "PnC", "Commercial"];
 
     public HttpSubmissionApi(HttpClient http, ILogger<HttpSubmissionApi> logger)
     {
@@ -54,17 +52,12 @@ public class HttpSubmissionApi : ISubmissionApi
             }
             catch { /* leave as 0 if parse fails */ }
 
-            // Map ProductLine integer enum to string name
-            string productLine = (raw.ProductLine >= 0 && raw.ProductLine < ProductLineNames.Length)
-                ? ProductLineNames[raw.ProductLine]
-                : "Life";
-
             return new SubmissionDto
             {
                 Id                 = raw.SubmissionID,
                 PartyId            = raw.PartyID,
                 AgentId            = raw.AgentID,
-                ProductLine        = productLine,
+                ProductLine        = raw.ProductLine,
                 SumInsured         = sumInsured,
                 PolicyTenureMonths = 12,          // default — not stored on Submission
                 OccupationType     = "General",   // default — not stored on Submission
@@ -89,10 +82,10 @@ public class HttpSubmissionApi : ISubmissionApi
         public Guid     SubmissionID  { get; set; }
         public string   PartyID       { get; set; } = string.Empty;
         public string   AgentID       { get; set; } = string.Empty;
-        public int      ProductLine   { get; set; }   // 0=Life,1=Health,2=PnC,3=Commercial
+        public string   ProductLine   { get; set; } = string.Empty;  // "Life","Health","PnC","Commercial"
         public string?  CoverageJSON  { get; set; }
         public DateTime InceptionDate { get; set; }
         public DateTime CreatedDate   { get; set; }
-        public int      Status        { get; set; }
+        public string   Status        { get; set; } = string.Empty;
     }
 }

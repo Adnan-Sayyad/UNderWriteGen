@@ -67,6 +67,20 @@ public class PricingParamController : ControllerBase
         return Ok(await _service.GetByProductLineAsync(line, ct));
     }
 
+    // DELETE /api/pricing-params/{paramId}
+    [HttpDelete("{paramId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid paramId, CancellationToken ct)
+    {
+        try
+        {
+            await _service.DeleteAsync(paramId, ct);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex) { return NotFound(new { error = ex.Message }); }
+    }
+
     // GET /api/pricing-params/effective/{date}
     // Returns all params that were/are active on the given date
     // Example: /api/pricing-params/effective/2026-04-01

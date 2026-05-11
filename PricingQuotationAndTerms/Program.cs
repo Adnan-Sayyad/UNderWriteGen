@@ -28,6 +28,19 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
 }
 
+// ── Global exception handler — returns JSON for all unhandled errors ──
+app.UseExceptionHandler(errApp =>
+{
+    errApp.Run(async ctx =>
+    {
+        ctx.Response.StatusCode  = 500;
+        ctx.Response.ContentType = "application/json";
+        var feature = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var msg     = feature?.Error?.Message ?? "An unexpected error occurred.";
+        await ctx.Response.WriteAsJsonAsync(new { error = msg });
+    });
+});
+
 // ── Swagger — always enabled (dev machine) ────────────────────────────
 app.UseSwagger();
 app.UseSwaggerUI(c =>
