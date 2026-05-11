@@ -53,6 +53,8 @@ namespace RulesScoringAndReferralMatrix.Repositories
             if (existing is null) return null;
 
             existing.ProductLine = rule.ProductLine;
+            existing.RuleName = rule.RuleName;
+            existing.Description = rule.Description;
             existing.ExpressionJSON = rule.ExpressionJSON;
             existing.Severity = rule.Severity;
             existing.Status = rule.Status;

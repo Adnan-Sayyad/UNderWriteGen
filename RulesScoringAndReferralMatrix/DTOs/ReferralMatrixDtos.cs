@@ -6,6 +6,8 @@ namespace RulesScoringAndReferralMatrix.DTOs
     {
         public string ProductLine { get; set; } = string.Empty;
         public CriteriaJSON CriteriaJSON { get; set; }
+        public string? Operator { get; set; }
+        public string? Threshold { get; set; }
         public RequiredAuthority RequiredAuthority { get; set; }
         public UWStatus Status { get; set; }
     }
@@ -14,6 +16,8 @@ namespace RulesScoringAndReferralMatrix.DTOs
     {
         public string ProductLine { get; set; } = string.Empty;
         public CriteriaJSON CriteriaJSON { get; set; }
+        public string? Operator { get; set; }
+        public string? Threshold { get; set; }
         public RequiredAuthority RequiredAuthority { get; set; }
         public UWStatus Status { get; set; }
     }
@@ -23,6 +27,8 @@ namespace RulesScoringAndReferralMatrix.DTOs
         public Guid ReferralMatrixID { get; set; }
         public string ProductLine { get; set; } = string.Empty;
         public CriteriaJSON CriteriaJSON { get; set; }
+        public string? Operator { get; set; }
+        public string? Threshold { get; set; }
         public RequiredAuthority RequiredAuthority { get; set; }
         public UWStatus Status { get; set; }
     }

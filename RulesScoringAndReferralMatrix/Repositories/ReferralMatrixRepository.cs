@@ -55,6 +55,8 @@ namespace RulesScoringAndReferralMatrix.Repositories
 
             existing.ProductLine = matrix.ProductLine;
             existing.CriteriaJSON = matrix.CriteriaJSON;
+            existing.Operator = matrix.Operator;
+            existing.Threshold = matrix.Threshold;
             existing.RequiredAuthority = matrix.RequiredAuthority;
             existing.Status = matrix.Status;
 

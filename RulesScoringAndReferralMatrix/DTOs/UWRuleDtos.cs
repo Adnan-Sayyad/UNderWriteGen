@@ -5,6 +5,8 @@ namespace RulesScoringAndReferralMatrix.DTOs
     public class CreateUWRuleDto
     {
         public string ProductLine { get; set; } = string.Empty;
+        public string? RuleName { get; set; }
+        public string? Description { get; set; }
         public string ExpressionJSON { get; set; } = string.Empty;
         public Severity Severity { get; set; }
         public UWStatus Status { get; set; }
@@ -13,6 +15,8 @@ namespace RulesScoringAndReferralMatrix.DTOs
     public class UpdateUWRuleDto
     {
         public string ProductLine { get; set; } = string.Empty;
+        public string? RuleName { get; set; }
+        public string? Description { get; set; }
         public string ExpressionJSON { get; set; } = string.Empty;
         public Severity Severity { get; set; }
         public UWStatus Status { get; set; }
@@ -22,6 +26,8 @@ namespace RulesScoringAndReferralMatrix.DTOs
     {
         public Guid UWRuleID { get; set; }
         public string ProductLine { get; set; } = string.Empty;
+        public string? RuleName { get; set; }
+        public string? Description { get; set; }
         public string ExpressionJSON { get; set; } = string.Empty;
         public Severity Severity { get; set; }
         public UWStatus Status { get; set; }
@@ -35,6 +41,7 @@ namespace RulesScoringAndReferralMatrix.DTOs
     public class RuleEvaluationResultDto
     {
         public Guid UWRuleID { get; set; }
+        public string? RuleName { get; set; }
         public string ProductLine { get; set; } = string.Empty;
         public Severity Severity { get; set; }
         public bool Triggered { get; set; }

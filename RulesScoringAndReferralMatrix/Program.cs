@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using RulesScoringAndReferralMatrix.Contracts.RepositoryContracts;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
@@ -7,7 +8,12 @@ using RulesScoringAndReferralMatrix.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+    {
+        // Accept and emit enums as names ("Refer", "Active") instead of integers.
+        opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();

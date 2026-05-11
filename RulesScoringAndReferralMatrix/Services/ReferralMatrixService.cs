@@ -44,6 +44,8 @@ namespace RulesScoringAndReferralMatrix.Services
             {
                 ProductLine = dto.ProductLine,
                 CriteriaJSON = dto.CriteriaJSON,
+                Operator = dto.Operator,
+                Threshold = dto.Threshold,
                 RequiredAuthority = dto.RequiredAuthority,
                 Status = dto.Status
             };
@@ -59,6 +61,8 @@ namespace RulesScoringAndReferralMatrix.Services
                 ReferralMatrixID = id,
                 ProductLine = dto.ProductLine,
                 CriteriaJSON = dto.CriteriaJSON,
+                Operator = dto.Operator,
+                Threshold = dto.Threshold,
                 RequiredAuthority = dto.RequiredAuthority,
                 Status = dto.Status
             };
@@ -83,6 +87,8 @@ namespace RulesScoringAndReferralMatrix.Services
             ReferralMatrixID = matrix.ReferralMatrixID,
             ProductLine = matrix.ProductLine,
             CriteriaJSON = matrix.CriteriaJSON,
+            Operator = matrix.Operator,
+            Threshold = matrix.Threshold,
             RequiredAuthority = matrix.RequiredAuthority,
             Status = matrix.Status
         };

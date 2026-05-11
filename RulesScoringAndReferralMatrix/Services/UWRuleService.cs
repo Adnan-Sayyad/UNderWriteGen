@@ -44,6 +44,8 @@ namespace RulesScoringAndReferralMatrix.Services
             var rule = new UWRule
             {
                 ProductLine = dto.ProductLine,
+                RuleName = dto.RuleName,
+                Description = dto.Description,
                 ExpressionJSON = dto.ExpressionJSON,
                 Severity = dto.Severity,
                 Status = dto.Status
@@ -59,6 +61,8 @@ namespace RulesScoringAndReferralMatrix.Services
             {
                 UWRuleID = id,
                 ProductLine = dto.ProductLine,
+                RuleName = dto.RuleName,
+                Description = dto.Description,
                 ExpressionJSON = dto.ExpressionJSON,
                 Severity = dto.Severity,
                 Status = dto.Status
@@ -91,10 +95,11 @@ namespace RulesScoringAndReferralMatrix.Services
             var results = activeRules.Select(rule => new RuleEvaluationResultDto
             {
                 UWRuleID = rule.UWRuleID,
+                RuleName = rule.RuleName,
                 ProductLine = rule.ProductLine,
                 Severity = rule.Severity,
                 Triggered = true,
-                Message = $"Rule {rule.UWRuleID} evaluated for submission {submissionId}"
+                Message = $"Rule '{rule.RuleName ?? rule.UWRuleID.ToString()}' evaluated for submission {submissionId}"
             }).ToList();
 
             return new EvaluateRulesResponseDto
@@ -110,6 +115,8 @@ namespace RulesScoringAndReferralMatrix.Services
         {
             UWRuleID = rule.UWRuleID,
             ProductLine = rule.ProductLine,
+            RuleName = rule.RuleName,
+            Description = rule.Description,
             ExpressionJSON = rule.ExpressionJSON,
             Severity = rule.Severity,
             Status = rule.Status
