@@ -38,6 +38,23 @@ namespace IdentityAndAccessManagement.Services
             return userDtos;
         }
 
+        // ── GET /api/users/me ─────────────────────────────────────
+        public async Task<UserDto> GetMyProfileAsync(Guid userId)
+        {
+            await ValidateSelfAsync(userId);
+
+            var user = await _userManager.FindByIdAsync(userId.ToString())
+                ?? throw new KeyNotFoundException(
+                    $"No account found with ID '{userId}'.");
+
+            if (user.IsDeleted)
+                throw new KeyNotFoundException(
+                    "This account has been deactivated.");
+
+            var roles = await _userManager.GetRolesAsync(user);
+            return MapToDto(user, roles);
+        }
+
         // ── GET /api/users/{userId} ───────────────────────────────
         public async Task<UserDto> GetUserByIdAsync(Guid adminId, Guid userId)
         {
@@ -68,17 +85,19 @@ namespace IdentityAndAccessManagement.Services
                 throw new KeyNotFoundException(
                     "This account has been deactivated and cannot be updated.");
 
-            user.FirstName  = dto.FirstName;
-            user.LastName   = dto.LastName;
-            user.Email      = dto.Email;
-            user.UpdatedAt  = DateTime.UtcNow;
+            user.FirstName   = dto.FirstName;
+            user.LastName    = dto.LastName;
+            user.Email       = dto.Email;
+            user.PhoneNumber = dto.PhoneNumber;
+            user.UpdatedAt   = DateTime.UtcNow;
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
                 throw new InvalidOperationException(
                     string.Join(", ", result.Errors.Select(e => e.Description)));
 
-            await LogAuditAsync(user, "UserUpdated", "UserManagement");
+            await LogAuditAsync(user, "UserUpdated", "UserManagement",
+                $"Name: {user.FirstName} {user.LastName}, Email: {user.Email}, Phone: {user.PhoneNumber ?? "—"}");
 
             var roles = await _userManager.GetRolesAsync(user);
             return MapToDto(user, roles);
@@ -117,7 +136,8 @@ namespace IdentityAndAccessManagement.Services
 
             await LogAuditAsync(user,
                 $"StatusChanged: {previousStatus} → {dto.Status}",
-                "UserManagement");
+                "UserManagement",
+                $"User: {user.FirstName} {user.LastName} ({user.Email}), PreviousStatus: {previousStatus}, NewStatus: {dto.Status}");
         }
 
         // ── DELETE /api/users/{userId} ────────────────────────────
@@ -141,7 +161,8 @@ namespace IdentityAndAccessManagement.Services
 
             await _userManager.UpdateAsync(user);
 
-            await LogAuditAsync(user, "UserDeleted", "UserManagement");
+            await LogAuditAsync(user, "UserDeleted", "UserManagement",
+                $"Name: {user.FirstName} {user.LastName}, Email: {user.Email}, DeletedAt: {DateTime.UtcNow:u}");
         }
 
         // ── Private: Validate Admin ───────────────────────────────
@@ -178,9 +199,29 @@ namespace IdentityAndAccessManagement.Services
                 throw new UnauthorizedAccessException(
                     "Access denied. Only logged in Admins can perform this action.");
 
-            if (!requireAdminOnly && !roles.Contains("Admin") && !roles.Contains("Manager"))
+            if (!requireAdminOnly && !roles.Contains("Admin"))
                 throw new UnauthorizedAccessException(
-                    "Access denied. Only logged in Admins or Managers can view users.");
+                    "Access denied. Only Admins can view users.");
+        }
+
+        // ── Private: Validate Self (no role check, any active user) ──
+        private async Task ValidateSelfAsync(Guid userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString())
+                ?? throw new UnauthorizedAccessException(
+                    $"No account found with ID '{userId}'.");
+
+            if (user.IsDeleted)
+                throw new UnauthorizedAccessException(
+                    "This account has been deactivated. Please contact the administrator.");
+
+            if (user.Status == "Locked")
+                throw new UnauthorizedAccessException(
+                    "This account is locked. Please contact the administrator to unlock it.");
+
+            if (user.Status == "Disabled")
+                throw new UnauthorizedAccessException(
+                    "This account has been disabled. Please contact the administrator.");
         }
 
         // ── Private: Map to DTO ───────────────────────────────────
@@ -196,14 +237,16 @@ namespace IdentityAndAccessManagement.Services
                 PhoneNumber = user.PhoneNumber,
                 Role        = string.Join(", ", roles),
                 Status      = user.Status,
-                CreatedAt   = user.CreatedAt,
-                UpdatedAt   = user.UpdatedAt
+                CreatedAt   = DateTime.SpecifyKind(user.CreatedAt, DateTimeKind.Utc),
+                UpdatedAt   = user.UpdatedAt.HasValue
+                              ? DateTime.SpecifyKind(user.UpdatedAt.Value, DateTimeKind.Utc)
+                              : null
             };
         }
 
         // ── Private: Audit Logger ─────────────────────────────────
         private async Task LogAuditAsync(
-            ApplicationUser user, string action, string resource)
+            ApplicationUser user, string action, string resource, string? metadata = null)
         {
             var audit = new AuditLogs
             {
@@ -211,6 +254,7 @@ namespace IdentityAndAccessManagement.Services
                 Email     = user.Email ?? string.Empty,
                 Action    = action,
                 Resource  = resource,
+                Metadata  = metadata,
                 CreatedAt = DateTime.UtcNow
             };
 

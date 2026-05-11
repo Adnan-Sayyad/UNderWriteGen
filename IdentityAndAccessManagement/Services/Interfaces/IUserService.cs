@@ -6,6 +6,7 @@ namespace IdentityAndAccessManagement.Services.Interfaces
     {
         Task<IEnumerable<UserDto>> GetAllUsersAsync(Guid adminId);
         Task<UserDto> GetUserByIdAsync(Guid adminId, Guid userId);
+        Task<UserDto> GetMyProfileAsync(Guid userId);          // self-access, no admin check
         Task<UserDto> UpdateUserAsync(Guid adminId, Guid userId, UpdateUserDto dto);
         Task UpdateUserStatusAsync(Guid adminId, Guid userId, UpdateUserStatusDto dto);
         Task DeleteUserAsync(Guid adminId, Guid userId);
