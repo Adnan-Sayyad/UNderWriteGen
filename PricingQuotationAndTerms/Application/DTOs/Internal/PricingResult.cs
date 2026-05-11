@@ -13,7 +13,8 @@ public class PricingResult
     public decimal TenureDiscount     { get; set; }  // >12 or >24 months
     public decimal LoyaltyDiscount    { get; set; }  // Renewal policies
     public decimal AgentDiscount      { get; set; }  // Preferred agent
-    public decimal TaxAmount          { get; set; }  // 18% GST on adjusted premium
+    public decimal TaxAmount          { get; set; }  // GST on adjusted premium (rate from DB)
     public decimal TotalPremium       { get; set; }  // Final amount
+    public int     QuoteValidityDays  { get; set; }  // How many days the quote stays valid (from DB)
     public string  PricingNotes       { get; set; } = string.Empty;
 }

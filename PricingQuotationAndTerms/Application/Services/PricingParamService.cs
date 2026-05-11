@@ -65,6 +65,15 @@ public class PricingParamService : IPricingParamService
         DateTime date, CancellationToken ct = default)
         => (await _repo.GetByEffectiveDateAsync(date, ct)).Select(Map);
 
+    public async Task DeleteAsync(Guid paramId, CancellationToken ct = default)
+    {
+        var param = await _repo.GetByIdAsync(paramId, ct)
+            ?? throw new KeyNotFoundException($"Pricing parameter '{paramId}' not found.");
+
+        await _repo.DeleteAsync(paramId, ct);
+        _logger.LogInformation("PricingParam deleted: {Id} ({Line}/{Name})", paramId, param.ProductLine, param.ParamName);
+    }
+
     private static PricingParamResponse Map(PricingParam p) => new()
     {
         Id            = p.Id,

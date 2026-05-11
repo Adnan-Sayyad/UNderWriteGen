@@ -122,7 +122,7 @@ public class QuoteService : IQuoteService, IQuoteApi
             loadingsJson  : loadingsJson,
             discountsJson : discountsJson,
             taxesJson     : taxesJson,
-            validUntil    : DateTime.UtcNow.AddDays(30));
+            validUntil    : DateTime.UtcNow.AddDays(pricing.QuoteValidityDays));
 
         await _repo.AddAsync(quote, ct);
 
@@ -232,6 +232,7 @@ public class QuoteService : IQuoteService, IQuoteApi
     // ════════════════════════════════════════════════════════════════
     private static QuoteResponse MapToResponse(Quote q) => new()
     {
+        QuoteRef      = GenerateRef(q),
         QuoteId       = q.Id,
         SubmissionId  = q.SubmissionId,
         VersionNo     = q.VersionNo,
@@ -243,6 +244,18 @@ public class QuoteService : IQuoteService, IQuoteApi
         DiscountsJson = q.DiscountsJson,
         TaxesJson     = q.TaxesJson
     };
+
+    /// <summary>
+    /// Derives a short human-readable reference from the GUID.
+    /// Deterministic: same quote always gets the same ref. No DB column or migration needed.
+    /// Format: QUO-{year}-{5-digit number}  e.g. QUO-2026-04287
+    /// </summary>
+    private static string GenerateRef(Quote q)
+    {
+        var bytes = q.Id.ToByteArray();
+        int seq   = Math.Abs(BitConverter.ToInt32(bytes, 0)) % 100000;
+        return $"QUO-{q.CreatedAt.Year}-{seq:D5}";
+    }
 
     // ════════════════════════════════════════════════════════════════
     // IQuoteApi — bridge for other microservices

@@ -25,10 +25,8 @@ public class PricingService : IPricingService
     private readonly IPricingParamRepository _paramRepo;
     private readonly ILogger<PricingService> _logger;
 
-    // Fallback constants — used ONLY if DB param is missing (safety net)
-    private const decimal FallbackBaseRate       = 0.025m;
-    private const decimal FallbackGstRate        = 0.18m;
-    private const decimal FallbackMinPremium     = 500m;
+    // Default validity days — used ONLY if QuoteValidityDays is missing from DB (non-financial, safe to default)
+    private const int DefaultQuoteValidityDays = 30;
 
     public PricingService(IPricingParamRepository paramRepo, ILogger<PricingService> logger)
     {
@@ -59,7 +57,16 @@ public class PricingService : IPricingService
         var globalParams  = (await _paramRepo.GetByProductLineAsync("Global", ct))
                             .ToDictionary(p => p.ParamName, p => p.Value);
 
-        // Helper: read param with fallback + warning
+        // Required param — throws if missing. Use for financial values where guessing is dangerous.
+        decimal GetRequired(Dictionary<string, decimal> src, string key, string context)
+        {
+            if (src.TryGetValue(key, out var val)) return val;
+            throw new InvalidOperationException(
+                $"Required pricing parameter '{key}' for product line '{context}' is missing from the database. " +
+                $"Please add it via POST /api/pricing-params before generating quotes.");
+        }
+
+        // Optional param — uses fallback with warning. Use for non-financial or low-risk values.
         decimal Get(Dictionary<string, decimal> src, string key, decimal fallback)
         {
             if (src.TryGetValue(key, out var val)) return val;
@@ -68,7 +75,8 @@ public class PricingService : IPricingService
         }
 
         // ── Step 1: Base Premium ──────────────────────────────────────
-        decimal baseRate     = Get(productParams, "BaseRate", FallbackBaseRate);
+        // BaseRate is REQUIRED — missing rate means we cannot calculate premium at all
+        decimal baseRate     = GetRequired(productParams, "BaseRate", input.ProductLine);
         decimal tenureFactor = input.PolicyTenureMonths / 12.0m;
         decimal basePremium  = Math.Round(input.SumInsured * baseRate * tenureFactor, 2);
 
@@ -117,23 +125,45 @@ public class PricingService : IPricingService
         decimal subtotal = basePremium + riskLoading + occupationLoading
                          - tenureDiscount - loyaltyDiscount - agentDiscount;
 
-        decimal minPremium = Get(globalParams, "MinimumPremium", FallbackMinPremium);
+        // ── Minimum Premium floor ─────────────────────────────────────
+        // Check product-specific first (e.g. Commercial/MinimumPremium = 5000),
+        // then fall back to Global/MinimumPremium.
+        // Both missing = throw. A ₹0 floor is never acceptable in insurance.
+        decimal minPremium;
+        if (!productParams.TryGetValue("MinimumPremium", out minPremium) &&
+            !globalParams.TryGetValue("MinimumPremium",  out minPremium))
+        {
+            throw new InvalidOperationException(
+                $"Required pricing parameter 'MinimumPremium' is missing for both " +
+                $"product line '{input.ProductLine}' and 'Global'. " +
+                $"Please add it via POST /api/pricing-params.");
+        }
+
         if (subtotal < minPremium)
         {
             _logger.LogInformation(
-                "Premium {Subtotal} below minimum {MinPremium}. Applying floor.",
-                subtotal, minPremium);
+                "Premium {Subtotal} below minimum {MinPremium} for {Line}. Applying floor.",
+                subtotal, minPremium, input.ProductLine);
             subtotal = minPremium;
         }
 
         // ── Step 7: GST ───────────────────────────────────────────────
-        decimal gstRate   = Get(globalParams, "GstRate", FallbackGstRate);
+        // GstRate is REQUIRED — silently wrong GST is a regulatory violation
+        decimal gstRate   = GetRequired(globalParams, "GstRate", "Global");
         decimal taxAmount = Math.Round(subtotal * gstRate, 2);
         decimal total     = Math.Round(subtotal + taxAmount, 2);
 
+        // ── Quote Validity Days ───────────────────────────────────────
+        // Product-specific first (e.g. Commercial/QuoteValidityDays = 60),
+        // then Global, then safe default of 30.
+        int quoteValidityDays = productParams.TryGetValue("QuoteValidityDays", out var pvd) ? (int)pvd
+                              : globalParams.TryGetValue("QuoteValidityDays",  out var gvd) ? (int)gvd
+                              : DefaultQuoteValidityDays;
+
         string notes = $"Product={input.ProductLine} | SumInsured={input.SumInsured:C} | " +
                        $"Tenure={input.PolicyTenureMonths}m | RiskBand={riskScore.Band} | " +
-                       $"Score={riskScore.ScoreValue} | Renewal={input.IsRenewal}";
+                       $"Score={riskScore.ScoreValue} | Renewal={input.IsRenewal} | " +
+                       $"ValidityDays={quoteValidityDays}";
 
         _logger.LogInformation(
             "Pricing complete: Base={Base}, Loading={Load}, Discount={Disc}, Tax={Tax}, Total={Total}",
@@ -149,6 +179,7 @@ public class PricingService : IPricingService
             AgentDiscount     = agentDiscount,
             TaxAmount         = taxAmount,
             TotalPremium      = total,
+            QuoteValidityDays = quoteValidityDays,
             PricingNotes      = notes
         };
     }
