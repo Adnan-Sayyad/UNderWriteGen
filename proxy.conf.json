@@ -38,7 +38,7 @@
     "target": "http://localhost:8082",
     "secure": false,
     "changeOrigin": true,
-    "pathRewrite": { "^/parties": "/api/parties" },
+    "pathRewrite": { "^/parties": "/api/customerparties" },
     "logLevel": "info"
   },
   "/submissions": {

@@ -4,56 +4,47 @@
 
   <!-- Success alert -->
   @if (success()) {
-    <div class="alert alert-success d-flex align-items-center gap-2 py-2" role="alert">
-      <i class="bi bi-check-circle-fill"></i>
-      <span>{{ success() }}</span>
-    </div>
+  <div class="alert alert-success d-flex align-items-center gap-2 py-2" role="alert">
+    <i class="bi bi-check-circle-fill"></i>
+    <span>{{ success() }}</span>
+  </div>
   }
 
   <!-- Error alert -->
   @if (error()) {
-    <div class="alert alert-danger d-flex align-items-center gap-2 py-2" role="alert">
-      <i class="bi bi-exclamation-triangle-fill"></i>
-      <span>{{ error() }}</span>
-    </div>
+  <div class="alert alert-danger d-flex align-items-center gap-2 py-2" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <span>{{ error() }}</span>
+  </div>
   }
 
   <!-- First & Last Name row -->
   <div class="row g-3 mb-3">
     <div class="col-6">
       <label class="form-label fw-medium" for="firstName">First Name</label>
-      <input
-        id="firstName"
-        type="text"
-        class="form-control"
-        [class.is-invalid]="f['firstName'].invalid && f['firstName'].touched"
-        formControlName="firstName"
-        placeholder="Shiva"
-        autocomplete="given-name"
-      />
+      <input id="firstName" type="text" class="form-control"
+        [class.is-invalid]="f['firstName'].invalid && f['firstName'].touched" formControlName="firstName"
+        placeholder="Shiva" autocomplete="given-name" />
       @if (f['firstName'].invalid && f['firstName'].touched) {
-        <div class="invalid-feedback">
-          @if (f['firstName'].errors?.['required']) { First name is required. }
-          @else { Max 100 characters. }
-        </div>
+      <div class="invalid-feedback">
+        @if (f['firstName'].errors?.['required'])   { First name is required. }
+        @else if (f['firstName'].errors?.['minlength']) { Minimum 2 characters required. }
+        @else if (f['firstName'].errors?.['maxlength']) { Maximum 20 characters allowed. }
+        @else { Only alphabets are allowed. }
+      </div>
       }
     </div>
     <div class="col-6">
       <label class="form-label fw-medium" for="lastName">Last Name</label>
-      <input
-        id="lastName"
-        type="text"
-        class="form-control"
-        [class.is-invalid]="f['lastName'].invalid && f['lastName'].touched"
-        formControlName="lastName"
-        placeholder="Molige"
-        autocomplete="family-name"
-      />
+      <input id="lastName" type="text" class="form-control"
+        [class.is-invalid]="f['lastName'].invalid && f['lastName'].touched" formControlName="lastName"
+        placeholder="Molige" autocomplete="family-name" />
       @if (f['lastName'].invalid && f['lastName'].touched) {
-        <div class="invalid-feedback">
-          @if (f['lastName'].errors?.['required']) { Last name is required. }
-          @else { Max 100 characters. }
-        </div>
+      <div class="invalid-feedback">
+        @if (f['lastName'].errors?.['required'])   { Last name is required. }
+        @else if (f['lastName'].errors?.['maxlength']) { Maximum 20 characters allowed. }
+        @else { Only alphabets are allowed. }
+      </div>
       }
     </div>
   </div>
@@ -63,20 +54,14 @@
     <label class="form-label fw-medium" for="reg-email">Email address</label>
     <div class="input-group">
       <span class="input-group-text bg-light"><i class="bi bi-envelope text-muted"></i></span>
-      <input
-        id="reg-email"
-        type="email"
-        class="form-control"
-        [class.is-invalid]="f['email'].invalid && f['email'].touched"
-        formControlName="email"
-        placeholder="you@company.com"
-        autocomplete="email"
-      />
+      <input id="reg-email" type="email" class="form-control"
+        [class.is-invalid]="f['email'].invalid && f['email'].touched" formControlName="email"
+        placeholder="you@company.com" autocomplete="email" />
       @if (f['email'].invalid && f['email'].touched) {
-        <div class="invalid-feedback">
-          @if (f['email'].errors?.['required']) { Email is required. }
-          @else { Enter a valid email address. }
-        </div>
+      <div class="invalid-feedback">
+        @if (f['email'].errors?.['required']) { Email is required. }
+        @else { Enter a valid email address. }
+      </div>
       }
     </div>
   </div>
@@ -88,17 +73,13 @@
     </label>
     <div class="input-group">
       <span class="input-group-text bg-light"><i class="bi bi-telephone text-muted"></i></span>
-      <input
-        id="phone"
-        type="tel"
-        class="form-control"
-        [class.is-invalid]="f['phoneNumber'].invalid && f['phoneNumber'].touched"
-        formControlName="phoneNumber"
-        placeholder="+91 98765 43210"
-        autocomplete="tel"
-      />
+      <input id="phone" type="tel" class="form-control"
+        [class.is-invalid]="f['phoneNumber'].invalid && f['phoneNumber'].touched" formControlName="phoneNumber"
+        placeholder="9876543210" autocomplete="tel" />
       @if (f['phoneNumber'].invalid && f['phoneNumber'].touched) {
-        <div class="invalid-feedback">Enter a valid phone number.</div>
+      <div class="invalid-feedback">
+        Must be 10 digits starting with 6, 7, 8 or 9 (e.g. 9876543210).
+      </div>
       }
     </div>
   </div>
@@ -108,48 +89,42 @@
     <label class="form-label fw-medium" for="reg-password">Password</label>
     <div class="input-group">
       <span class="input-group-text bg-light"><i class="bi bi-lock text-muted"></i></span>
-      <input
-        id="reg-password"
-        [type]="showPass() ? 'text' : 'password'"
-        class="form-control"
-        [class.is-invalid]="f['password'].invalid && f['password'].touched"
-        formControlName="password"
-        placeholder="Min 8 chars, upper, lower, digit, symbol"
-        autocomplete="new-password"
-      />
-      <button type="button" class="input-group-text bg-light border-start-0"
-              (click)="showPass.set(!showPass())">
+      <input id="reg-password" [type]="showPass() ? 'text' : 'password'" class="form-control"
+        [class.is-invalid]="f['password'].invalid && f['password'].touched" formControlName="password"
+        placeholder="8–20 chars, upper, lower, digit, symbol" autocomplete="new-password" />
+      <button type="button" class="input-group-text bg-light border-start-0" (click)="showPass.set(!showPass())">
         <i class="bi" [class.bi-eye]="!showPass()" [class.bi-eye-slash]="showPass()"></i>
       </button>
       @if (f['password'].invalid && f['password'].touched) {
-        <div class="invalid-feedback">
-          @if (f['password'].errors?.['required']) { Password is required. }
-          @else if (f['password'].errors?.['minlength']) { Minimum 8 characters. }
-          @else { Must include uppercase, lowercase, digit and special character. }
-        </div>
+      <div class="invalid-feedback">
+        @if (f['password'].errors?.['required']) { Password is required. }
+        @else if (f['password'].errors?.['minlength']) { Minimum 8 characters required. }
+        @else if (f['password'].errors?.['maxlength']) { Maximum 20 characters allowed. }
+        @else { Must include uppercase, lowercase, digit and special character. }
+      </div>
       }
     </div>
     <!-- Strength hint -->
     @if (f['password'].value) {
-      <div class="password-hint mt-1">
-        <div class="d-flex gap-2 flex-wrap" style="font-size:.75rem">
-          <span [class.text-success]="hasLength()" [class.text-muted]="!hasLength()">
-            <i class="bi" [class.bi-check-circle-fill]="hasLength()" [class.bi-circle]="!hasLength()"></i> 8+ chars
-          </span>
-          <span [class.text-success]="hasUpper()" [class.text-muted]="!hasUpper()">
-            <i class="bi" [class.bi-check-circle-fill]="hasUpper()" [class.bi-circle]="!hasUpper()"></i> Uppercase
-          </span>
-          <span [class.text-success]="hasLower()" [class.text-muted]="!hasLower()">
-            <i class="bi" [class.bi-check-circle-fill]="hasLower()" [class.bi-circle]="!hasLower()"></i> Lowercase
-          </span>
-          <span [class.text-success]="hasDigit()" [class.text-muted]="!hasDigit()">
-            <i class="bi" [class.bi-check-circle-fill]="hasDigit()" [class.bi-circle]="!hasDigit()"></i> Number
-          </span>
-          <span [class.text-success]="hasSymbol()" [class.text-muted]="!hasSymbol()">
-            <i class="bi" [class.bi-check-circle-fill]="hasSymbol()" [class.bi-circle]="!hasSymbol()"></i> Symbol
-          </span>
-        </div>
+    <div class="password-hint mt-1">
+      <div class="d-flex gap-2 flex-wrap" style="font-size:.75rem">
+        <span [class.text-success]="hasLength()" [class.text-muted]="!hasLength()">
+          <i class="bi" [class.bi-check-circle-fill]="hasLength()" [class.bi-circle]="!hasLength()"></i> 8–20 chars
+        </span>
+        <span [class.text-success]="hasUpper()" [class.text-muted]="!hasUpper()">
+          <i class="bi" [class.bi-check-circle-fill]="hasUpper()" [class.bi-circle]="!hasUpper()"></i> Uppercase
+        </span>
+        <span [class.text-success]="hasLower()" [class.text-muted]="!hasLower()">
+          <i class="bi" [class.bi-check-circle-fill]="hasLower()" [class.bi-circle]="!hasLower()"></i> Lowercase
+        </span>
+        <span [class.text-success]="hasDigit()" [class.text-muted]="!hasDigit()">
+          <i class="bi" [class.bi-check-circle-fill]="hasDigit()" [class.bi-circle]="!hasDigit()"></i> Number
+        </span>
+        <span [class.text-success]="hasSymbol()" [class.text-muted]="!hasSymbol()">
+          <i class="bi" [class.bi-check-circle-fill]="hasSymbol()" [class.bi-circle]="!hasSymbol()"></i> Symbol
+        </span>
       </div>
+    </div>
     }
   </div>
 
@@ -158,37 +133,61 @@
     <label class="form-label fw-medium" for="confirmPass">Confirm Password</label>
     <div class="input-group">
       <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
-      <input
-        id="confirmPass"
-        [type]="showConf() ? 'text' : 'password'"
-        class="form-control"
-        [class.is-invalid]="(f['confirmPass'].touched && form.errors?.['mismatch']) || (f['confirmPass'].invalid && f['confirmPass'].touched)"
-        formControlName="confirmPass"
-        placeholder="Re-enter your password"
-        autocomplete="new-password"
-      />
-      <button type="button" class="input-group-text bg-light border-start-0"
-              (click)="showConf.set(!showConf())">
+      <input id="confirmPass" [type]="showConf() ? 'text' : 'password'" class="form-control"
+        [class.is-invalid]="f['confirmPass'].touched && (f['confirmPass'].invalid || form.errors?.['mismatch'])"
+        formControlName="confirmPass" placeholder="Re-enter your password" autocomplete="new-password" />
+      <button type="button" class="input-group-text bg-light border-start-0" (click)="showConf.set(!showConf())">
         <i class="bi" [class.bi-eye]="!showConf()" [class.bi-eye-slash]="showConf()"></i>
       </button>
-      @if (f['confirmPass'].touched && form.errors?.['mismatch']) {
-        <div class="invalid-feedback d-block">Passwords do not match.</div>
-      }
-      @else if (f['confirmPass'].invalid && f['confirmPass'].touched) {
-        <div class="invalid-feedback">Please confirm your password.</div>
+      @if (f['confirmPass'].touched) {
+        @if (f['confirmPass'].errors?.['required']) {
+          <div class="invalid-feedback d-block">Please confirm your password.</div>
+        } @else if (f['confirmPass'].errors?.['minlength']) {
+          <div class="invalid-feedback d-block">Minimum 8 characters required.</div>
+        } @else if (f['confirmPass'].errors?.['maxlength']) {
+          <div class="invalid-feedback d-block">Maximum 20 characters allowed.</div>
+        } @else if (f['confirmPass'].errors?.['weakPassword']) {
+          <div class="invalid-feedback d-block">Must include uppercase, lowercase, digit and special character.</div>
+        } @else if (form.errors?.['mismatch']) {
+          <div class="invalid-feedback d-block">Passwords do not match.</div>
+        }
       }
     </div>
+    @if (f['confirmPass'].value) {
+    <div class="d-flex gap-2 flex-wrap mt-1" style="font-size:.75rem">
+      <span [class.text-success]="hasConfLength()" [class.text-muted]="!hasConfLength()">
+        <i class="bi" [class.bi-check-circle-fill]="hasConfLength()" [class.bi-circle]="!hasConfLength()"></i> 8–20 chars
+      </span>
+      <span [class.text-success]="hasConfUpper()" [class.text-muted]="!hasConfUpper()">
+        <i class="bi" [class.bi-check-circle-fill]="hasConfUpper()" [class.bi-circle]="!hasConfUpper()"></i> Uppercase
+      </span>
+      <span [class.text-success]="hasConfLower()" [class.text-muted]="!hasConfLower()">
+        <i class="bi" [class.bi-check-circle-fill]="hasConfLower()" [class.bi-circle]="!hasConfLower()"></i> Lowercase
+      </span>
+      <span [class.text-success]="hasConfDigit()" [class.text-muted]="!hasConfDigit()">
+        <i class="bi" [class.bi-check-circle-fill]="hasConfDigit()" [class.bi-circle]="!hasConfDigit()"></i> Number
+      </span>
+      <span [class.text-success]="hasConfSymbol()" [class.text-muted]="!hasConfSymbol()">
+        <i class="bi" [class.bi-check-circle-fill]="hasConfSymbol()" [class.bi-circle]="!hasConfSymbol()"></i> Symbol
+      </span>
+    </div>
+    }
   </div>
 
-  <!-- Submit -->
-  <button type="submit" class="btn btn-primary w-100 fw-semibold" [disabled]="loading()">
-    @if (loading()) {
+  <!-- Submit / Reset -->
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-outline-secondary w-50 fw-semibold" (click)="reset()" [disabled]="loading()">
+      <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
+    </button>
+    <button type="submit" class="btn btn-primary w-50 fw-semibold" [disabled]="loading() || form.invalid">
+      @if (loading()) {
       <span class="spinner-border spinner-border-sm me-2" role="status"></span>
       Creating account…
-    } @else {
+      } @else {
       <i class="bi bi-person-plus-fill me-2"></i>Create Account
-    }
-  </button>
+      }
+    </button>
+  </div>
 
   <!-- Login link -->
   <p class="text-center mt-3 mb-0" style="font-size:.875rem">

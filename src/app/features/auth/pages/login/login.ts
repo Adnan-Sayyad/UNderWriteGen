@@ -1,8 +1,15 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
+
+function passwordStrength(ctrl: AbstractControl): ValidationErrors | null {
+  const v = ctrl.value as string;
+  if (!v) return null;
+  const ok = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,20}$/.test(v);
+  return ok ? null : { weakPassword: true };
+}
 
 @Component({
   selector: 'app-login',
@@ -15,8 +22,9 @@ export class LoginPage {
   private readonly fb = inject(FormBuilder);
 
   readonly form = this.fb.group({
-    email:    ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    email:    ['', [Validators.required,
+                    Validators.pattern(/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/)]],
+    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(20), passwordStrength]],
   });
 
   readonly loading  = signal(false);
@@ -27,6 +35,19 @@ export class LoginPage {
     private auth: AuthService,
     private router: Router,
   ) {}
+
+  private get pwd(): string { return this.form.controls.password.value ?? ''; }
+  hasLength():  boolean { return this.pwd.length >= 8 && this.pwd.length <= 20; }
+  hasUpper():   boolean { return /[A-Z]/.test(this.pwd); }
+  hasLower():   boolean { return /[a-z]/.test(this.pwd); }
+  hasDigit():   boolean { return /\d/.test(this.pwd); }
+  hasSymbol():  boolean { return /[\W_]/.test(this.pwd); }
+
+  reset(): void {
+    this.form.reset();
+    this.error.set(null);
+    this.showPass.set(false);
+  }
 
   submit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }

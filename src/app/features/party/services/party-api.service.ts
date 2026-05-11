@@ -60,7 +60,7 @@ export class PartyApiService {
 
   constructor(private http: HttpClient) {}
 
-  // ── Agents (GET /api/agents/search) ───────────────────────────────────────
+  // ── Agents ────────────────────────────────────────────────────────────────
 
   getAgents(req?: any, filters?: Record<string, string>) {
     const params: any = {};
@@ -95,7 +95,15 @@ export class PartyApiService {
     });
   }
 
-  // ── Customer Parties (GET /api/customerparties/search) ────────────────────
+  activateAgent(id: string) {
+    return this.http.patch<ApiResponse<Agent>>(`${this.base}/agents/${id}/activate`, {});
+  }
+
+  deactivateAgent(id: string) {
+    return this.http.patch<ApiResponse<Agent>>(`${this.base}/agents/${id}/deactivate`, {});
+  }
+
+  // ── Customer Parties ──────────────────────────────────────────────────────
 
   getParties(req?: any, filters?: Record<string, string>) {
     const params: any = {};
@@ -131,5 +139,13 @@ export class PartyApiService {
       contactInfo:      payload.contactInfo ? JSON.stringify(payload.contactInfo) : null,
       segment:          payload.segment,
     });
+  }
+
+  activateParty(id: string) {
+    return this.http.patch<ApiResponse<CustomerParty>>(`${this.base}/customerparties/${id}/activate`, {});
+  }
+
+  deactivateParty(id: string) {
+    return this.http.patch<ApiResponse<CustomerParty>>(`${this.base}/customerparties/${id}/deactivate`, {});
   }
 }

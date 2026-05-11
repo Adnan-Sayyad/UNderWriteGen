@@ -22,6 +22,10 @@ export class AuditLogsPage implements OnInit {
 
   readonly resources = ['Auth', 'UserManagement'];
 
+  // Pagination
+  readonly currentPage = signal(1);
+  readonly pageSize    = 10;
+
   readonly filtered = computed(() => {
     const q   = this.searchEmail().toLowerCase();
     const res = this.filterRes();
@@ -30,6 +34,23 @@ export class AuditLogsPage implements OnInit {
       (!res || l.resource === res)
     );
   });
+
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
+
+  readonly paged = computed(() => {
+    const page  = Math.min(this.currentPage(), this.totalPages());
+    const start = (page - 1) * this.pageSize;
+    return this.filtered().slice(start, start + this.pageSize);
+  });
+
+  readonly pageNumbers = computed(() =>
+    Array.from({ length: this.totalPages() }, (_, i) => i + 1)
+  );
+
+  setSearch(val: string): void { this.searchEmail.set(val); this.currentPage.set(1); }
+  prevPage(): void { if (this.currentPage() > 1) this.currentPage.update(p => p - 1); }
+  nextPage(): void { if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1); }
+  goToPage(n: number): void { this.currentPage.set(n); }
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -53,6 +74,7 @@ export class AuditLogsPage implements OnInit {
 
   applyResourceFilter(res: string): void {
     this.filterRes.set(res);
+    this.currentPage.set(1);
     if (!res) { this.load(); return; }
     this.loading.set(true);
     this.iam.getAuditLogsByResource(res, this.adminId).subscribe({

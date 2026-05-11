@@ -1,75 +1,301 @@
 <div class="page-container">
+
+  <!-- ── Page header ───────────────────────────────────────────────── -->
   <app-page-header
     title="Notifications"
-    subtitle="Alerts for referrals, SLAs, subjectivities and compliance"
+    subtitle="Alerts for referrals, SLAs, subjectivities, quotes and compliance"
     icon="bi-bell"
     [breadcrumbs]="breadcrumbs">
     <div class="d-flex gap-2 align-items-center">
       @if (unreadCount() > 0) {
-        <span class="badge bg-danger">{{ unreadCount() }} unread</span>
-        <button class="btn btn-sm btn-outline-primary" (click)="markAllRead()">
-          <i class="bi bi-check2-all me-1"></i>Mark all read
+        <span class="badge bg-danger rounded-pill px-2 py-1">
+          {{ unreadCount() }} unread
+        </span>
+      }
+      @if (canCreate()) {
+        <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="openCreate()">
+          <i class="bi bi-send"></i>
+          <span>Send Notification</span>
         </button>
       }
-      <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+      <button class="btn btn-sm btn-outline-secondary" (click)="load()" title="Refresh">
         <i class="bi bi-arrow-clockwise"></i>
       </button>
     </div>
   </app-page-header>
 
-  <!-- Filter tabs -->
-  <div class="d-flex gap-2 mb-3">
-    @for (s of filterOptions; track s) {
-      <button class="btn btn-sm"
-              [class.btn-primary]="filterStatus() === s"
-              [class.btn-outline-secondary]="filterStatus() !== s"
-              (click)="setFilter(s)">
-        {{ s || 'All' }}
-      </button>
-    }
+  <!-- ── Flash alert ───────────────────────────────────────────────── -->
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex align-items-center gap-2 py-2 mb-3 border-0 rounded-3">
+      <i class="bi flex-shrink-0"
+         [class.bi-check-circle-fill]="alertMsg()!.type === 'success'"
+         [class.bi-exclamation-triangle-fill]="alertMsg()!.type === 'danger'"></i>
+      <span>{{ alertMsg()!.text }}</span>
+    </div>
+  }
+
+  <!-- ── Toolbar: search + filters ────────────────────────────────── -->
+  <div class="notif-toolbar">
+
+    <!-- Search -->
+    <div class="input-group notif-search">
+      <span class="input-group-text notif-search-icon">
+        <i class="bi bi-search"></i>
+      </span>
+      <input
+        type="text"
+        class="form-control notif-search-input"
+        placeholder="Search messages or email addresses…"
+        [value]="searchQuery()"
+        (input)="onSearch($event)" />
+      @if (searchQuery()) {
+        <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      }
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="notif-filter-row">
+      @for (opt of filterOptions; track opt.value) {
+        <button
+          class="btn btn-sm notif-filter-btn"
+          [class.active]="filterStatus() === opt.value"
+          (click)="setFilter(opt.value)">
+          {{ opt.label }}
+          @if (opt.value === 'Unread' && unreadCount() > 0) {
+            <span class="badge bg-danger rounded-pill ms-1">{{ unreadCount() }}</span>
+          }
+          @if (opt.value === 'sent' && sentCount() > 0) {
+            <span class="badge bg-secondary rounded-pill ms-1">{{ sentCount() }}</span>
+          }
+        </button>
+      }
+      <span class="text-muted notif-count-label">
+        {{ filtered().length }} notification{{ filtered().length === 1 ? '' : 's' }}
+      </span>
+    </div>
+
   </div>
 
+  <!-- ── Notification list ─────────────────────────────────────────── -->
   @if (loading()) {
-    <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading…</span>
+      </div>
+      <p class="mt-2 text-muted small">Loading notifications…</p>
+    </div>
+
   } @else if (!filtered().length) {
-    <app-empty-state icon="bi-bell" title="No notifications"
-                     message="You're all caught up!"></app-empty-state>
+    <app-empty-state
+      icon="bi-bell-slash"
+      title="No notifications"
+      message="Nothing here — you're all caught up!">
+    </app-empty-state>
+
   } @else {
-    <div class="d-flex flex-column gap-2">
-      @for (n of filtered(); track n.notificationId) {
-        <div class="notif-card card border-0 shadow-sm"
-             [class.notif-unread]="n.status === 'Unread'">
-          <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
-            <div class="notif-icon">
-              <span class="badge rounded-pill fs-5 p-2" [ngClass]="categoryClass(n.category)">
-                <i class="bi {{ categoryIcon(n.category) }}"></i>
+    <div class="notif-list">
+      @for (n of filtered(); track n.notificationID) {
+
+        <div class="notif-card"
+             [class.notif-card--unread]="n.status === 'Unread' && isReceived(n)"
+             [class.notif-card--sent]="isSent(n) && !isReceived(n)"
+             [class.notif-card--dismissed]="n.status === 'Dismissed'">
+
+          <!-- Left: category icon -->
+          <div class="notif-icon-col">
+            <span class="notif-cat-icon" [ngClass]="categoryClass(n.category)">
+              <i class="bi {{ categoryIcon(n.category) }}"></i>
+            </span>
+          </div>
+
+          <!-- Centre: content -->
+          <div class="notif-body">
+
+            <!-- Row 1: category pill + status badges + timestamp -->
+            <div class="notif-meta-row">
+              <span class="badge rounded-pill notif-cat-pill" [ngClass]="categoryClass(n.category)">
+                {{ n.category }}
+              </span>
+
+              @if (n.status === 'Unread' && isReceived(n)) {
+                <span class="badge bg-danger notif-status-badge">New</span>
+              }
+              @if (n.status === 'Dismissed') {
+                <span class="badge bg-light text-muted border notif-status-badge">Dismissed</span>
+              }
+              @if (isSent(n) && !isReceived(n)) {
+                <span class="badge bg-secondary notif-status-badge">
+                  <i class="bi bi-arrow-up-right me-1"></i>Sent
+                </span>
+              }
+
+              <span class="notif-timestamp ms-auto">
+                <i class="bi bi-clock me-1"></i>{{ n.createdDate | date:'MMM d, y · h:mm a' }}
               </span>
             </div>
-            <div class="flex-grow-1">
-              <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge" [ngClass]="categoryClass(n.category)">{{ n.category }}</span>
-                @if (n.status === 'Unread') {
-                  <span class="badge bg-danger" style="font-size:.65rem">New</span>
-                }
-                <small class="text-muted ms-auto">{{ n.createdDate | date:'medium' }}</small>
-              </div>
-              <p class="mb-0 small">{{ n.message }}</p>
-            </div>
-            <div class="d-flex gap-1">
-              @if (n.status === 'Unread') {
-                <button class="btn btn-sm btn-outline-primary" title="Mark read" (click)="markRead(n)">
-                  <i class="bi bi-check"></i>
-                </button>
+
+            <!-- Row 2: message body -->
+            <p class="notif-message">{{ n.message }}</p>
+
+            <!-- Row 3: direction (from / to) + ID -->
+            <div class="notif-addr-row">
+              @if (isSent(n) && !isReceived(n)) {
+                <span class="notif-direction">
+                  <i class="bi bi-arrow-right-circle text-secondary me-1"></i>
+                  <span class="text-muted">To:</span>
+                  <strong class="ms-1">{{ n.recipientEmail }}</strong>
+                </span>
+              } @else {
+                <span class="notif-direction">
+                  <i class="bi bi-arrow-left-circle text-secondary me-1"></i>
+                  <span class="text-muted">From:</span>
+                  <strong class="ms-1">
+                    {{ n.senderEmail === 'system@uwpro.internal' ? 'System' : n.senderEmail }}
+                  </strong>
+                </span>
               }
-              @if (n.status !== 'Dismissed') {
-                <button class="btn btn-sm btn-outline-secondary" title="Dismiss" (click)="dismiss(n)">
-                  <i class="bi bi-x"></i>
-                </button>
-              }
+              <span class="notif-id">
+                <i class="bi bi-hash me-1"></i>{{ n.notificationID }}
+              </span>
             </div>
+
           </div>
+
+          <!-- Right: action buttons -->
+          <div class="notif-actions">
+            @if (n.status === 'Unread' && isReceived(n)) {
+              <button class="btn btn-sm btn-outline-primary" title="Mark as read" (click)="markRead(n)">
+                <i class="bi bi-check-lg"></i>
+              </button>
+            }
+            @if (n.status !== 'Dismissed' && isReceived(n)) {
+              <button class="btn btn-sm btn-outline-secondary" title="Dismiss" (click)="dismiss(n)">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            }
+            <button class="btn btn-sm btn-outline-danger" title="Delete" (click)="deleteNotification(n)">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
+
         </div>
+
       }
     </div>
   }
+
 </div>
+
+<!-- ── Send Notification modal ───────────────────────────────────── -->
+@if (showCreate()) {
+  <div class="notif-overlay" (click)="closeCreate()"></div>
+
+  <div class="notif-modal" role="dialog" aria-modal="true" aria-labelledby="ntf-modal-title">
+
+    <div class="notif-modal__header">
+      <span id="ntf-modal-title" class="notif-modal__title">
+        <i class="bi bi-send text-primary me-2"></i>Send Notification
+      </span>
+      <button class="btn-close" type="button" aria-label="Close" (click)="closeCreate()"></button>
+    </div>
+
+    <div class="notif-modal__body">
+      <form [formGroup]="form" novalidate>
+
+        <!-- Send To toggle -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Send To</label>
+          <div class="d-flex gap-2">
+            <button type="button"
+                    class="btn btn-sm flex-fill"
+                    [class.btn-primary]="sendMode() === 'individual'"
+                    [class.btn-outline-secondary]="sendMode() !== 'individual'"
+                    (click)="setSendMode('individual')">
+              <i class="bi bi-person me-1"></i>Individual
+            </button>
+            <button type="button"
+                    class="btn btn-sm flex-fill"
+                    [class.btn-primary]="sendMode() === 'group'"
+                    [class.btn-outline-secondary]="sendMode() !== 'group'"
+                    (click)="setSendMode('group')">
+              <i class="bi bi-people me-1"></i>Role Group
+            </button>
+          </div>
+        </div>
+
+        <!-- Individual: email input -->
+        @if (sendMode() === 'individual') {
+          <div class="mb-3">
+            <label class="form-label fw-semibold required-mark" for="ntf-email">Recipient Email</label>
+            <input
+              id="ntf-email"
+              type="email"
+              class="form-control"
+              [class.is-invalid]="form.controls.recipientEmail.invalid && form.controls.recipientEmail.touched"
+              formControlName="recipientEmail"
+              placeholder="recipient@example.com"
+              autocomplete="off" />
+            <div class="invalid-feedback">Please enter a valid email address.</div>
+          </div>
+        }
+
+        <!-- Group: role dropdown -->
+        @if (sendMode() === 'group') {
+          <div class="mb-3">
+            <label class="form-label fw-semibold required-mark" for="ntf-group">Select Group</label>
+            <select id="ntf-group" class="form-select" formControlName="recipientGroup">
+              @for (g of roleGroups; track g.value) {
+                <option [value]="g.value">{{ g.label }}</option>
+              }
+            </select>
+            <small class="text-muted mt-1 d-block">
+              <i class="bi bi-info-circle me-1"></i>A separate notification will be sent to every active user in this group.
+            </small>
+          </div>
+        }
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold required-mark" for="ntf-cat">Category</label>
+          <select id="ntf-cat" class="form-select" formControlName="category">
+            @for (c of categories; track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="mb-1">
+          <label class="form-label fw-semibold required-mark" for="ntf-msg">Message</label>
+          <textarea
+            id="ntf-msg"
+            class="form-control"
+            rows="3"
+            [class.is-invalid]="form.controls.message.invalid && form.controls.message.touched"
+            formControlName="message"
+            placeholder="Enter notification message…"></textarea>
+          <div class="invalid-feedback">Message is required.</div>
+        </div>
+
+      </form>
+    </div>
+
+    <div class="notif-modal__footer">
+      <button class="btn btn-outline-secondary" type="button" (click)="closeCreate()">
+        Cancel
+      </button>
+      <button class="btn btn-primary d-flex align-items-center gap-1"
+              type="button"
+              (click)="saveNotification()"
+              [disabled]="saving()">
+        @if (saving()) {
+          <span class="spinner-border spinner-border-sm"></span>
+        } @else {
+          <i class="bi bi-send"></i>
+        }
+        <span>Send</span>
+      </button>
+    </div>
+
+  </div>
+}
