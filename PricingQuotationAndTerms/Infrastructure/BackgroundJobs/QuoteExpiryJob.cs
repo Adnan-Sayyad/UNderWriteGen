@@ -11,23 +11,29 @@ namespace PricingQuotationAndTerms.Infrastructure.BackgroundJobs;
 /// </summary>
 public class QuoteExpiryJob : BackgroundService
 {
-    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IServiceScopeFactory    _scopeFactory;
     private readonly ILogger<QuoteExpiryJob> _logger;
-    private static readonly TimeSpan Interval = TimeSpan.FromHours(1);
+    private readonly TimeSpan                _interval;
 
-    public QuoteExpiryJob(IServiceScopeFactory scopeFactory, ILogger<QuoteExpiryJob> logger)
+    public QuoteExpiryJob(
+        IServiceScopeFactory    scopeFactory,
+        ILogger<QuoteExpiryJob> logger,
+        IConfiguration          configuration)
     {
         _scopeFactory = scopeFactory;
         _logger       = logger;
+
+        var hours = configuration.GetValue<double>("QuoteExpiryJob:IntervalHours", 1);
+        _interval = TimeSpan.FromHours(hours);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("QuoteExpiryJob started. Runs every {Interval}.", Interval);
+        _logger.LogInformation("QuoteExpiryJob started. Runs every {Interval}.", _interval);
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(Interval, stoppingToken);
+            await Task.Delay(_interval, stoppingToken);
             await RunAsync(stoppingToken);
         }
     }

@@ -122,7 +122,7 @@ public class QuoteService : IQuoteService, IQuoteApi
             loadingsJson  : loadingsJson,
             discountsJson : discountsJson,
             taxesJson     : taxesJson,
-            validUntil    : DateTime.UtcNow.AddDays(30));
+            validUntil    : DateTime.UtcNow.AddDays(pricing.QuoteValidityDays));
 
         await _repo.AddAsync(quote, ct);
 

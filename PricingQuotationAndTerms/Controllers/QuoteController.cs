@@ -18,10 +18,7 @@ public class QuoteController : ControllerBase
         _logger       = logger;
     }
 
-    // ═══════════════════════════════════════════════════════
-    // POST /api/quotes
-    // Generate a new quote — triggers the pricing engine
-    // ═══════════════════════════════════════════════════════
+    
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
