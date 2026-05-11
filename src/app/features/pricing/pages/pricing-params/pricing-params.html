@@ -1,11 +1,11 @@
 <div class="page-container">
   <app-page-header
     title="Pricing Parameters"
-    subtitle="Rating factor tables by product line"
+    subtitle="Rating factor tables and pricing configuration by product line"
     icon="bi-sliders"
     [breadcrumbs]="breadcrumbs">
     <div class="d-flex gap-2">
-      <a routerLink="/pricing" class="btn btn-sm btn-outline-secondary">
+      <a routerLink="/pricing/quotes" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-calculator me-1"></i>Quotes
       </a>
       <button class="btn btn-sm btn-primary" (click)="openCreate()">
@@ -16,44 +16,143 @@
 
   @if (alertMsg()) {
     <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
-      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
-                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      <i class="bi"
+         [class.bi-check-circle-fill]="alertMsg()!.type === 'success'"
+         [class.bi-exclamation-triangle-fill]="alertMsg()!.type === 'danger'"></i>
       {{ alertMsg()!.text }}
     </div>
   }
 
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="filterLine()"
+                  (change)="filterLine.set($any($event.target).value)">
+            <option value="">All Product Lines</option>
+            @for (l of PRODUCT_LINES; track l) { <option [value]="l">{{ productLineLabel(l) }}</option> }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="filterActive()"
+                  (change)="filterActive.set($any($event.target).value === '' ? '' : $any($event.target).value === 'true')">
+            <option value="">All Statuses</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light text-muted" title="Effective on date">
+              <i class="bi bi-calendar-check"></i>
+            </span>
+            <input type="date" class="form-control form-control-sm"
+                   [value]="filterDate()"
+                   (change)="filterDate.set($any($event.target).value)"
+                   title="Show params effective on this date" />
+          </div>
+        </div>
+        <div class="col-md-3 d-flex gap-2 justify-content-end">
+          <button class="btn btn-sm btn-primary" (click)="applyFilters()">
+            <i class="bi bi-funnel me-1"></i>Apply
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+            <i class="bi bi-x-circle me-1"></i>Clear
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" (click)="load()" title="Refresh">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
   <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-2 d-flex align-items-center justify-content-between">
+      <span class="small fw-semibold text-muted">
+        {{ filtered().length }} of {{ params().length }} parameter(s)
+      </span>
+    </div>
     <div class="card-body p-0">
       @if (loading()) {
-        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+        </div>
       } @else if (!params().length) {
-        <app-empty-state icon="bi-sliders" title="No pricing parameters"
-                         message="Add pricing parameters to enable quote calculations."></app-empty-state>
+        <app-empty-state
+          icon="bi-sliders"
+          title="No pricing parameters"
+          message="Add parameters to enable quote calculations.">
+        </app-empty-state>
+      } @else if (!filtered().length) {
+        <div class="text-center py-4 text-muted small">
+          <i class="bi bi-funnel me-1"></i>No parameters match the current filters.
+        </div>
       } @else {
         <div class="table-responsive">
           <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
               <tr>
                 <th>Product Line</th>
-                <th>Factor Name</th>
+                <th>Parameter Name</th>
+                <th>Value</th>
+                <th>Description</th>
                 <th>Effective From</th>
                 <th>Effective To</th>
                 <th>Status</th>
+                <th>Updated</th>
                 <th class="table-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
-              @for (p of params(); track p.paramId) {
+              @for (p of filtered(); track p.id) {
                 <tr>
-                  <td><span class="badge bg-primary">{{ p.productLine }}</span></td>
-                  <td class="fw-medium">{{ p.factorName }}</td>
-                  <td class="small text-muted">{{ p.effectiveFrom | date:'mediumDate' }}</td>
-                  <td class="small text-muted">{{ p.effectiveTo | date:'mediumDate' }}</td>
-                  <td><span class="badge" [ngClass]="statusClass(p.status)">{{ p.status }}</span></td>
+                  <td>
+                    <span class="badge" [ngClass]="productLineClass(p.productLine)"
+                          [title]="p.productLine">
+                      {{ productLineLabel(p.productLine) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="fw-medium">{{ paramLabel(p.paramName) }}</div>
+                    <div class="small text-muted font-monospace">{{ p.paramName }}</div>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border fw-semibold">
+                      {{ formatParamValue(p.paramName, p.value) }}
+                    </span>
+                  </td>
+                  <td class="small text-muted text-truncate" style="max-width:180px"
+                      [title]="p.description">{{ p.description }}</td>
+                  <td class="small">{{ p.effectiveFrom | date:'mediumDate' }}</td>
+                  <td class="small text-muted">
+                    {{ p.effectiveTo ? (p.effectiveTo | date:'mediumDate') : '—' }}
+                  </td>
+                  <td>
+                    @if (p.isActive) {
+                      <span class="badge bg-success">Active</span>
+                    } @else {
+                      <span class="badge bg-secondary">Inactive</span>
+                    }
+                  </td>
+                  <td class="small text-muted">
+                    {{ (p.updatedAt || p.createdAt) | date:'shortDate' }}
+                  </td>
                   <td class="table-actions">
-                    <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(p)">
-                      <i class="bi bi-pencil"></i>
-                    </button>
+                    <div class="d-flex gap-1">
+                      <button class="btn btn-sm btn-outline-primary" title="Edit value & description"
+                              (click)="openEdit(p)">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" title="Delete parameter"
+                              (click)="openDelete(p)">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }
@@ -65,51 +164,169 @@
   </div>
 </div>
 
-@if (modalMode()) {
+<!-- ── Create Modal ── -->
+@if (modalMode() === 'create') {
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">
       <h6 class="mb-0 fw-semibold">
-        <i class="bi bi-sliders me-2 text-primary"></i>
-        {{ modalMode() === 'create' ? 'Add Parameter' : 'Edit Parameter' }}
+        <i class="bi bi-plus-circle me-2 text-primary"></i>Add Pricing Parameter
       </h6>
       <button class="btn-close btn-sm" (click)="closeModal()"></button>
     </div>
     <div class="modal-panel-body">
-      <form [formGroup]="form" novalidate>
+      <form [formGroup]="createForm" novalidate>
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label small fw-medium required-mark">Product Line</label>
-            <input type="text" class="form-control form-control-sm" formControlName="productLine"
-                   placeholder="e.g. Life, Health, PnC" />
+            <select class="form-select form-select-sm" formControlName="productLine"
+                    [class.is-invalid]="createForm.controls.productLine.invalid && createForm.controls.productLine.touched">
+              <option value="" disabled>Select product line…</option>
+              @for (l of CREATE_PRODUCT_LINES; track l) { <option [value]="l">{{ productLineLabel(l) }}</option> }
+            </select>
+            <div class="invalid-feedback">Product line is required.</div>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Factor Name</label>
-            <input type="text" class="form-control form-control-sm" formControlName="factorName" />
+            <label class="form-label small fw-medium required-mark">Parameter Name</label>
+            <input type="text" class="form-control form-control-sm" formControlName="paramName"
+                   placeholder="e.g. BaseRate, TenureDiscount_12m"
+                   [class.is-invalid]="createForm.controls.paramName.invalid && createForm.controls.paramName.touched" />
+            <div class="invalid-feedback">Parameter name is required (max 100).</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Value</label>
+            <input type="number" class="form-control form-control-sm" formControlName="value"
+                   min="0" step="0.0001"
+                   [class.is-invalid]="createForm.controls.value.invalid && createForm.controls.value.touched" />
+            <div class="invalid-feedback">Value must be ≥ 0.</div>
+            <div class="form-text">Enter the numeric value — e.g. <strong>2.5</strong> for a 2.5% rate, <strong>1000</strong> for a ₹1,000 floor, <strong>30</strong> for 30 days.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Description</label>
+            <input type="text" class="form-control form-control-sm" formControlName="description"
+                   placeholder="Brief description of what this parameter controls"
+                   [class.is-invalid]="createForm.controls.description.invalid && createForm.controls.description.touched" />
+            <div class="invalid-feedback">Description is required (max 250).</div>
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-medium required-mark">Effective From</label>
-            <input type="date" class="form-control form-control-sm" formControlName="effectiveFrom" />
+            <input type="date" class="form-control form-control-sm" formControlName="effectiveFrom"
+                   [class.is-invalid]="createForm.controls.effectiveFrom.invalid && createForm.controls.effectiveFrom.touched" />
+            <div class="invalid-feedback">Effective from date is required.</div>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Effective To</label>
+            <label class="form-label small fw-medium">Effective To <span class="text-muted">(optional)</span></label>
             <input type="date" class="form-control form-control-sm" formControlName="effectiveTo" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Status</label>
-            <select class="form-select form-select-sm" formControlName="status">
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
+            <div class="form-text">Leave blank for no expiry.</div>
           </div>
         </div>
       </form>
     </div>
     <div class="modal-panel-footer">
       <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
-      <button class="btn btn-sm btn-primary" (click)="save()" [disabled]="saving()">
+      <button class="btn btn-sm btn-primary" (click)="saveCreate()" [disabled]="saving()">
         @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-        Save
+        Create Parameter
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ── Confirm Delete Modal ── -->
+@if (modalMode() === 'confirmDelete' && selected()) {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg" style="max-width: 420px;">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold text-danger">
+        <i class="bi bi-trash me-2"></i>Delete Parameter
+      </h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <p class="mb-2">Are you sure you want to delete this pricing parameter?</p>
+      <div class="context-row">
+        <div class="context-item">
+          <div class="context-label">Product Line</div>
+          <span class="badge bg-primary">{{ selected()!.productLine }}</span>
+        </div>
+        <div class="context-item">
+          <div class="context-label">Parameter Name</div>
+          <code class="small">{{ selected()!.paramName }}</code>
+        </div>
+        <div class="context-item">
+          <div class="context-label">Value</div>
+          <span class="badge bg-light text-dark border font-monospace">{{ selected()!.value }}</span>
+        </div>
+      </div>
+      <div class="alert alert-warning d-flex gap-2 py-2 mt-3 mb-0">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+        <span class="small">This action is permanent. The pricing engine will no longer use this parameter.</span>
+      </div>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-danger" (click)="confirmDelete()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Delete Parameter
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ── Edit Modal ── -->
+@if (modalMode() === 'edit' && selected()) {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-pencil me-2 text-primary"></i>Edit Parameter
+      </h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <!-- Read-only context -->
+      <div class="context-row mb-3">
+        <div class="context-item">
+          <div class="context-label">Product Line</div>
+          <span class="badge bg-primary">{{ selected()!.productLine }}</span>
+        </div>
+        <div class="context-item">
+          <div class="context-label">Parameter Name</div>
+          <code class="small">{{ selected()!.paramName }}</code>
+        </div>
+        <div class="context-item">
+          <div class="context-label">Effective From</div>
+          <span class="small">{{ selected()!.effectiveFrom | date:'mediumDate' }}</span>
+        </div>
+      </div>
+      <p class="form-text mb-3">
+        <i class="bi bi-info-circle me-1"></i>
+        Only the <strong>value</strong> and <strong>description</strong> can be updated.
+        To change other fields, create a new parameter.
+      </p>
+      <form [formGroup]="editForm" novalidate>
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label small fw-medium required-mark">Value</label>
+            <input type="number" class="form-control form-control-sm" formControlName="value"
+                   min="0" step="0.0001"
+                   [class.is-invalid]="editForm.controls.value.invalid && editForm.controls.value.touched" />
+            <div class="invalid-feedback">Value must be ≥ 0.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Description</label>
+            <input type="text" class="form-control form-control-sm" formControlName="description"
+                   [class.is-invalid]="editForm.controls.description.invalid && editForm.controls.description.touched" />
+            <div class="invalid-feedback">Description is required (max 250).</div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="saveEdit()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Save Changes
       </button>
     </div>
   </div>

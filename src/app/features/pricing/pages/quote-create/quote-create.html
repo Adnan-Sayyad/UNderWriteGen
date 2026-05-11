@@ -1,71 +1,214 @@
 <div class="page-container">
+
   <app-page-header
-    title="New Quote"
-    subtitle="Create a pricing quote for a submission"
+    title="Create Quote"
+    subtitle="Run the pricing engine to generate a quote for a submission"
     icon="bi-plus-circle"
     [breadcrumbs]="breadcrumbs">
   </app-page-header>
 
+  <!-- Alert -->
   @if (alertMsg()) {
     <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
-      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
-                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      <i class="bi flex-shrink-0"
+         [class.bi-info-circle-fill]="alertMsg()!.type==='info'"
+         [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+         [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
       {{ alertMsg()!.text }}
     </div>
   }
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-body">
-      @if (submissionId()) {
-        <div class="alert alert-info d-flex gap-2 py-2 mb-3">
-          <i class="bi bi-info-circle-fill"></i>
-          <span>Creating quote for submission <strong>{{ submissionId() }}</strong></span>
-        </div>
-      }
-      <form [formGroup]="form" novalidate>
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label small fw-medium required-mark">Base Premium ($)</label>
-            <input type="number" class="form-control form-control-sm" formControlName="basePremium"
-                   min="0" step="0.01"
-                   [class.is-invalid]="form.controls.basePremium.invalid && form.controls.basePremium.touched" />
-            <div class="invalid-feedback">Base premium is required.</div>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label small fw-medium required-mark">Total Premium ($)</label>
-            <input type="number" class="form-control form-control-sm" formControlName="totalPremium"
-                   min="0" step="0.01"
-                   [class.is-invalid]="form.controls.totalPremium.invalid && form.controls.totalPremium.touched" />
-            <div class="invalid-feedback">Total premium is required.</div>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label small fw-medium required-mark">Valid Until</label>
-            <input type="date" class="form-control form-control-sm" formControlName="validUntil"
-                   [class.is-invalid]="form.controls.validUntil.invalid && form.controls.validUntil.touched" />
-            <div class="invalid-feedback">Validity date is required.</div>
-          </div>
+  <div class="row g-3">
 
-          <div class="col-12"><hr class="my-1" /><p class="small fw-semibold text-muted mb-0">Terms</p></div>
+    <!-- ── Main form ── -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
 
-          <div class="col-md-4">
-            <label class="form-label small fw-medium">Deductibles ($)</label>
-            <input type="number" class="form-control form-control-sm" formControlName="deductibles" min="0" step="0.01" />
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-lightning-charge-fill text-primary me-2"></i>
+            Quote Generation Request
+          </h6>
+        </div>
+
+        <div class="card-body">
+          <form [formGroup]="form" novalidate>
+            <div class="row g-3">
+
+              <!-- Submission ID -->
+              <div class="col-12">
+                <label class="form-label fw-medium small required-mark">Submission ID</label>
+
+                @if (submissionFromRoute()) {
+                  <!-- Read-only banner when navigated from a submission -->
+                  <div class="submission-banner">
+                    <div class="d-flex align-items-start gap-3">
+                      <i class="bi bi-file-earmark-text fs-3 text-primary flex-shrink-0"></i>
+                      <div>
+                        <div class="fw-semibold mb-1">Submission</div>
+                        <code class="text-primary user-select-all">
+                          {{ form.getRawValue().submissionId }}
+                        </code>
+                        <div class="form-text mt-1">
+                          Pre-filled from the submission you navigated from.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <!-- Manual entry when opening directly from sidebar -->
+                  <div class="input-group">
+                    <span class="input-group-text bg-light">
+                      <i class="bi bi-file-earmark-text text-muted"></i>
+                    </span>
+                    <input
+                      type="text"
+                      class="form-control font-monospace"
+                      formControlName="submissionId"
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      [class.is-invalid]="form.controls.submissionId.invalid && form.controls.submissionId.touched" />
+                    <div class="invalid-feedback">
+                      A valid Submission GUID is required (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).
+                    </div>
+                  </div>
+                  <div class="form-text">
+                    Enter the Submission GUID you want to price. The pricing engine will fetch
+                    its risk score, product line, and attributes automatically.
+                  </div>
+                }
+              </div>
+
+              <!-- Requested By -->
+              <div class="col-12">
+                <label class="form-label fw-medium small required-mark">Requested By</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="requestedBy"
+                  placeholder="Your name or agent code"
+                  [class.is-invalid]="form.controls.requestedBy.invalid && form.controls.requestedBy.touched" />
+                <div class="invalid-feedback">
+                  Requester name is required (max 100 characters).
+                </div>
+                <div class="form-text">Logged with this quote for audit trail purposes.</div>
+              </div>
+
+              <!-- What gets included notice -->
+              <div class="col-12">
+                <div class="included-notice">
+                  <i class="bi bi-check-circle-fill text-success me-2"></i>
+                  <span>All applicable discounts and GST (18%) are automatically included in the final premium.</span>
+                </div>
+              </div>
+
+            </div>
+          </form>
+        </div>
+
+        <!-- Step-by-step loading progress -->
+        @if (saving()) {
+          <div class="loading-steps-panel border-top px-4 py-3">
+            <div class="small fw-semibold text-muted mb-2 text-uppercase" style="letter-spacing:.05em">
+              Pricing Engine Running…
+            </div>
+            <div class="steps-track">
+              @for (step of LOADING_STEPS; track step.label; let i = $index) {
+                <div class="step-item"
+                     [class.step-active]="i === loadingStep()"
+                     [class.step-done]="i < loadingStep()">
+                  <div class="step-icon">
+                    @if (i < loadingStep()) {
+                      <i class="bi bi-check-circle-fill text-success"></i>
+                    } @else if (i === loadingStep()) {
+                      <span class="spinner-border spinner-border-sm text-primary"></span>
+                    } @else {
+                      <i class="bi bi-circle text-muted"></i>
+                    }
+                  </div>
+                  <div class="step-label" [class.text-primary]="i === loadingStep()"
+                       [class.text-muted]="i > loadingStep()">
+                    {{ step.label }}
+                  </div>
+                </div>
+              }
+            </div>
           </div>
-          <div class="col-md-8">
-            <label class="form-label small fw-medium">Exclusions</label>
-            <input type="text" class="form-control form-control-sm" formControlName="exclusions"
-                   placeholder="Comma-separated list of exclusions" />
-            <div class="form-text">e.g. Flood, Earthquake, War</div>
+        }
+
+        <div class="card-footer bg-transparent border-top d-flex justify-content-between align-items-center">
+          <button class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving()">
+            <i class="bi bi-arrow-left me-1"></i>Cancel
+          </button>
+          <button class="btn btn-primary px-4"
+                  (click)="generate()"
+                  [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>Running…
+            } @else {
+              <i class="bi bi-lightning-charge-fill me-1"></i>Generate Quote
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Info sidebar ── -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-info-circle text-secondary me-2"></i>What happens next?
+          </h6>
+        </div>
+        <div class="card-body">
+          <ol class="engine-steps">
+            <li>
+              The pricing engine retrieves the submission details and its
+              <strong>risk assessment</strong> automatically.
+            </li>
+            <li>
+              A <strong>premium is calculated</strong> based on the product line,
+              sum insured, policy tenure, and risk profile.
+            </li>
+            <li>
+              Eligible <strong>discounts</strong> (tenure, loyalty, preferred agent)
+              and <strong>GST at 18%</strong> are applied automatically.
+            </li>
+            <li>
+              The quote is created in <span class="badge-status badge-draft">Draft</span>
+              status. Move it to
+              <span class="badge-status badge-presented">Presented</span>
+              once ready to share with the client.
+            </li>
+            <li>
+              The client or underwriter can then
+              <span class="badge-status badge-accepted">Accept</span> the quote
+              to proceed to policy binding.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Quote lifecycle -->
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-body">
+          <div class="small fw-semibold text-muted mb-2 text-uppercase" style="letter-spacing:.05em">
+            Quote Lifecycle
+          </div>
+          <div class="d-flex align-items-center gap-1 flex-wrap">
+            <span class="badge-status badge-draft">Draft</span>
+            <i class="bi bi-arrow-right text-muted small"></i>
+            <span class="badge-status badge-presented">Presented</span>
+            <i class="bi bi-arrow-right text-muted small"></i>
+            <span class="badge-status badge-accepted">Accepted</span>
+          </div>
+          <div class="mt-2 d-flex gap-1 flex-wrap">
+            <span class="badge-status badge-declined">Declined</span>
+            <span class="badge-status badge-expired">Expired</span>
           </div>
         </div>
-      </form>
+      </div>
     </div>
-    <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary btn-sm" (click)="cancel()">Cancel</button>
-      <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving()">
-        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-        Create Quote
-      </button>
-    </div>
+
   </div>
 </div>

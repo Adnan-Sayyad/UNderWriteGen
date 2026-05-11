@@ -15,8 +15,9 @@ const STATUS_MAP: Record<string, { label: string; css: string }> = {
   Pending:        { label: 'Pending',         css: 'badge-pending' },
   Approved:       { label: 'Approved',        css: 'badge-approved' },
   Rejected:       { label: 'Rejected',        css: 'badge-declined' },
-  Offered:        { label: 'Offered',         css: 'badge-approved' },
-  Accepted:       { label: 'Accepted',        css: 'badge-active' },
+  Offered:        { label: 'Offered',          css: 'badge-approved' },
+  Presented:      { label: 'Presented',        css: 'badge-approved' },
+  Accepted:       { label: 'Accepted',         css: 'badge-active' },
   Open:           { label: 'Open',            css: 'badge-pending' },
   Closed:         { label: 'Closed',          css: 'badge-expired' },
 };

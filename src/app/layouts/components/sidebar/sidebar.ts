@@ -39,10 +39,17 @@ export class Sidebar {
       ],
     },
     {
-      title: 'Pricing & Policy',
+      title: 'Pricing & Quotation',
       items: [
-        { label: 'Pricing Console', icon: 'bi-calculator',        route: '/pricing',        roles: ['PricingAnalyst','Underwriter','Admin'] },
-        { label: 'Policy Desk',     icon: 'bi-journal-bookmark',  route: '/policy',         roles: ['Operations','Underwriter','Admin'] },
+        { label: 'Create Quote', icon: 'bi-plus-circle',  route: '/pricing/quotes/new', roles: ['Pricing','Underwriter','Admin'] },
+        { label: 'Quotes',       icon: 'bi-calculator',   route: '/pricing/quotes',     roles: ['Pricing','Underwriter','Admin'] },
+        { label: 'Parameters',   icon: 'bi-sliders',      route: '/pricing/params',     roles: ['Pricing','Admin'] },
+      ],
+    },
+    {
+      title: 'Policy',
+      items: [
+        { label: 'Policy Desk', icon: 'bi-journal-bookmark', route: '/policy', roles: ['Operations','Underwriter','Admin'] },
       ],
     },
     {

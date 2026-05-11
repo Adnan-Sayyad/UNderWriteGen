@@ -1,28 +1,94 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import { PricingParam, Quote } from '../models/pricing.model';
-import { PagedResponse, ApiResponse } from '../../../shared/models/api-response.model';
-import { PageRequest } from '../../../shared/models/pagination.model';
+import {
+  PricingParam,
+  Quote,
+  CreateQuoteRequest,
+  UpdateQuoteTermsRequest,
+  UpdateQuoteStatusRequest,
+  CreatePricingParamRequest,
+  UpdatePricingParamRequest,
+  QuoteActionResponse,
+} from '../models/pricing.model';
+
+// The dev proxy (proxy.conf.json) intercepts paths like /quotes and /pricing-params
+// and rewrites them to /api/quotes and /api/pricing-params on the target backend.
+// So the frontend must call /quotes (not /api/quotes) in development.
+// In production, environment.apiBaseUrl = '/api/v1' handles the full prefix.
 
 @Injectable({ providedIn: 'root' })
 export class PricingApiService {
-  private readonly base = `${environment.apiBaseUrl}`;
+  private readonly base = environment.apiBaseUrl; // '' in dev (proxy handles /api rewrite)
 
   constructor(private http: HttpClient) {}
 
-  getParams(productLine?: string) {
-    const params = productLine ? new HttpParams().set('productLine', productLine) : undefined;
-    return this.http.get<ApiResponse<PricingParam[]>>(`${this.base}/pricing-params`, { params });
-  }
-  saveParam(payload: Partial<PricingParam>) { return this.http.post<ApiResponse<PricingParam>>(`${this.base}/pricing-params`, payload); }
-  updateParam(id: string, payload: Partial<PricingParam>) { return this.http.put<ApiResponse<PricingParam>>(`${this.base}/pricing-params/${id}`, payload); }
+  // ── Quotes ──────────────────────────────────────────────────────────────────
 
-  getQuotes(req: PageRequest, filters?: Record<string, string>) {
-    return this.http.get<PagedResponse<Quote>>(`${this.base}/quotes`, { params: new HttpParams({ fromObject: { ...req, ...filters } }) });
+  /** POST /api/quotes — triggers the backend pricing engine */
+  generateQuote(payload: CreateQuoteRequest) {
+    return this.http.post<Quote>(`${this.base}/quotes`, payload);
   }
-  getQuote(id: string) { return this.http.get<ApiResponse<Quote>>(`${this.base}/quotes/${id}`); }
-  createQuote(payload: Partial<Quote>) { return this.http.post<ApiResponse<Quote>>(`${this.base}/quotes`, payload); }
-  updateQuote(id: string, payload: Partial<Quote>) { return this.http.put<ApiResponse<Quote>>(`${this.base}/quotes/${id}`, payload); }
-  acceptQuote(id: string) { return this.http.post<ApiResponse<Quote>>(`${this.base}/quotes/${id}/accept`, {}); }
+
+  /** GET /api/quotes/{quoteId} */
+  getQuote(id: string) {
+    return this.http.get<Quote>(`${this.base}/quotes/${id}`);
+  }
+
+  /** GET /api/quotes/submission/{submissionId}/latest */
+  getLatestQuoteForSubmission(submissionId: string) {
+    return this.http.get<Quote>(`${this.base}/quotes/submission/${submissionId}/latest`);
+  }
+
+  /** POST /api/quotes/{quoteId}/accept */
+  acceptQuote(quoteId: string) {
+    return this.http.post<QuoteActionResponse>(`${this.base}/quotes/${quoteId}/accept`, {});
+  }
+
+  /** PATCH /api/quotes/{quoteId}/terms */
+  updateTerms(quoteId: string, payload: UpdateQuoteTermsRequest) {
+    return this.http.patch<QuoteActionResponse>(`${this.base}/quotes/${quoteId}/terms`, payload);
+  }
+
+  /** PATCH /api/quotes/{quoteId}/status */
+  updateStatus(quoteId: string, payload: UpdateQuoteStatusRequest) {
+    return this.http.patch<QuoteActionResponse>(`${this.base}/quotes/${quoteId}/status`, payload);
+  }
+
+  // ── Pricing Parameters ──────────────────────────────────────────────────────
+
+  /** GET /api/pricing-params */
+  getParams() {
+    return this.http.get<PricingParam[]>(`${this.base}/pricing-params`);
+  }
+
+  /** GET /api/pricing-params/product-line/{line} */
+  getParamsByProductLine(line: string) {
+    return this.http.get<PricingParam[]>(`${this.base}/pricing-params/product-line/${line}`);
+  }
+
+  /** GET /api/pricing-params/effective/{date} (format: yyyy-MM-dd) */
+  getParamsByEffectiveDate(date: string) {
+    return this.http.get<PricingParam[]>(`${this.base}/pricing-params/effective/${date}`);
+  }
+
+  /** POST /api/pricing-params */
+  createParam(payload: CreatePricingParamRequest) {
+    return this.http.post<PricingParam>(`${this.base}/pricing-params`, payload);
+  }
+
+  /** PUT /api/pricing-params/{paramId} — only value + description are updated */
+  updateParam(id: string, payload: UpdatePricingParamRequest) {
+    return this.http.put<PricingParam>(`${this.base}/pricing-params/${id}`, payload);
+  }
+
+  /** DELETE /api/pricing-params/{paramId} */
+  deleteParam(id: string) {
+    return this.http.delete<void>(`${this.base}/pricing-params/${id}`);
+  }
+
+  /** GET /api/quotes/submission/{submissionId} — all versions, newest first */
+  getQuotesBySubmission(submissionId: string) {
+    return this.http.get<Quote[]>(`${this.base}/quotes/submission/${submissionId}`);
+  }
 }
