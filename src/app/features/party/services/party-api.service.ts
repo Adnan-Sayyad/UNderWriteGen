@@ -1,151 +1,71 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { map } from 'rxjs/operators';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import { Agent, CustomerParty, ContactInfo, PartyType, Segment, PartyStatus, AgentStatus } from '../models/party.model';
-import { PagedResponse, ApiResponse } from '../../../shared/models/api-response.model';
-
-function parseContactInfo(raw: any): ContactInfo {
-  if (!raw) return { email: '', phone: '' };
-  if (typeof raw === 'string') {
-    try { return JSON.parse(raw); } catch { return { email: '', phone: raw }; }
-  }
-  return raw;
-}
-
-function normalizeAgent(r: any): Agent {
-  return {
-    agentId:      r.agentId      ?? r.agentID      ?? r.AgentID      ?? '',
-    name:         r.name         ?? r.Name         ?? '',
-    producerCode: r.producerCode ?? r.ProducerCode ?? '',
-    contactInfo:  parseContactInfo(r.contactInfo   ?? r.ContactInfo),
-    region:       r.region       ?? r.Region       ?? '',
-    status:       (r.status      ?? r.Status       ?? 'Active') as AgentStatus,
-  };
-}
-
-function normalizeParty(r: any): CustomerParty {
-  return {
-    partyId:          r.partyId          ?? r.partyID          ?? r.PartyID          ?? '',
-    partyType:        (r.partyType        ?? r.PartyType        ?? 'Individual')       as PartyType,
-    name:             r.name             ?? r.Name             ?? '',
-    dobIncorporation: r.dobIncorporation ?? r.DOBIncorporation ?? r.dOBIncorporation  ?? '',
-    contactInfo:      parseContactInfo(r.contactInfo ?? r.ContactInfo),
-    segment:          (r.segment          ?? r.Segment          ?? 'Retail')           as Segment,
-    status:           (r.status           ?? r.Status           ?? 'Active')           as PartyStatus,
-  };
-}
-
-function toPagedAgents(res: any): PagedResponse<Agent> {
-  const raw: any[] = Array.isArray(res) ? res : (res?.data ?? res?.content ?? []);
-  const items = raw.map(normalizeAgent);
-  return {
-    content: items, data: items,
-    totalPages: 1, totalElements: items.length, size: items.length, number: 0,
-  } as unknown as PagedResponse<Agent>;
-}
-
-function toPagedParties(res: any): PagedResponse<CustomerParty> {
-  const raw: any[] = Array.isArray(res) ? res : (res?.data ?? res?.content ?? []);
-  const items = raw.map(normalizeParty);
-  return {
-    content: items, data: items,
-    totalPages: 1, totalElements: items.length, size: items.length, number: 0,
-  } as unknown as PagedResponse<CustomerParty>;
-}
-
+import { Agent, CustomerParty } from '../models/party.model';
+import { ApiResponse } from '../../../shared/models/api-response.model';
+ 
 @Injectable({ providedIn: 'root' })
 export class PartyApiService {
   private readonly base = `${environment.apiBaseUrl}`;
-
+ 
   constructor(private http: HttpClient) {}
-
-  // ── Agents ────────────────────────────────────────────────────────────────
-
-  getAgents(req?: any, filters?: Record<string, string>) {
-    const params: any = {};
-    if (filters?.['name'])   params['name']   = filters['name'];
-    if (filters?.['region']) params['region'] = filters['region'];
-    if (filters?.['status']) params['status'] = filters['status'];
-    return this.http.get<any>(`${this.base}/agents/search`, { params }).pipe(
-      map(res => toPagedAgents(res))
-    );
+ 
+  // Agents — backend: GET /api/agents/search?name=&region=&status=
+  getAgents(name = '', region = '', status = '') {
+    let params = new HttpParams();
+    if (name)   params = params.set('name', name);
+    if (region) params = params.set('region', region);
+    if (status) params = params.set('status', status);
+    return this.http.get<ApiResponse<Agent[]>>(`${this.base}/agents/search`, { params });
   }
-
+ 
   getAgent(id: string) {
-    return this.http.get<any>(`${this.base}/agents/${id}`).pipe(
-      map(res => ({ data: normalizeAgent(res?.data ?? res) } as ApiResponse<Agent>))
-    );
+    return this.http.get<ApiResponse<Agent>>(`${this.base}/agents/${id}`);
   }
-
+ 
   createAgent(payload: Partial<Agent>) {
-    return this.http.post<ApiResponse<Agent>>(`${this.base}/agents`, {
-      name:         payload.name,
-      producerCode: payload.producerCode,
-      contactInfo:  payload.contactInfo ? JSON.stringify(payload.contactInfo) : null,
-      region:       payload.region,
-    });
+    return this.http.post<ApiResponse<Agent>>(`${this.base}/agents`, payload);
   }
-
+ 
   updateAgent(id: string, payload: Partial<Agent>) {
-    return this.http.put<ApiResponse<Agent>>(`${this.base}/agents/${id}`, {
-      name:        payload.name,
-      contactInfo: payload.contactInfo ? JSON.stringify(payload.contactInfo) : null,
-      region:      payload.region,
-    });
+    return this.http.put<ApiResponse<Agent>>(`${this.base}/agents/${id}`, payload);
   }
-
+ 
   activateAgent(id: string) {
     return this.http.patch<ApiResponse<Agent>>(`${this.base}/agents/${id}/activate`, {});
   }
-
+ 
   deactivateAgent(id: string) {
     return this.http.patch<ApiResponse<Agent>>(`${this.base}/agents/${id}/deactivate`, {});
   }
-
-  // ── Customer Parties ──────────────────────────────────────────────────────
-
-  getParties(req?: any, filters?: Record<string, string>) {
-    const params: any = {};
-    if (filters?.['name'])      params['name']      = filters['name'];
-    if (filters?.['partyType']) params['partyType'] = filters['partyType'];
-    if (filters?.['segment'])   params['segment']   = filters['segment'];
-    if (filters?.['status'])    params['status']    = filters['status'];
-    return this.http.get<any>(`${this.base}/customerparties/search`, { params }).pipe(
-      map(res => toPagedParties(res))
-    );
+ 
+  // Customer Parties — backend: GET /api/customerparties/search (proxied via /parties)
+  getParties(name = '', partyType = '', segment = '', status = '') {
+    let params = new HttpParams();
+    if (name)      params = params.set('name', name);
+    if (partyType) params = params.set('partyType', partyType);
+    if (segment)   params = params.set('segment', segment);
+    if (status)    params = params.set('status', status);
+    return this.http.get<ApiResponse<CustomerParty[]>>(`${this.base}/parties/search`, { params });
   }
-
+ 
   getParty(id: string) {
-    return this.http.get<any>(`${this.base}/customerparties/${id}`).pipe(
-      map(res => ({ data: normalizeParty(res?.data ?? res) } as ApiResponse<CustomerParty>))
-    );
+    return this.http.get<ApiResponse<CustomerParty>>(`${this.base}/parties/${id}`);
   }
-
+ 
   createParty(payload: Partial<CustomerParty>) {
-    return this.http.post<ApiResponse<CustomerParty>>(`${this.base}/customerparties`, {
-      partyType:        payload.partyType,
-      name:             payload.name,
-      dobIncorporation: payload.dobIncorporation || null,
-      contactInfo:      payload.contactInfo ? JSON.stringify(payload.contactInfo) : null,
-      segment:          payload.segment,
-    });
+    return this.http.post<ApiResponse<CustomerParty>>(`${this.base}/parties`, payload);
   }
-
+ 
   updateParty(id: string, payload: Partial<CustomerParty>) {
-    return this.http.put<ApiResponse<CustomerParty>>(`${this.base}/customerparties/${id}`, {
-      name:             payload.name,
-      dobIncorporation: payload.dobIncorporation || null,
-      contactInfo:      payload.contactInfo ? JSON.stringify(payload.contactInfo) : null,
-      segment:          payload.segment,
-    });
+    return this.http.put<ApiResponse<CustomerParty>>(`${this.base}/parties/${id}`, payload);
   }
-
+ 
   activateParty(id: string) {
-    return this.http.patch<ApiResponse<CustomerParty>>(`${this.base}/customerparties/${id}/activate`, {});
+    return this.http.patch<ApiResponse<CustomerParty>>(`${this.base}/parties/${id}/activate`, {});
   }
-
+ 
   deactivateParty(id: string) {
-    return this.http.patch<ApiResponse<CustomerParty>>(`${this.base}/customerparties/${id}/deactivate`, {});
+    return this.http.patch<ApiResponse<CustomerParty>>(`${this.base}/parties/${id}/deactivate`, {});
   }
 }
