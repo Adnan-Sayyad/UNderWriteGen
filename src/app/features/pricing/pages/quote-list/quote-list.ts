@@ -12,6 +12,7 @@ const MAX_RECENT  = 20;
 
 export interface RecentQuote {
   quoteId: string;
+  quoteRef?: string;
   submissionId: string;
   versionNo: number;
   basePremium: number;
@@ -196,7 +197,7 @@ export class QuoteListPage implements OnInit {
 
   private addToRecent(q: Quote): void {
     const entry: RecentQuote = {
-      quoteId: q.quoteId, submissionId: q.submissionId, versionNo: q.versionNo,
+      quoteId: q.quoteId, quoteRef: q.quoteRef, submissionId: q.submissionId, versionNo: q.versionNo,
       basePremium: q.basePremium, totalPremium: q.totalPremium,
       validUntil: q.validUntil, status: q.status,
       searchedAt: new Date().toISOString(),
