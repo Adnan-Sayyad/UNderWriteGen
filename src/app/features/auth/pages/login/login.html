@@ -26,7 +26,7 @@
       @if (emailCtrl.invalid && emailCtrl.touched) {
         <div class="invalid-feedback">
           @if (emailCtrl.errors?.['required']) { Email is required. }
-          @else { Please enter a valid email address. }
+          @else { Enter a valid email (e.g. user&#64;domain.com). }
         </div>
       }
     </div>
@@ -34,10 +34,7 @@
 
   <!-- Password -->
   <div class="mb-4">
-    <div class="d-flex justify-content-between align-items-center">
-      <label class="form-label fw-medium" for="password">Password</label>
-      <a routerLink="/auth/forgot-password" class="small text-primary text-decoration-none">Forgot password?</a>
-    </div>
+    <label class="form-label fw-medium" for="password">Password</label>
     <div class="input-group">
       <span class="input-group-text bg-light"><i class="bi bi-lock text-muted"></i></span>
       <input
@@ -46,7 +43,7 @@
         class="form-control"
         [class.is-invalid]="passwordCtrl.invalid && passwordCtrl.touched"
         formControlName="password"
-        placeholder="Enter your password"
+        placeholder="8–20 chars, upper, lower, digit, symbol"
         autocomplete="current-password"
       />
       <button type="button" class="input-group-text bg-light border-start-0 cursor-pointer"
@@ -55,22 +52,49 @@
       </button>
       @if (passwordCtrl.invalid && passwordCtrl.touched) {
         <div class="invalid-feedback">
-          @if (passwordCtrl.errors?.['required']) { Password is required. }
-          @else { Password must be at least 6 characters. }
+          @if (passwordCtrl.errors?.['required'])       { Password is required. }
+          @else if (passwordCtrl.errors?.['minlength']) { At least 8 characters required. }
+          @else if (passwordCtrl.errors?.['maxlength']) { Maximum 20 characters allowed. }
+          @else { Must include uppercase, lowercase, digit and special character. }
         </div>
       }
     </div>
+    <!-- Live strength checklist -->
+    @if (passwordCtrl.value) {
+      <div class="d-flex gap-2 flex-wrap mt-1" style="font-size:.75rem">
+        <span [class.text-success]="hasLength()" [class.text-muted]="!hasLength()">
+          <i class="bi" [class.bi-check-circle-fill]="hasLength()" [class.bi-circle]="!hasLength()"></i> 8–20 chars
+        </span>
+        <span [class.text-success]="hasUpper()" [class.text-muted]="!hasUpper()">
+          <i class="bi" [class.bi-check-circle-fill]="hasUpper()" [class.bi-circle]="!hasUpper()"></i> Uppercase
+        </span>
+        <span [class.text-success]="hasLower()" [class.text-muted]="!hasLower()">
+          <i class="bi" [class.bi-check-circle-fill]="hasLower()" [class.bi-circle]="!hasLower()"></i> Lowercase
+        </span>
+        <span [class.text-success]="hasDigit()" [class.text-muted]="!hasDigit()">
+          <i class="bi" [class.bi-check-circle-fill]="hasDigit()" [class.bi-circle]="!hasDigit()"></i> Number
+        </span>
+        <span [class.text-success]="hasSymbol()" [class.text-muted]="!hasSymbol()">
+          <i class="bi" [class.bi-check-circle-fill]="hasSymbol()" [class.bi-circle]="!hasSymbol()"></i> Symbol
+        </span>
+      </div>
+    }
   </div>
 
-  <!-- Submit -->
-  <button type="submit" class="btn btn-primary w-100 fw-semibold" [disabled]="loading()">
-    @if (loading()) {
-      <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-      Signing in…
-    } @else {
-      <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
-    }
-  </button>
+  <!-- Submit / Reset -->
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-outline-secondary w-50 fw-semibold" (click)="reset()" [disabled]="loading()">
+      <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
+    </button>
+    <button type="submit" class="btn btn-primary w-50 fw-semibold" [disabled]="loading() || form.invalid">
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+        Signing in…
+      } @else {
+        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+      }
+    </button>
+  </div>
 
   <!-- Register link -->
   <p class="text-center mt-3 mb-0" style="font-size:.875rem">

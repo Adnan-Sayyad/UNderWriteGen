@@ -4,9 +4,14 @@
     subtitle="Track open conditions that must be met before binding"
     icon="bi-list-check"
     [breadcrumbs]="breadcrumbs">
-    <button class="btn btn-sm btn-outline-secondary" (click)="load()">
-      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-    </button>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-plus-lg me-1"></i>New Subjectivity
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
   </app-page-header>
 
   @if (alertMsg()) {
@@ -17,9 +22,32 @@
     </div>
   }
 
+  <!-- Confirm Action Banner -->
+  @if (confirmId()) {
+    <div class="alert alert-warning d-flex align-items-center justify-content-between gap-2 py-2 mb-3">
+      <span>
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Mark this subjectivity as <strong>{{ confirmAction() }}</strong>? This cannot be undone.
+      </span>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary" (click)="cancelConfirm()">Cancel</button>
+        <button class="btn btn-sm btn-warning" (click)="confirmUpdate()">
+          Yes, Mark {{ confirmAction() }}
+        </button>
+      </div>
+    </div>
+  }
+
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
       <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-transparent"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control" placeholder="Search by submission ID or description…"
+                   [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" />
+          </div>
+        </div>
         <div class="col-md-3">
           <select class="form-select form-select-sm"
                   [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
@@ -30,7 +58,7 @@
           </select>
         </div>
         <div class="col text-end">
-          <small class="text-muted">{{ filtered().length }} of {{ subjectivities().length }} item(s)</small>
+          <small class="text-muted">{{ filtered().length }} of {{ totalElements() }} item(s)</small>
         </div>
       </div>
     </div>
@@ -65,11 +93,11 @@
                   <td class="table-actions">
                     @if (s.status === 'Open') {
                       <button class="btn btn-sm btn-outline-success me-1" title="Mark Met"
-                              (click)="updateStatus(s, 'Met')">
+                              (click)="askConfirm(s, 'Met')">
                         <i class="bi bi-check-lg"></i>
                       </button>
                       <button class="btn btn-sm btn-outline-secondary" title="Waive"
-                              (click)="updateStatus(s, 'Waived')">
+                              (click)="askConfirm(s, 'Waived')">
                         <i class="bi bi-slash-circle"></i>
                       </button>
                     }
@@ -79,7 +107,77 @@
             </tbody>
           </table>
         </div>
+
+        @if (totalPages() > 1) {
+          <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+            <small class="text-muted">Page {{ currentPage() + 1 }} of {{ totalPages() }}</small>
+            <nav>
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="currentPage() === 0">
+                  <button class="page-link" (click)="goToPage(currentPage() - 1)">‹</button>
+                </li>
+                @for (p of pageNumbers(); track p) {
+                  <li class="page-item" [class.active]="p === currentPage()">
+                    <button class="page-link" (click)="goToPage(p)">{{ p + 1 }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="currentPage() >= totalPages() - 1">
+                  <button class="page-link" (click)="goToPage(currentPage() + 1)">›</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        }
       }
     </div>
   </div>
 </div>
+
+<!-- Create Subjectivity Modal -->
+@if (showCreateModal()) {
+  <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.45)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fs-6 fw-semibold">
+            <i class="bi bi-plus-circle me-2 text-primary"></i>New Subjectivity
+          </h5>
+          <button type="button" class="btn-close" (click)="closeCreateModal()"></button>
+        </div>
+        <div class="modal-body">
+          <form [formGroup]="createForm" novalidate>
+            <div class="mb-3">
+              <label class="form-label small fw-medium">Submission ID <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm font-monospace"
+                     formControlName="submissionId" placeholder="e.g. SUB-2024-001"
+                     [class.is-invalid]="createForm.controls.submissionId.invalid && createForm.controls.submissionId.touched" />
+              <div class="invalid-feedback">Submission ID is required.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-medium">Description <span class="text-danger">*</span></label>
+              <textarea class="form-control form-control-sm" rows="3"
+                        formControlName="description"
+                        placeholder="Describe the condition that must be met…"
+                        [class.is-invalid]="createForm.controls.description.invalid && createForm.controls.description.touched"></textarea>
+              <div class="invalid-feedback">Description is required (min 10 chars).</div>
+            </div>
+            <div class="mb-1">
+              <label class="form-label small fw-medium">Due Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control form-control-sm"
+                     formControlName="dueDate"
+                     [class.is-invalid]="createForm.controls.dueDate.invalid && createForm.controls.dueDate.touched" />
+              <div class="invalid-feedback">Due date is required.</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-outline-secondary btn-sm" (click)="closeCreateModal()">Cancel</button>
+          <button class="btn btn-primary btn-sm" (click)="saveSubjectivity()" [disabled]="creating()">
+            @if (creating()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            <i class="bi bi-plus-lg me-1"></i>Create
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -39,3 +39,28 @@
 }
 
 .ls-wide { letter-spacing: .07em; }
+
+/* ── Colorful status badges ───────────────────────────────────────────── */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  padding: .28rem .65rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.badge-draft     { background: #e9ecef; color: #495057; border: 1px solid #ced4da; }
+.badge-presented { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+.badge-accepted  { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.badge-declined  { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.badge-expired   { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+
+/* ── Days left label under the date ──────────────────────────────────── */
+.days-left-label {
+  font-size: .68rem;
+  margin-top: .15rem;
+  font-weight: 500;
+}

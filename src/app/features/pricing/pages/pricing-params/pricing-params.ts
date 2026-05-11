@@ -11,12 +11,46 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 type ModalMode = 'create' | 'edit' | 'confirmDelete' | null;
 
-const PRODUCT_LINES = ['Life', 'Health', 'PnC', 'Commercial'];
+const PRODUCT_LINES = ['Life', 'Health', 'PnC', 'Commercial', 'Global'];
+
+/** Excludes "Global" — that's an internal catch-all, not a real product line users should create params for */
+const CREATE_PRODUCT_LINES = ['Life', 'Health', 'PnC', 'Commercial'];
+
+const PARAM_LABELS: Record<string, string> = {
+  BaseRate:                 'Base Rate',
+  RiskLoading_Medium:       'Risk Loading — Medium Band',
+  RiskLoading_High:         'Risk Loading — High Band',
+  OccupationLoad_Mining:    'Occupation Loading (Mining)',
+  OccupationLoad_General:   'Occupation Loading (General)',
+  OccupationLoad_Construction: 'Occupation Loading (Construction)',
+  OccupationLoad_IT:        'Occupation Loading (IT)',
+  OccupationLoad_Banking:   'Occupation Loading (Banking)',
+  OccupationLoad_Agriculture: 'Occupation Loading (Agriculture)',
+  OccupationLoad_Transport: 'Occupation Loading (Transport)',
+  OccupationLoad_Education: 'Occupation Loading (Education)',
+  TenureDiscount_12m:       'Tenure Discount — 12 months',
+  TenureDiscount_24m:       'Tenure Discount — 24 months',
+  TenureDiscount_36m:       'Tenure Discount — 36 months',
+  LoyaltyDiscount:          'Loyalty Discount (Renewal)',
+  AgentDiscount_Preferred:  'Preferred Agent Discount',
+  GstRate:                  'GST Rate',
+  MinimumPremium:           'Minimum Premium (Floor)',
+  QuoteValidityDays:        'Quote Validity Period',
+};
+
+const PRODUCT_LINE_LABELS: Record<string, string> = {
+  Life:       'Life',
+  Health:     'Health',
+  PnC:        'Property & Casualty',
+  Commercial: 'Commercial',
+  Global:     'Global (All Lines)',
+};
 
 @Component({
   selector: 'app-pricing-params',
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, PageHeader, EmptyState],
+  // imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
   templateUrl: './pricing-params.html',
   styleUrl: './pricing-params.css',
 })
@@ -33,7 +67,8 @@ export class PricingParamsPage implements OnInit {
   readonly filterDate   = signal('');
   readonly filterActive = signal<boolean | ''>('');
 
-  readonly PRODUCT_LINES = PRODUCT_LINES;
+  readonly PRODUCT_LINES        = PRODUCT_LINES;
+  readonly CREATE_PRODUCT_LINES = CREATE_PRODUCT_LINES;
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -183,6 +218,37 @@ export class PricingParamsPage implements OnInit {
         this.flash('danger', err.error?.error ?? 'Failed to update parameter.');
       },
     });
+  }
+
+  /** Human-readable parameter name */
+  paramLabel(name: string): string {
+    return PARAM_LABELS[name]
+      ?? name.replace(/_/g, ' — ').replace(/([A-Z])/g, ' $1').trim();
+  }
+
+  /** Human-readable product line name */
+  productLineLabel(line: string): string {
+    return PRODUCT_LINE_LABELS[line] ?? line;
+  }
+
+  /** Product line badge CSS class */
+  productLineClass(line: string): string {
+    const m: Record<string, string> = {
+      Life:       'bg-info-subtle text-info-emphasis border border-info-subtle',
+      Health:     'bg-success-subtle text-success-emphasis border border-success-subtle',
+      PnC:        'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+      Commercial: 'bg-primary-subtle text-primary-emphasis border border-primary-subtle',
+      Global:     'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle',
+    };
+    return m[line] ?? 'bg-secondary';
+  }
+
+  /** Human-readable value — shows % for rates, ₹ for money, 'days' for validity */
+  formatParamValue(name: string, value: number): string {
+    if (name === 'MinimumPremium') return `₹${value.toLocaleString('en-IN')}`;
+    if (name === 'QuoteValidityDays') return `${value} days`;
+    if (value > 0 && value < 1)    return `${(value * 100).toFixed(1)}%`;
+    return value.toString();
   }
 
   private flash(type: 'success' | 'danger', text: string): void {

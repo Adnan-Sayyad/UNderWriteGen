@@ -93,43 +93,11 @@
                 <div class="form-text">Logged with this quote for audit trail purposes.</div>
               </div>
 
-              <!-- Pricing Options -->
+              <!-- What gets included notice -->
               <div class="col-12">
-                <label class="form-label fw-medium small">Pricing Options</label>
-                <div class="options-grid">
-
-                  <label class="option-card" [class.option-card--active]="form.controls.applyDiscounts.value">
-                    <div class="d-flex align-items-center gap-3">
-                      <div class="flex-grow-1">
-                        <div class="fw-medium">Apply Discounts</div>
-                        <div class="text-muted" style="font-size:.8rem; margin-top:.15rem">
-                          Tenure, loyalty, and preferred-agent discounts applied when eligible.
-                        </div>
-                      </div>
-                      <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch"
-                               formControlName="applyDiscounts" id="chkDiscounts" />
-                        <label class="form-check-label visually-hidden" for="chkDiscounts">Apply discounts</label>
-                      </div>
-                    </div>
-                  </label>
-
-                  <label class="option-card" [class.option-card--active]="form.controls.applyTaxes.value">
-                    <div class="d-flex align-items-center gap-3">
-                      <div class="flex-grow-1">
-                        <div class="fw-medium">Apply Taxes (GST 18%)</div>
-                        <div class="text-muted" style="font-size:.8rem; margin-top:.15rem">
-                          18% GST is added on top of the gross premium.
-                        </div>
-                      </div>
-                      <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch"
-                               formControlName="applyTaxes" id="chkTaxes" />
-                        <label class="form-check-label visually-hidden" for="chkTaxes">Apply taxes</label>
-                      </div>
-                    </div>
-                  </label>
-
+                <div class="included-notice">
+                  <i class="bi bi-check-circle-fill text-success me-2"></i>
+                  <span>All applicable discounts and GST (18%) are automatically included in the final premium.</span>
                 </div>
               </div>
 
@@ -137,15 +105,45 @@
           </form>
         </div>
 
+        <!-- Step-by-step loading progress -->
+        @if (saving()) {
+          <div class="loading-steps-panel border-top px-4 py-3">
+            <div class="small fw-semibold text-muted mb-2 text-uppercase" style="letter-spacing:.05em">
+              Pricing Engine Running…
+            </div>
+            <div class="steps-track">
+              @for (step of LOADING_STEPS; track step.label; let i = $index) {
+                <div class="step-item"
+                     [class.step-active]="i === loadingStep()"
+                     [class.step-done]="i < loadingStep()">
+                  <div class="step-icon">
+                    @if (i < loadingStep()) {
+                      <i class="bi bi-check-circle-fill text-success"></i>
+                    } @else if (i === loadingStep()) {
+                      <span class="spinner-border spinner-border-sm text-primary"></span>
+                    } @else {
+                      <i class="bi bi-circle text-muted"></i>
+                    }
+                  </div>
+                  <div class="step-label" [class.text-primary]="i === loadingStep()"
+                       [class.text-muted]="i > loadingStep()">
+                    {{ step.label }}
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
         <div class="card-footer bg-transparent border-top d-flex justify-content-between align-items-center">
-          <button class="btn btn-outline-secondary" (click)="cancel()">
+          <button class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving()">
             <i class="bi bi-arrow-left me-1"></i>Cancel
           </button>
           <button class="btn btn-primary px-4"
                   (click)="generate()"
                   [disabled]="saving()">
             @if (saving()) {
-              <span class="spinner-border spinner-border-sm me-1"></span>Generating…
+              <span class="spinner-border spinner-border-sm me-1"></span>Running…
             } @else {
               <i class="bi bi-lightning-charge-fill me-1"></i>Generate Quote
             }
@@ -154,45 +152,38 @@
       </div>
     </div>
 
-    <!-- ── How it works sidebar ── -->
+    <!-- ── Info sidebar ── -->
     <div class="col-lg-4">
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-bottom py-3">
           <h6 class="mb-0 fw-semibold">
-            <i class="bi bi-info-circle text-secondary me-2"></i>How the Pricing Engine Works
+            <i class="bi bi-info-circle text-secondary me-2"></i>What happens next?
           </h6>
         </div>
         <div class="card-body">
           <ol class="engine-steps">
             <li>
-              <strong>Submission data</strong> is fetched — sum insured, product line,
-              tenure, occupation type, and inception date.
+              The pricing engine retrieves the submission details and its
+              <strong>risk assessment</strong> automatically.
             </li>
             <li>
-              <strong>Risk score</strong> from the rules engine determines the risk band
-              (Low / Medium / High / Unacceptable) and the corresponding loading %.
+              A <strong>premium is calculated</strong> based on the product line,
+              sum insured, policy tenure, and risk profile.
             </li>
             <li>
-              <strong>Base premium</strong> is computed:
-              <code class="d-block p-2 bg-light rounded mt-1" style="font-size:.78rem">
-                SumInsured × BaseRate × TenureFactor
-              </code>
+              Eligible <strong>discounts</strong> (tenure, loyalty, preferred agent)
+              and <strong>GST at 18%</strong> are applied automatically.
             </li>
             <li>
-              <strong>Loadings</strong> (risk, occupation) are added on top of the base.
+              The quote is created in <span class="badge-status badge-draft">Draft</span>
+              status. Move it to
+              <span class="badge-status badge-presented">Presented</span>
+              once ready to share with the client.
             </li>
             <li>
-              <strong>Discounts</strong> (tenure, loyalty, preferred agent) are subtracted
-              — only when <em>Apply Discounts</em> is enabled.
-            </li>
-            <li>
-              <strong>GST at 18%</strong> is applied — only when <em>Apply Taxes</em>
-              is enabled.
-            </li>
-            <li>
-              The quote is saved in <span class="badge bg-secondary">Draft</span> status.
-              Change status to <span class="badge bg-primary">Presented</span> before
-              the client can accept it.
+              The client or underwriter can then
+              <span class="badge-status badge-accepted">Accept</span> the quote
+              to proceed to policy binding.
             </li>
           </ol>
         </div>
@@ -205,15 +196,15 @@
             Quote Lifecycle
           </div>
           <div class="d-flex align-items-center gap-1 flex-wrap">
-            <span class="badge bg-secondary">Draft</span>
+            <span class="badge-status badge-draft">Draft</span>
             <i class="bi bi-arrow-right text-muted small"></i>
-            <span class="badge bg-primary">Presented</span>
+            <span class="badge-status badge-presented">Presented</span>
             <i class="bi bi-arrow-right text-muted small"></i>
-            <span class="badge bg-success">Accepted</span>
+            <span class="badge-status badge-accepted">Accepted</span>
           </div>
           <div class="mt-2 d-flex gap-1 flex-wrap">
-            <span class="badge bg-danger">Declined</span>
-            <span class="badge bg-dark">Expired</span>
+            <span class="badge-status badge-declined">Declined</span>
+            <span class="badge-status badge-expired">Expired</span>
           </div>
         </div>
       </div>

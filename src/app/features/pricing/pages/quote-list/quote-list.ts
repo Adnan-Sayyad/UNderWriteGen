@@ -25,6 +25,7 @@ export interface RecentQuote {
   selector: 'app-quote-list',
   standalone: true,
   imports: [CommonModule, RouterModule, PageHeader, EmptyState],
+  // imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
   templateUrl: './quote-list.html',
   styleUrl: './quote-list.css',
 })
@@ -160,14 +161,29 @@ export class QuoteListPage implements OnInit {
   /* ── helpers ────────────────────────────────────────────────────────── */
   statusClass(s: string): string {
     const map: Record<string, string> = {
-      Draft: 'bg-secondary', Presented: 'bg-primary',
-      Accepted: 'bg-success', Declined: 'bg-danger', Expired: 'bg-dark',
+      Draft:     'badge-status badge-draft',
+      Presented: 'badge-status badge-presented',
+      Accepted:  'badge-status badge-accepted',
+      Declined:  'badge-status badge-declined',
+      Expired:   'badge-status badge-expired',
     };
-    return map[s] ?? 'bg-secondary';
+    return map[s] ?? 'badge-status badge-draft';
   }
 
   isExpired(validUntil: string): boolean {
     return new Date(validUntil) < new Date();
+  }
+
+  daysLeft(validUntil: string): number {
+    return Math.ceil((new Date(validUntil).getTime() - Date.now()) / 86_400_000);
+  }
+
+  daysLeftLabel(validUntil: string): string {
+    const d = this.daysLeft(validUntil);
+    if (d < 0)  return `Expired ${Math.abs(d)} day${Math.abs(d) === 1 ? '' : 's'} ago`;
+    if (d === 0) return 'Expires today';
+    if (d <= 7)  return `${d} day${d === 1 ? '' : 's'} left`;
+    return '';   // no label needed when plenty of time remains
   }
 
   /* ── private ────────────────────────────────────────────────────────── */

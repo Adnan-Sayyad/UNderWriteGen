@@ -6,7 +6,8 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { SubmissionApiService } from '../../../submission/services/submission-api.service';
 import { Submission } from '../../../submission/models/submission.model';
-import { DEFAULT_PAGE_REQUEST } from '../../../../shared/models/pagination.model';
+
+const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-uw-workbench',
@@ -16,9 +17,12 @@ import { DEFAULT_PAGE_REQUEST } from '../../../../shared/models/pagination.model
   styleUrl: './uw-workbench.css',
 })
 export class UwWorkbenchPage implements OnInit {
-  readonly submissions  = signal<Submission[]>([]);
-  readonly loading      = signal(false);
-  readonly searchQuery  = signal('');
+  readonly submissions   = signal<Submission[]>([]);
+  readonly loading       = signal(false);
+  readonly searchQuery   = signal('');
+  readonly currentPage   = signal(0);
+  readonly totalPages    = signal(0);
+  readonly totalElements = signal(0);
 
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
@@ -26,6 +30,10 @@ export class UwWorkbenchPage implements OnInit {
       !q || s.submissionId.toLowerCase().includes(q) || s.productLine.toLowerCase().includes(q)
     );
   });
+
+  readonly pageNumbers = computed(() =>
+    Array.from({ length: this.totalPages() }, (_, i) => i)
+  );
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -37,16 +45,29 @@ export class UwWorkbenchPage implements OnInit {
 
   ngOnInit(): void { this.load(); }
 
-  load(): void {
+  load(page = 0): void {
     this.loading.set(true);
-    this.svc.getAll(DEFAULT_PAGE_REQUEST, { status: 'UnderReview' }).subscribe({
+    const req: any = { page, size: PAGE_SIZE, sort: 'createdDate', direction: 'desc' };
+    this.svc.getAll(req).subscribe({
       next: res => {
-        const d: any = res;
-        this.submissions.set(d?.content ?? d?.data ?? []);
+        // Show only submissions that are UnderReview or Quoted (active UW work)
+        const all = res.content ?? [];
+        const uwItems = all.filter((s: any) =>
+          s.status === 'UnderReview' || s.status === 'IntakeComplete' || s.status === 'Quoted'
+        );
+        this.submissions.set(uwItems);
+        this.totalPages.set(res.totalPages ?? 1);
+        this.totalElements.set(uwItems.length);
+        this.currentPage.set(page);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages()) return;
+    this.load(page);
   }
 
   productClass(p: string): string {

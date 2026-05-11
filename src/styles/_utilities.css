@@ -40,6 +40,10 @@
   background-color: #f59e0b !important;
   color: #1a1a1a !important;
 }
+.badge-inactive {
+  background-color: #6c757d !important;
+  color: #fff !important;
+}
 .badge-disabled {
   background-color: #dc3545 !important;
   color: #fff !important;

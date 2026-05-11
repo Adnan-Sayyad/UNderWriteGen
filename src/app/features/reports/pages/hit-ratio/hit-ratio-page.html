@@ -1,0 +1,184 @@
+<div class="page-container">
+
+  <app-page-header
+    title="Hit Ratio Analysis"
+    subtitle="Quote acceptance rate — bound policies vs total quotes by scope"
+    icon="bi-bullseye"
+    [breadcrumbs]="breadcrumbs">
+    <button class="btn btn-sm btn-outline-secondary" (click)="load()" [disabled]="loading()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </app-page-header>
+
+  <!-- Nav Tabs -->
+  <app-reports-nav></app-reports-nav>
+
+  <!-- Filter Bar -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-medium mb-1"><i class="bi bi-funnel me-1 text-primary"></i>Scope</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterScope">
+            <option value="">All Scopes</option>
+            @for (s of scopes; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-medium mb-1">From</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="filterFrom" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-medium mb-1">To</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="filterTo" />
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary btn-sm px-4" (click)="load()" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            @else { <i class="bi bi-search me-1"></i> }
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Banner -->
+  @if (hasError()) {
+    <div class="alert alert-danger d-flex gap-2 align-items-center mb-4">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>Failed to load hit ratio data. Check that the Reporting service is running on port 8090.</span>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" style="width:3rem;height:3rem"></div>
+      <p class="text-muted mt-3">Loading hit ratio data…</p>
+    </div>
+  }
+
+  @if (!loading()) {
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="kpi-card border-start border-4 border-info">
+          <span class="kpi-value text-info">{{ totalQuotes }}</span>
+          <span class="kpi-label">Total Quotes</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card border-start border-4 border-success">
+          <span class="kpi-value text-success">{{ totalBound }}</span>
+          <span class="kpi-label">Bound Policies</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card border-start border-4 border-primary">
+          <span class="kpi-value text-primary">{{ overallRate | number:'1.1-1' }}%</span>
+          <span class="kpi-label">Overall Hit Ratio</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card border-start border-4 border-secondary">
+          <span class="kpi-value">{{ data().length }}</span>
+          <span class="kpi-label">Scope Values</span>
+        </div>
+      </div>
+    </div>
+
+    @if (!data().length && !hasError()) {
+      <app-empty-state icon="bi-bullseye" title="No hit ratio data"
+        message="Adjust filters and click Apply."></app-empty-state>
+    } @else if (data().length) {
+
+      <!-- Best / Worst callouts -->
+      @if (bestScope() && worstScope()) {
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="insight-card bg-success-subtle border border-success-subtle">
+              <i class="bi bi-trophy-fill text-success me-2"></i>
+              <div>
+                <div class="fw-semibold small">Best Performing</div>
+                <div class="text-success fw-bold">{{ bestScope()!.scopeValue }}</div>
+                <div class="small text-muted">{{ bestScope()!.hitRatioPercent | number:'1.1-1' }}% hit ratio
+                  ({{ bestScope()!.boundPolicies }}/{{ bestScope()!.quotes }} quotes)</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="insight-card bg-danger-subtle border border-danger-subtle">
+              <i class="bi bi-exclamation-circle-fill text-danger me-2"></i>
+              <div>
+                <div class="fw-semibold small">Needs Attention</div>
+                <div class="text-danger fw-bold">{{ worstScope()!.scopeValue }}</div>
+                <div class="small text-muted">{{ worstScope()!.hitRatioPercent | number:'1.1-1' }}% hit ratio
+                  ({{ worstScope()!.boundPolicies }}/{{ worstScope()!.quotes }} quotes)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Chart -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header chart-hdr">
+          <span><i class="bi bi-bar-chart me-2 text-primary"></i>Hit Ratio by Scope Value</span>
+          <span class="badge bg-primary-subtle text-primary">% bound / quoted</span>
+        </div>
+        <div class="card-body">
+          <app-hit-ratio-chart [data]="data()" title="Hit Ratio Analysis"></app-hit-ratio-chart>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header chart-hdr">
+          <span><i class="bi bi-table me-2 text-secondary"></i>Detailed Breakdown</span>
+          <span class="badge bg-secondary">{{ data().length }} entries</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+              <tr>
+                <th>Scope Value</th>
+                <th class="text-end">Total Quotes</th>
+                <th class="text-end">Bound</th>
+                <th class="text-end">Hit Ratio</th>
+                <th>Performance</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of data(); track row.scopeValue) {
+                <tr>
+                  <td class="fw-medium">{{ row.scopeValue }}</td>
+                  <td class="text-end">{{ row.quotes }}</td>
+                  <td class="text-end text-success fw-medium">{{ row.boundPolicies }}</td>
+                  <td class="text-end fw-bold"
+                      [class.text-success]="row.hitRatioPercent >= 50"
+                      [class.text-warning]="row.hitRatioPercent >= 25 && row.hitRatioPercent < 50"
+                      [class.text-danger]="row.hitRatioPercent < 25">
+                    {{ row.hitRatioPercent | number:'1.1-1' }}%
+                  </td>
+                  <td>
+                    <div class="progress" style="height:8px;width:120px">
+                      <div class="progress-bar"
+                           [class.bg-success]="row.hitRatioPercent >= 50"
+                           [class.bg-warning]="row.hitRatioPercent >= 25 && row.hitRatioPercent < 50"
+                           [class.bg-danger]="row.hitRatioPercent < 25"
+                           [style.width.%]="row.hitRatioPercent">
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    }
+  }
+</div>

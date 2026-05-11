@@ -32,7 +32,7 @@
                   [value]="filterLine()"
                   (change)="filterLine.set($any($event.target).value)">
             <option value="">All Product Lines</option>
-            @for (l of PRODUCT_LINES; track l) { <option [value]="l">{{ l }}</option> }
+            @for (l of PRODUCT_LINES; track l) { <option [value]="l">{{ productLineLabel(l) }}</option> }
           </select>
         </div>
         <div class="col-md-3">
@@ -111,11 +111,19 @@
             <tbody>
               @for (p of filtered(); track p.id) {
                 <tr>
-                  <td><span class="badge bg-primary">{{ p.productLine }}</span></td>
-                  <td class="fw-medium">{{ p.paramName }}</td>
                   <td>
-                    <span class="badge bg-light text-dark border font-monospace">
-                      {{ p.value | number:'1.4-4' }}
+                    <span class="badge" [ngClass]="productLineClass(p.productLine)"
+                          [title]="p.productLine">
+                      {{ productLineLabel(p.productLine) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="fw-medium">{{ paramLabel(p.paramName) }}</div>
+                    <div class="small text-muted font-monospace">{{ p.paramName }}</div>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border fw-semibold">
+                      {{ formatParamValue(p.paramName, p.value) }}
                     </span>
                   </td>
                   <td class="small text-muted text-truncate" style="max-width:180px"
@@ -174,14 +182,14 @@
             <select class="form-select form-select-sm" formControlName="productLine"
                     [class.is-invalid]="createForm.controls.productLine.invalid && createForm.controls.productLine.touched">
               <option value="" disabled>Select product line…</option>
-              @for (l of PRODUCT_LINES; track l) { <option [value]="l">{{ l }}</option> }
+              @for (l of CREATE_PRODUCT_LINES; track l) { <option [value]="l">{{ productLineLabel(l) }}</option> }
             </select>
             <div class="invalid-feedback">Product line is required.</div>
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-medium required-mark">Parameter Name</label>
             <input type="text" class="form-control form-control-sm" formControlName="paramName"
-                   placeholder="e.g. base_rate, risk_loading"
+                   placeholder="e.g. BaseRate, TenureDiscount_12m"
                    [class.is-invalid]="createForm.controls.paramName.invalid && createForm.controls.paramName.touched" />
             <div class="invalid-feedback">Parameter name is required (max 100).</div>
           </div>
@@ -191,7 +199,7 @@
                    min="0" step="0.0001"
                    [class.is-invalid]="createForm.controls.value.invalid && createForm.controls.value.touched" />
             <div class="invalid-feedback">Value must be ≥ 0.</div>
-            <div class="form-text">Decimal value, e.g. 0.0250 for 2.5%</div>
+            <div class="form-text">Enter the numeric value — e.g. <strong>2.5</strong> for a 2.5% rate, <strong>1000</strong> for a ₹1,000 floor, <strong>30</strong> for 30 days.</div>
           </div>
           <div class="col-12">
             <label class="form-label small fw-medium required-mark">Description</label>

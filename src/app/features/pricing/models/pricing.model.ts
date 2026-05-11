@@ -4,6 +4,7 @@ export type QuoteStatus = 'Draft' | 'Presented' | 'Accepted' | 'Declined' | 'Exp
 
 // Matches QuoteResponse DTO from backend (GET /api/quotes/{id})
 export interface Quote {
+  quoteRef?: string;   // e.g. QUO-2026-04287 — display reference only, use quoteId for API calls
   quoteId: string;
   submissionId: string;
   versionNo: number;

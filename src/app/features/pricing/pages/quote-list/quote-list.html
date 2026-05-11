@@ -132,7 +132,7 @@
             <table class="table table-sm table-bordered mb-0 align-middle">
               <thead class="table-light">
                 <tr>
-                  <th>Quote ID</th><th>Submission</th><th>Ver.</th>
+                  <th>Reference</th><th>Submission</th><th>Ver.</th>
                   <th>Base Premium</th><th>Total Premium</th>
                   <th>Valid Until</th><th>Status</th><th class="table-actions">Actions</th>
                 </tr>
@@ -142,21 +142,28 @@
                 @if (allVersions().length) {
                   @for (v of allVersions(); track v.quoteId) {
                     <tr [class.table-active]="v.quoteId === q.quoteId">
-                      <td class="font-monospace small">{{ v.quoteId | slice:0:8 }}…</td>
-                      <td class="font-monospace small text-muted">{{ v.submissionId | slice:0:8 }}…</td>
+                      <td class="small" [title]="v.quoteId">
+                        <span class="fw-semibold font-monospace">{{ v.quoteRef || (v.quoteId | slice:0:8) + '…' }}</span>
+                      </td>
+                      <td class="font-monospace small text-muted" [title]="v.submissionId">{{ v.submissionId | slice:0:8 }}…</td>
                       <td class="text-center">
                         <span class="badge border" [ngClass]="v.quoteId === q.quoteId ? 'bg-primary text-white' : 'bg-light text-dark'">
                           v{{ v.versionNo }}
                           @if (v.quoteId === q.quoteId) { <span class="ms-1" style="font-size:.65rem">latest</span> }
                         </span>
                       </td>
-                      <td class="fw-medium">{{ v.basePremium | number:'1.2-2' }}</td>
-                      <td class="fw-semibold text-primary">{{ v.totalPremium | number:'1.2-2' }}</td>
-                      <td class="small" [class.text-danger]="isExpired(v.validUntil)">
-                        {{ v.validUntil | date:'mediumDate' }}
-                        @if (isExpired(v.validUntil)) { <i class="bi bi-exclamation-circle ms-1"></i> }
+                      <td class="fw-medium">{{ v.basePremium | currency:'INR':'₹':'1.2-2' }}</td>
+                      <td class="fw-semibold text-primary">{{ v.totalPremium | currency:'INR':'₹':'1.2-2' }}</td>
+                      <td class="small">
+                        <div [class.text-danger]="isExpired(v.validUntil)">{{ v.validUntil | date:'mediumDate' }}</div>
+                        @if (daysLeftLabel(v.validUntil)) {
+                          <div class="days-left-label" [class.text-danger]="daysLeft(v.validUntil) < 0"
+                               [class.text-warning]="daysLeft(v.validUntil) >= 0 && daysLeft(v.validUntil) <= 7">
+                            <i class="bi bi-clock me-1"></i>{{ daysLeftLabel(v.validUntil) }}
+                          </div>
+                        }
                       </td>
-                      <td><span class="badge" [ngClass]="statusClass(v.status)">{{ v.status }}</span></td>
+                      <td><span [ngClass]="statusClass(v.status)">{{ v.status }}</span></td>
                       <td class="table-actions">
                         <div class="d-flex gap-1">
                           <a [routerLink]="['/pricing/quotes', v.quoteId]"
@@ -180,16 +187,23 @@
                   }
                 } @else {
                   <tr>
-                    <td class="font-monospace small">{{ q.quoteId | slice:0:8 }}…</td>
-                    <td class="font-monospace small text-muted">{{ q.submissionId | slice:0:8 }}…</td>
-                    <td class="text-center"><span class="badge bg-primary text-white border">v{{ q.versionNo }} <span style="font-size:.65rem">latest</span></span></td>
-                    <td class="fw-medium">{{ q.basePremium | number:'1.2-2' }}</td>
-                    <td class="fw-semibold text-primary">{{ q.totalPremium | number:'1.2-2' }}</td>
-                    <td class="small" [class.text-danger]="isExpired(q.validUntil)">
-                      {{ q.validUntil | date:'mediumDate' }}
-                      @if (isExpired(q.validUntil)) { <i class="bi bi-exclamation-circle ms-1"></i> }
+                    <td class="small" [title]="q.quoteId">
+                      <span class="fw-semibold font-monospace">{{ q.quoteRef || (q.quoteId | slice:0:8) + '…' }}</span>
                     </td>
-                    <td><span class="badge" [ngClass]="statusClass(q.status)">{{ q.status }}</span></td>
+                    <td class="font-monospace small text-muted" [title]="q.submissionId">{{ q.submissionId | slice:0:8 }}…</td>
+                    <td class="text-center"><span class="badge bg-primary text-white border">v{{ q.versionNo }} <span style="font-size:.65rem">latest</span></span></td>
+                    <td class="fw-medium">{{ q.basePremium | currency:'INR':'₹':'1.2-2' }}</td>
+                    <td class="fw-semibold text-primary">{{ q.totalPremium | currency:'INR':'₹':'1.2-2' }}</td>
+                    <td class="small">
+                      <div [class.text-danger]="isExpired(q.validUntil)">{{ q.validUntil | date:'mediumDate' }}</div>
+                      @if (daysLeftLabel(q.validUntil)) {
+                        <div class="days-left-label" [class.text-danger]="daysLeft(q.validUntil) < 0"
+                             [class.text-warning]="daysLeft(q.validUntil) >= 0 && daysLeft(q.validUntil) <= 7">
+                          <i class="bi bi-clock me-1"></i>{{ daysLeftLabel(q.validUntil) }}
+                        </div>
+                      }
+                    </td>
+                    <td><span [ngClass]="statusClass(q.status)">{{ q.status }}</span></td>
                     <td class="table-actions">
                       <div class="d-flex gap-1">
                         <a [routerLink]="['/pricing/quotes', q.quoteId]"
@@ -270,7 +284,7 @@
           <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
               <tr>
-                <th>Quote ID</th><th>Submission</th><th>Ver.</th>
+                <th>Reference</th><th>Submission</th><th>Ver.</th>
                 <th>Base Premium</th><th>Total Premium</th>
                 <th>Valid Until</th><th>Status</th>
                 <th>Last Viewed</th><th class="table-actions">Actions</th>
@@ -279,17 +293,24 @@
             <tbody>
               @for (q of filteredRecent(); track q.quoteId) {
                 <tr>
-                  <td class="font-monospace small">{{ q.quoteId | slice:0:8 }}…</td>
-                  <td class="font-monospace small text-muted">{{ q.submissionId | slice:0:8 }}…</td>
+                  <td class="small" [title]="q.quoteId">
+                    <span class="fw-semibold font-monospace">{{ q.quoteRef || (q.quoteId | slice:0:8) + '…' }}</span>
+                  </td>
+                  <td class="font-monospace small text-muted" [title]="q.submissionId">{{ q.submissionId | slice:0:8 }}…</td>
                   <td class="text-center"><span class="badge bg-light text-dark border">v{{ q.versionNo }}</span></td>
-                  <td class="fw-medium">{{ q.basePremium | number:'1.2-2' }}</td>
-                  <td class="fw-semibold text-primary">{{ q.totalPremium | number:'1.2-2' }}</td>
-                  <td class="small" [class.text-danger]="isExpired(q.validUntil)">
-                    {{ q.validUntil | date:'mediumDate' }}
-                    @if (isExpired(q.validUntil)) { <i class="bi bi-exclamation-circle ms-1" title="Expired"></i> }
+                  <td class="fw-medium">{{ q.basePremium | currency:'INR':'₹':'1.2-2' }}</td>
+                  <td class="fw-semibold text-primary">{{ q.totalPremium | currency:'INR':'₹':'1.2-2' }}</td>
+                  <td class="small">
+                    <div [class.text-danger]="isExpired(q.validUntil)">{{ q.validUntil | date:'mediumDate' }}</div>
+                    @if (daysLeftLabel(q.validUntil)) {
+                      <div class="days-left-label" [class.text-danger]="daysLeft(q.validUntil) < 0"
+                           [class.text-warning]="daysLeft(q.validUntil) >= 0 && daysLeft(q.validUntil) <= 7">
+                        <i class="bi bi-clock me-1"></i>{{ daysLeftLabel(q.validUntil) }}
+                      </div>
+                    }
                   </td>
                   <td>
-                    <span class="badge" [ngClass]="statusClass(q.status)">{{ q.status }}</span>
+                    <span [ngClass]="statusClass(q.status)">{{ q.status }}</span>
                   </td>
                   <td class="small text-muted">{{ q.searchedAt | date:'short' }}</td>
                   <td class="table-actions">

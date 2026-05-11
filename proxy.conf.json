@@ -27,78 +27,78 @@
     "pathRewrite": { "^/agents": "/api/agents" },
     "logLevel": "info"
   },
+  "/customerparties": {
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/customerparties": "/api/customerparties" },
+    "logLevel": "info"
+  },
   "/parties": {
     "target": "http://localhost:8082",
     "secure": false,
     "changeOrigin": true,
-    "pathRewrite": { "^/parties": "/api/parties" },
+    "pathRewrite": { "^/parties": "/api/customerparties" },
     "logLevel": "info"
   },
   "/submissions": {
-    "target": "http://localhost:8090",
+    "target": "http://localhost:8083",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/submissions": "/api/submissions" },
     "logLevel": "info"
   },
   "/questionnaires": {
-    "target": "http://localhost:8090",
+    "target": "http://localhost:8083",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/questionnaires": "/api/questionnaires" },
     "logLevel": "info"
   },
   "/attachments": {
-    "target": "http://localhost:8090",
+    "target": "http://localhost:8083",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/attachments": "/api/attachments" },
     "logLevel": "info"
   },
   "/completeness-checks": {
-    "target": "http://localhost:8090",
+    "target": "http://localhost:8083",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/completeness-checks": "/api/completeness-checks" },
     "logLevel": "info"
   },
-  "/risk-profiles": {
-    "target": "http://localhost:8088",
+  "/notifications": {
+    "target": "http://localhost:8084",
     "secure": false,
     "changeOrigin": true,
-    "pathRewrite": { "^/risk-profiles": "/api/risk-profiles" },
-    "logLevel": "info"
-  },
-  "/evidence-refs": {
-    "target": "http://localhost:8088",
-    "secure": false,
-    "changeOrigin": true,
-    "pathRewrite": { "^/evidence-refs": "/api/evidence-refs" },
+    "pathRewrite": { "^/notifications": "/api/notifications" },
     "logLevel": "info"
   },
   "/uw-rules": {
-    "target": "http://localhost:8083",
+    "target": "http://localhost:8085",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/uw-rules": "/api/uw-rules" },
     "logLevel": "info"
   },
   "/risk-scores": {
-    "target": "http://localhost:8083",
+    "target": "http://localhost:8085",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/risk-scores": "/api/risk-scores" },
     "logLevel": "info"
   },
   "/referral-matrix": {
-    "target": "http://localhost:8083",
+    "target": "http://localhost:8085",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/referral-matrix": "/api/referral-matrix" },
     "logLevel": "info"
   },
   "/referrals": {
-    "target": "http://localhost:8083",
+    "target": "http://localhost:8085",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/referrals": "/api/referrals" },
@@ -119,49 +119,49 @@
     "logLevel": "info"
   },
   "/uw-notes": {
-    "target": "http://localhost:8091",
+    "target": "http://localhost:8087",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/uw-notes": "/api/uw-notes" },
     "logLevel": "info"
   },
   "/uw-decisions": {
-    "target": "http://localhost:8091",
+    "target": "http://localhost:8087",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/uw-decisions": "/api/uw-decisions" },
     "logLevel": "info"
   },
   "/subjectivities": {
-    "target": "http://localhost:8091",
+    "target": "http://localhost:8087",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/subjectivities": "/api/subjectivities" },
     "logLevel": "info"
   },
   "/policies": {
-    "target": "http://localhost:8085",
+    "target": "http://localhost:8088",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/policies": "/api/policies" },
     "logLevel": "info"
   },
   "/endorsements": {
-    "target": "http://localhost:8085",
+    "target": "http://localhost:8088",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/endorsements": "/api/endorsements" },
     "logLevel": "info"
   },
   "/cancellations": {
-    "target": "http://localhost:8085",
+    "target": "http://localhost:8088",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/cancellations": "/api/cancellations" },
     "logLevel": "info"
   },
   "/renewals": {
-    "target": "http://localhost:8085",
+    "target": "http://localhost:8088",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": { "^/renewals": "/api/renewals" },
@@ -195,11 +195,18 @@
     "pathRewrite": { "^/reports": "/api/reports" },
     "logLevel": "info"
   },
-  "/notifications": {
-    "target": "http://localhost:8084",
+  "/risk-profiles": {
+    "target": "http://localhost:8091",
     "secure": false,
     "changeOrigin": true,
-    "pathRewrite": { "^/notifications": "/api/notifications" },
+    "pathRewrite": { "^/risk-profiles": "/api/risk-profiles" },
+    "logLevel": "info"
+  },
+  "/evidence-refs": {
+    "target": "http://localhost:8091",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/evidence-refs": "/api/evidence-refs" },
     "logLevel": "info"
   }
 }

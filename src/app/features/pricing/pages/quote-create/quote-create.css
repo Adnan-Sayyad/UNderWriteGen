@@ -1,3 +1,15 @@
+/* Included-automatically notice */
+.included-notice {
+  display: flex;
+  align-items: flex-start;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: .5rem;
+  padding: .75rem 1rem;
+  font-size: .85rem;
+  color: #166534;
+}
+
 /* Submission banner */
 .submission-banner {
   background: #eef4ff;
@@ -37,3 +49,34 @@
 }
 
 .engine-steps li:last-child { margin-bottom: 0; }
+
+/* ── Step-by-step loading panel ──────────────────────────────────────── */
+.loading-steps-panel {
+  background: #f8f9ff;
+}
+
+.steps-track {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  font-size: .85rem;
+  color: #adb5bd;
+  transition: color .2s ease;
+}
+
+.step-item.step-active { color: #0d6efd; font-weight: 500; }
+.step-item.step-done   { color: #198754; }
+
+.step-icon {
+  width: 1.2rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.step-label { line-height: 1.4; }

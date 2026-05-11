@@ -1,0 +1,10 @@
+.kpi-card { background:#fff; border-radius:.375rem; padding:.75rem 1rem; box-shadow:0 1px 4px rgba(0,0,0,.08); display:flex; flex-direction:column; }
+.kpi-value { font-size:1.6rem; font-weight:700; line-height:1.1; }
+.kpi-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:#6c757d; margin-top:.25rem; }
+
+.insight-card { display:flex; align-items:flex-start; gap:.75rem; padding:1rem; border-radius:.5rem; }
+
+.chart-hdr { background:#fff; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; font-size:.82rem; font-weight:600; padding:.6rem 1rem; }
+
+.table th { font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:#6c757d; font-weight:600; }
+.table td { font-size:.83rem; }

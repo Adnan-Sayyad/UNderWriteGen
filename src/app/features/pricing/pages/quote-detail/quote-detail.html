@@ -59,7 +59,7 @@
                 <!-- Base -->
                 <tr class="breakdown-base">
                   <td class="ps-3">Base Premium</td>
-                  <td class="text-end pe-3 fw-medium">{{ quote()!.basePremium | currency }}</td>
+                  <td class="text-end pe-3 fw-medium">{{ quote()!.basePremium | currency:'INR':'₹':'1.2-2' }}</td>
                 </tr>
 
                 <!-- Loadings -->
@@ -68,12 +68,12 @@
                     <td class="ps-4 small">
                       <i class="bi bi-plus text-warning me-1"></i>{{ fmtKey(e[0]) }}
                     </td>
-                    <td class="text-end pe-3 small text-warning">+ {{ e[1] | currency }}</td>
+                    <td class="text-end pe-3 small text-warning">+ {{ e[1] | currency:'INR':'₹':'1.2-2' }}</td>
                   </tr>
                 }
                 @if (!loadings().length) {
                   <tr class="breakdown-loading">
-                    <td class="ps-4 small text-muted">No loadings applied</td>
+                    <td class="ps-4 small text-muted">No risk loadings applied</td>
                     <td class="text-end pe-3 small text-muted">—</td>
                   </tr>
                 }
@@ -81,7 +81,7 @@
                 <!-- Gross sub-total -->
                 <tr class="breakdown-subtotal">
                   <td class="ps-3 small text-muted">Gross Premium (after loadings)</td>
-                  <td class="text-end pe-3 small fw-medium">{{ grossPremium() | currency }}</td>
+                  <td class="text-end pe-3 small fw-medium">{{ grossPremium() | currency:'INR':'₹':'1.2-2' }}</td>
                 </tr>
 
                 <!-- Discounts -->
@@ -91,7 +91,7 @@
                       <i class="bi bi-dash text-success me-1"></i>{{ fmtKey(e[0]) }}
                     </td>
                     <td class="text-end pe-3 small text-success">
-                      - {{ (e[1] < 0 ? -e[1] : e[1]) | currency }}
+                      − {{ (e[1] < 0 ? -e[1] : e[1]) | currency:'INR':'₹':'1.2-2' }}
                     </td>
                   </tr>
                 }
@@ -108,7 +108,7 @@
                     <td class="ps-4 small text-muted">
                       <i class="bi bi-percent text-secondary me-1"></i>{{ fmtKey(e[0]) }}
                     </td>
-                    <td class="text-end pe-3 small">{{ e[1] | currency }}</td>
+                    <td class="text-end pe-3 small">{{ e[1] | currency:'INR':'₹':'1.2-2' }}</td>
                   </tr>
                 }
                 @if (!taxes().length) {
@@ -122,7 +122,7 @@
                 <tr class="breakdown-total">
                   <td class="ps-3 fw-bold">Total Premium (Payable)</td>
                   <td class="text-end pe-3 fw-bold fs-5 text-primary">
-                    {{ quote()!.totalPremium | currency }}
+                    {{ quote()!.totalPremium | currency:'INR':'₹':'1.2-2' }}
                   </td>
                 </tr>
 
@@ -159,31 +159,73 @@
             @if (activePanel() === 'terms') {
               <form [formGroup]="termsForm" novalidate class="mb-4">
                 <div class="row g-3">
+
+                  <!-- Deductibles -->
                   <div class="col-md-6">
-                    <label class="form-label small fw-medium">Deductibles ($)</label>
-                    <input type="number" class="form-control form-control-sm"
-                           formControlName="deductibles" min="0" step="0.01"
-                           placeholder="0.00" />
+                    <label class="form-label small fw-medium">Deductibles (₹)</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text">₹</span>
+                      <input type="number" class="form-control"
+                             formControlName="deductibles" min="0" step="1"
+                             placeholder="0" />
+                    </div>
+                    <div class="form-text">Amount the insured pays before coverage kicks in.</div>
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label small fw-medium">Coverage Limits (JSON)</label>
-                    <textarea class="form-control form-control-sm font-monospace"
-                              formControlName="limitsJson" rows="3"
-                              placeholder='{ "property": 500000, "liability": 1000000 }'></textarea>
-                    <div class="form-text">Key-value JSON — key: coverage name, value: limit amount.</div>
+
+                  <!-- Coverage Limits — key/value rows -->
+                  <div class="col-12">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <label class="form-label small fw-medium mb-0">Coverage Limits</label>
+                      <button type="button" class="btn btn-xs btn-outline-primary"
+                              (click)="addLimitRow()">
+                        <i class="bi bi-plus me-1"></i>Add Limit
+                      </button>
+                    </div>
+                    @if (!limitRows().length) {
+                      <div class="text-muted small fst-italic">
+                        No coverage limits set. Click "Add Limit" to add one.
+                      </div>
+                    }
+                    @for (row of limitRows(); track $index; let i = $index) {
+                      <div class="d-flex gap-2 mb-2 align-items-center limit-row">
+                        <input type="text" class="form-control form-control-sm"
+                               placeholder="Coverage name  e.g. Property Damage"
+                               [value]="row.key"
+                               (input)="updateLimitKey(i, $any($event.target).value)" />
+                        <div class="input-group input-group-sm" style="max-width: 180px">
+                          <span class="input-group-text">₹</span>
+                          <input type="number" class="form-control"
+                                 placeholder="Amount"
+                                 [value]="row.value ?? ''"
+                                 (input)="updateLimitValue(i, $any($event.target).value)"
+                                 min="0" step="1000" />
+                        </div>
+                        <button type="button" class="btn btn-xs btn-outline-danger flex-shrink-0"
+                                (click)="removeLimitRow(i)" title="Remove">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    }
                   </div>
+
+                  <!-- Exclusions -->
                   <div class="col-12">
                     <label class="form-label small fw-medium">Exclusions</label>
                     <input type="text" class="form-control form-control-sm"
                            formControlName="exclusions"
-                           placeholder="Flood, Earthquake, War (comma-separated)" />
+                           placeholder="e.g. Flood, Earthquake, War  (comma-separated)" />
+                    <div class="form-text">List events or circumstances not covered by this policy.</div>
                   </div>
+
+                  <!-- Subjectivities -->
                   <div class="col-12">
-                    <label class="form-label small fw-medium">Subjectivities</label>
+                    <label class="form-label small fw-medium">Conditions &amp; Subjectivities</label>
                     <textarea class="form-control form-control-sm" rows="3"
                               formControlName="subjectivities"
-                              placeholder="One subjectivity per line&#10;e.g. Submit fire-safety inspection report within 30 days"></textarea>
+                              placeholder="e.g. Submit fire-safety inspection report within 30 days&#10;One condition per line"></textarea>
+                    <div class="form-text">Conditions the insured must fulfil for coverage to apply.</div>
                   </div>
+
                 </div>
                 <div class="d-flex gap-2 justify-content-end mt-3">
                   <button type="button" class="btn btn-sm btn-outline-secondary"
@@ -213,7 +255,7 @@
                   <div class="col-md-6">
                     <div class="terms-block">
                       <div class="terms-label">Deductibles</div>
-                      <div class="terms-value">{{ terms()!.deductibles | currency }}</div>
+                      <div class="terms-value">{{ terms()!.deductibles | currency:'INR':'₹':'1.2-2' }}</div>
                     </div>
                   </div>
                 }
@@ -224,7 +266,7 @@
                       @for (kv of (terms()!.limits | keyvalue); track kv.key) {
                         <div class="d-flex justify-content-between small py-1 border-bottom">
                           <span class="text-muted">{{ fmtKey(kv.key) }}</span>
-                          <span class="fw-medium">{{ kv.value | currency }}</span>
+                          <span class="fw-medium">{{ kv.value | currency:'INR':'₹':'1.2-2' }}</span>
                         </div>
                       }
                     </div>
@@ -325,14 +367,17 @@
 
             <div class="summary-row">
               <div class="summary-key">Status</div>
-              <span class="badge fs-6" [ngClass]="statusClass(quote()!.status)">
-                {{ quote()!.status }}
-              </span>
+              <span [ngClass]="statusClass(quote()!.status)">{{ quote()!.status }}</span>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-key">Reference</div>
+              <code class="small fw-semibold text-primary">{{ quote()!.quoteRef || '—' }}</code>
             </div>
 
             <div class="summary-row">
               <div class="summary-key">Quote ID</div>
-              <code class="small text-break">{{ quote()!.quoteId }}</code>
+              <code class="small text-break" style="font-size:.7rem">{{ quote()!.quoteId | slice:0:18 }}…</code>
             </div>
 
             <div class="summary-row">
@@ -350,24 +395,28 @@
 
             <div class="summary-row">
               <div class="summary-key">Valid Until</div>
-              <span class="small" [class.text-danger]="isExpiredDate()">
-                {{ quote()!.validUntil | date:'mediumDate' }}
-                @if (isExpiredDate()) {
-                  <span class="badge bg-danger ms-1 small">Expired</span>
-                }
-              </span>
+              <div class="text-end">
+                <div class="small" [class.text-danger]="isExpiredDate()">
+                  {{ quote()!.validUntil | date:'mediumDate' }}
+                </div>
+                <div class="days-left-label"
+                     [class.text-danger]="daysLeft() < 0"
+                     [class.text-warning]="daysLeft() >= 0 && daysLeft() <= 14">
+                  <i class="bi bi-clock me-1"></i>{{ daysLeftLabel() }}
+                </div>
+              </div>
             </div>
 
             <hr class="my-2" />
 
             <div class="summary-row">
               <div class="summary-key">Base Premium</div>
-              <span class="fw-medium">{{ quote()!.basePremium | currency }}</span>
+              <span class="fw-medium">{{ quote()!.basePremium | currency:'INR':'₹':'1.2-2' }}</span>
             </div>
 
             <div class="summary-row">
               <div class="summary-key">Total Premium</div>
-              <span class="fw-bold text-primary fs-5">{{ quote()!.totalPremium | currency }}</span>
+              <span class="fw-bold text-primary fs-5">{{ quote()!.totalPremium | currency:'INR':'₹':'1.2-2' }}</span>
             </div>
 
           </div>

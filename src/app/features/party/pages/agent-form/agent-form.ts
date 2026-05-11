@@ -5,6 +5,11 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PartyApiService } from '../../services/party-api.service';
 import { Agent } from '../../models/party.model';
+import {
+  noDigitsValidator,
+  smartContactInfoValidator,
+  extractApiErrors,
+} from '../../../../shared/validators/custom-validators';
 
 @Component({
   selector: 'app-agent-form',
@@ -14,10 +19,10 @@ import { Agent } from '../../models/party.model';
   styleUrl: './agent-form.css',
 })
 export class AgentFormPage implements OnInit {
-  readonly agentId   = signal<string | null>(null);
-  readonly loading   = signal(false);
-  readonly saving    = signal(false);
-  readonly alertMsg  = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
+  readonly agentId  = signal<string | null>(null);
+  readonly loading  = signal(false);
+  readonly saving   = signal(false);
+  readonly alertMsg = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -25,18 +30,30 @@ export class AgentFormPage implements OnInit {
     { label: 'Agent Details' },
   ];
 
-  readonly statuses = ['Active', 'Inactive', 'Suspended'];
+  readonly statuses = ['Active', 'Inactive'];
 
   private readonly fb = inject(FormBuilder);
 
   readonly form = this.fb.group({
-    name:         ['', Validators.required],
-    producerCode: ['', Validators.required],
-    region:       ['', Validators.required],
-    status:       ['Active', Validators.required],
-    email:        ['', [Validators.required, Validators.email]],
-    phone:        [''],
-    address:      [''],
+    name: ['', [
+      Validators.required,
+      Validators.minLength(2),
+      Validators.maxLength(150),
+      noDigitsValidator(),
+      Validators.pattern(/^[a-zA-Z\s\-'\.]+$/),
+    ]],
+    producerCode: ['', [
+      Validators.required,
+      Validators.minLength(3),
+      Validators.maxLength(50),
+      Validators.pattern(/^[a-zA-Z0-9\-_]+$/),
+    ]],
+    region: ['', [
+      Validators.maxLength(100),
+      Validators.pattern(/^[a-zA-Z\s\-]*$/),
+    ]],
+    status: ['Active', Validators.required],
+    contactInfo: ['', [smartContactInfoValidator(), Validators.maxLength(500)]],
   });
 
   constructor(
@@ -56,11 +73,9 @@ export class AgentFormPage implements OnInit {
           this.form.patchValue({
             name:         a.name,
             producerCode: a.producerCode,
-            region:       a.region,
+            region:       a.region ?? '',
             status:       a.status,
-            email:        a.contactInfo?.email ?? '',
-            phone:        a.contactInfo?.phone ?? '',
-            address:      a.contactInfo?.address ?? '',
+            contactInfo:  a.contactInfo ?? '',
           });
           this.loading.set(false);
         },
@@ -72,12 +87,12 @@ export class AgentFormPage implements OnInit {
   save() {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const v = this.form.value;
-    const payload = {
+    const payload: Partial<Agent> = {
       name:         v.name!,
       producerCode: v.producerCode!,
-      region:       v.region!,
+      region:       v.region ?? '',
       status:       v.status as any,
-      contactInfo:  { email: v.email!, phone: v.phone ?? '', address: v.address ?? '' },
+      contactInfo:  v.contactInfo ?? undefined,
     };
     this.saving.set(true);
     const req = this.agentId()
@@ -85,7 +100,7 @@ export class AgentFormPage implements OnInit {
       : this.svc.createAgent(payload);
     req.subscribe({
       next: () => { this.saving.set(false); this.router.navigate(['/party/agents']); },
-      error: () => { this.saving.set(false); this.flash('danger', 'Save failed. Please try again.'); },
+      error: err => { this.saving.set(false); this.flash('danger', extractApiErrors(err)); },
     });
   }
 
@@ -93,6 +108,6 @@ export class AgentFormPage implements OnInit {
 
   private flash(type: 'success' | 'danger', text: string) {
     this.alertMsg.set({ type, text });
-    setTimeout(() => this.alertMsg.set(null), 4000);
+    setTimeout(() => this.alertMsg.set(null), 5000);
   }
 }

@@ -4,10 +4,21 @@
     subtitle="Manage active policies, endorsements and renewals"
     icon="bi-journal-bookmark"
     [breadcrumbs]="breadcrumbs">
-    <a routerLink="/policy/renewals" class="btn btn-sm btn-outline-secondary me-1">
+    <button class="btn btn-sm btn-success me-1" (click)="openBindModal()">
+      <i class="bi bi-link-45deg me-1"></i>Bind Policy
+    </button>
+    <a routerLink="/policy/renewals" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-repeat me-1"></i>Renewals
     </a>
   </app-page-header>
+
+  @if (alertMsg()) {
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
+      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
+                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
+      {{ alertMsg()!.text }}
+    </div>
+  }
 
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
@@ -27,7 +38,7 @@
           </select>
         </div>
         <div class="col text-end">
-          <small class="text-muted">{{ filtered().length }} of {{ policies().length }} record(s)</small>
+          <small class="text-muted">{{ filtered().length }} of {{ totalElements() }} record(s)</small>
           <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()">
             <i class="bi bi-arrow-clockwise"></i>
           </button>
@@ -82,7 +93,93 @@
             </tbody>
           </table>
         </div>
+
+        @if (totalPages() > 1) {
+          <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+            <small class="text-muted">Page {{ currentPage() + 1 }} of {{ totalPages() }}</small>
+            <nav>
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="currentPage() === 0">
+                  <button class="page-link" (click)="goToPage(currentPage() - 1)">‹</button>
+                </li>
+                @for (p of pageNumbers(); track p) {
+                  <li class="page-item" [class.active]="p === currentPage()">
+                    <button class="page-link" (click)="goToPage(p)">{{ p + 1 }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="currentPage() >= totalPages() - 1">
+                  <button class="page-link" (click)="goToPage(currentPage() + 1)">›</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        }
       }
     </div>
   </div>
 </div>
+
+<!-- Bind Policy Modal -->
+@if (showBindModal()) {
+  <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fs-6 fw-semibold">
+            <i class="bi bi-link-45deg me-2 text-success"></i>Bind Policy from Submission
+          </h5>
+          <button type="button" class="btn-close" (click)="closeBindModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info d-flex gap-2 py-2 mb-3">
+            <i class="bi bi-info-circle-fill"></i>
+            <small>Fill in all fields to create and bind a new policy.</small>
+          </div>
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label small fw-medium">Submission ID <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm font-monospace"
+                     placeholder="UUID of the approved submission"
+                     [value]="bindSubId()"
+                     (input)="bindSubId.set($any($event.target).value)" />
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-medium">Policy Number <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm"
+                     placeholder="e.g. POL-2024-001"
+                     [value]="bindPolicyNumber()"
+                     (input)="bindPolicyNumber.set($any($event.target).value)" />
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-medium">Product Line <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm"
+                      [value]="bindProductLine()"
+                      (change)="bindProductLine.set($any($event.target).value)">
+                @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-medium">Inception Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control form-control-sm"
+                     [value]="bindInceptionDate()"
+                     (input)="bindInceptionDate.set($any($event.target).value)" />
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-medium">Expiry Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control form-control-sm"
+                     [value]="bindExpiryDate()"
+                     (input)="bindExpiryDate.set($any($event.target).value)" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-outline-secondary btn-sm" (click)="closeBindModal()">Cancel</button>
+          <button class="btn btn-success btn-sm" (click)="bindPolicy()" [disabled]="binding()">
+            @if (binding()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            <i class="bi bi-link-45deg me-1"></i>Bind Policy
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

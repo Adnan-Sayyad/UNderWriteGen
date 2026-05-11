@@ -17,8 +17,18 @@ import { HttpErrorResponse } from '@angular/common/http';
 export class QuoteCreatePage implements OnInit {
   /** true when submissionId came from URL param (navigated from submission page) */
   readonly submissionFromRoute = signal(false);
-  readonly saving   = signal(false);
-  readonly alertMsg = signal<{ type: 'success' | 'danger' | 'info'; text: string } | null>(null);
+  readonly saving      = signal(false);
+  readonly loadingStep = signal(-1);   // -1 = idle; 0-3 = active step index
+  readonly alertMsg    = signal<{ type: 'success' | 'danger' | 'info'; text: string } | null>(null);
+
+  readonly LOADING_STEPS = [
+    { icon: 'bi-file-earmark-text', label: 'Fetching submission data…'  },
+    { icon: 'bi-shield-check',      label: 'Evaluating risk score…'     },
+    { icon: 'bi-calculator',        label: 'Calculating premium…'       },
+    { icon: 'bi-patch-check-fill',  label: 'Finalising quote…'          },
+  ];
+
+  private stepTimer: ReturnType<typeof setInterval> | null = null;
 
   readonly breadcrumbs = [
     { label: 'Home',         route: '/' },
@@ -37,11 +47,9 @@ export class QuoteCreatePage implements OnInit {
    *   applyTaxes     — toggle
    */
   readonly form = this.fb.group({
-    submissionId:   ['', [Validators.required,
-                          Validators.pattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]],
-    requestedBy:    ['', [Validators.required, Validators.maxLength(100)]],
-    applyDiscounts: [true],
-    applyTaxes:     [true],
+    submissionId: ['', [Validators.required,
+                        Validators.pattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]],
+    requestedBy:  ['', [Validators.required, Validators.maxLength(100)]],
   });
 
   constructor(
@@ -70,19 +78,32 @@ export class QuoteCreatePage implements OnInit {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
 
     this.saving.set(true);
+    this.loadingStep.set(0);
+
+    // Step through the loading stages while the API call is in flight
+    let step = 0;
+    this.stepTimer = setInterval(() => {
+      step = Math.min(step + 1, this.LOADING_STEPS.length - 1);
+      this.loadingStep.set(step);
+    }, 900);
+
     const v = this.form.getRawValue();   // getRawValue() includes disabled controls
 
     this.svc.generateQuote({
       submissionId:   v.submissionId!,
-      applyDiscounts: v.applyDiscounts ?? true,
-      applyTaxes:     v.applyTaxes     ?? true,
+      applyDiscounts: true,
+      applyTaxes:     true,
       requestedBy:    v.requestedBy!,
     }).subscribe({
       next: quote => {
+        if (this.stepTimer) clearInterval(this.stepTimer);
+        this.loadingStep.set(this.LOADING_STEPS.length - 1);
         this.saving.set(false);
         this.router.navigate(['/pricing/quotes', quote.quoteId]);
       },
       error: (err: HttpErrorResponse) => {
+        if (this.stepTimer) clearInterval(this.stepTimer);
+        this.loadingStep.set(-1);
         this.saving.set(false);
         const msg =
           err.error?.error   ??

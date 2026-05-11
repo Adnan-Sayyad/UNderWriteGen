@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+
 import { RiskApiService } from '../../services/risk-api.service';
 import { RiskProfile, RiskType } from '../../models/risk.model';
 
@@ -12,7 +12,7 @@ const RISK_TYPES: RiskType[] = ['Life', 'Health', 'Property', 'Auto', 'Marine', 
 @Component({
   selector: 'app-risk-profile',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader],
   templateUrl: './risk-profile.html',
   styleUrl: './risk-profile.css',
 })
@@ -72,7 +72,7 @@ export class RiskProfilePage implements OnInit {
         }
         this.loading.set(false);
       },
-      error: () => { this.profile.set(null); this.loading.set(false); },
+      error: () => { this.profile.set(null); this.form.patchValue({ submissionId: id }); this.loading.set(false); },
     });
   }
 
@@ -80,9 +80,13 @@ export class RiskProfilePage implements OnInit {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving.set(true);
     const v = this.form.value;
-    this.svc.saveRiskProfile(v.submissionId!, {
-      riskType: v.riskType as RiskType, riskNotes: v.riskNotes ?? '', attributesJSON: {},
-    }).subscribe({
+    const payload = { riskType: v.riskType as RiskType, riskNotes: v.riskNotes ?? '', attributesJSON: {} };
+    const existing = this.profile();
+    const call$ = existing?.riskId
+      ? this.svc.updateRiskProfile(existing.riskId, payload)
+      : this.svc.createRiskProfile(v.submissionId!, payload);
+
+    call$.subscribe({
       next: res => {
         const d: any = res;
         this.profile.set(d?.data ?? null);

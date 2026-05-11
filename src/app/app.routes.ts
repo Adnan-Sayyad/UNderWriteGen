@@ -35,12 +35,14 @@ export const routes: Routes = [
       },
       {
         path: 'pricing',
-        canActivate: [roleGuard], data: { roles: ['Pricing', 'Underwriter', 'Admin'] },
+        canActivate: [roleGuard], data: { roles: ['PricingAnalyst', 'Underwriter', 'Admin'] },
         loadChildren: () => import('./features/pricing/pricing.routes').then(m => m.PRICING_ROUTES),
       },
       {
         path: 'underwriting',
-        canActivate: [roleGuard], data: { roles: ['Underwriter', 'Assistant'] },
+ 
+        canActivate: [roleGuard], data: { roles: ['Underwriter', 'Assistant', 'Admin'] },
+ 
         loadChildren: () => import('./features/underwriting/underwriting.routes').then(m => m.UNDERWRITING_ROUTES),
       },
       {

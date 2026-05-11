@@ -79,12 +79,33 @@ export class QuoteDetailPage implements OnInit {
   private readonly fb   = inject(FormBuilder);
   private readonly auth = inject(AuthService);
 
+  /** Key-value rows for coverage limits — replaces the raw JSON textarea */
+  readonly limitRows = signal<{ key: string; value: number | null }[]>([]);
+
   readonly termsForm = this.fb.group({
     deductibles:    [<number | null>null, [Validators.min(0)]],
-    limitsJson:     ['{}'],
     exclusions:     [''],
     subjectivities: [''],
   });
+
+  addLimitRow(): void {
+    this.limitRows.update(rows => [...rows, { key: '', value: null }]);
+  }
+
+  removeLimitRow(i: number): void {
+    this.limitRows.update(rows => rows.filter((_, idx) => idx !== i));
+  }
+
+  updateLimitKey(i: number, key: string): void {
+    this.limitRows.update(rows =>
+      rows.map((r, idx) => idx === i ? { ...r, key } : r));
+  }
+
+  updateLimitValue(i: number, value: string): void {
+    const num = parseFloat(value);
+    this.limitRows.update(rows =>
+      rows.map((r, idx) => idx === i ? { ...r, value: isNaN(num) ? null : num } : r));
+  }
 
   readonly statusForm = this.fb.group({
     status: ['', Validators.required],
@@ -122,8 +143,12 @@ export class QuoteDetailPage implements OnInit {
     if (this.termsForm.invalid) { this.termsForm.markAllAsTouched(); return; }
     const v = this.termsForm.value;
 
-    let limitsObj: Record<string, number> = {};
-    try { limitsObj = JSON.parse(v.limitsJson || '{}'); } catch { /* ignore */ }
+    // Build limits from the key-value row UI
+    const limitsObj: Record<string, number> = {};
+    for (const row of this.limitRows()) {
+      if (row.key.trim() && row.value != null && row.value > 0)
+        limitsObj[row.key.trim()] = row.value;
+    }
 
     const terms: QuoteTerms = {};
     if (v.deductibles != null && v.deductibles > 0) terms.deductibles = v.deductibles;
@@ -182,15 +207,29 @@ export class QuoteDetailPage implements OnInit {
   /* ── helpers ────────────────────────────────────────────────────────── */
   statusClass(s: string): string {
     const m: Record<string, string> = {
-      Draft: 'bg-secondary', Presented: 'bg-primary',
-      Accepted: 'bg-success', Declined: 'bg-danger', Expired: 'bg-dark',
+      Draft:     'badge-status badge-draft',
+      Presented: 'badge-status badge-presented',
+      Accepted:  'badge-status badge-accepted',
+      Declined:  'badge-status badge-declined',
+      Expired:   'badge-status badge-expired',
     };
-    return m[s] ?? 'bg-secondary';
+    return m[s] ?? 'badge-status badge-draft';
   }
 
-  /** Convert camelCase key → readable label */
+  /** Convert backend JSON key → human-readable breakdown label */
+  private readonly KEY_LABELS: Record<string, string> = {
+    RiskLoading:       'Risk Loading',
+    OccupationLoading: 'Occupation Loading',
+    TenureDiscount:    'Tenure Discount',
+    LoyaltyDiscount:   'Loyalty Discount',
+    AgentDiscount:     'Preferred Agent Discount',
+    GstAmount:         'GST (18%)',
+    GstRate:           'GST Rate',
+  };
+
   fmtKey(k: string): string {
-    return k.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+    if (this.KEY_LABELS[k]) return this.KEY_LABELS[k];
+    return k.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
   }
 
   canManage(): boolean {
@@ -200,6 +239,20 @@ export class QuoteDetailPage implements OnInit {
   isExpiredDate(): boolean {
     const q = this.quote();
     return !!q && new Date(q.validUntil) < new Date();
+  }
+
+  daysLeft(): number {
+    const q = this.quote();
+    if (!q) return 0;
+    return Math.ceil((new Date(q.validUntil).getTime() - Date.now()) / 86_400_000);
+  }
+
+  daysLeftLabel(): string {
+    const d = this.daysLeft();
+    if (d < 0)   return `Expired ${Math.abs(d)} day${Math.abs(d) === 1 ? '' : 's'} ago`;
+    if (d === 0) return 'Expires today';
+    if (d <= 14) return `${d} day${d === 1 ? '' : 's'} left`;
+    return `${d} days remaining`;
   }
 
   /* ── private ────────────────────────────────────────────────────────── */
@@ -222,18 +275,23 @@ export class QuoteDetailPage implements OnInit {
     const t = this.terms();
     this.termsForm.patchValue({
       deductibles:    t?.deductibles ?? null,
-      limitsJson:     t?.limits ? JSON.stringify(t.limits, null, 2) : '{}',
       exclusions:     t?.exclusions?.join(', ')  ?? '',
       subjectivities: t?.subjectivities?.join('\n') ?? '',
     });
+    // Populate key-value limit rows from existing terms
+    const rows = t?.limits
+      ? Object.entries(t.limits).map(([key, value]) => ({ key, value }))
+      : [];
+    this.limitRows.set(rows);
   }
 
   private parseJsonPairs(raw?: string): [string, number][] {
     if (!raw) return [];
     try {
       const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      return Object.entries(obj as Record<string, number>)
-        .filter(([, v]) => v !== 0);
+      return Object.entries(obj as Record<string, unknown>)
+        .filter(([, v]) => typeof v === 'number' && v !== 0)
+        .map(([k, v]) => [k, v as number]);
     } catch { return []; }
   }
 

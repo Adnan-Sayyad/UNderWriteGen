@@ -8,6 +8,7 @@ const STATUS_MAP: Record<string, { label: string; css: string }> = {
   Declined:       { label: 'Declined',        css: 'badge-declined' },
   Expired:        { label: 'Expired',         css: 'badge-expired' },
   Active:         { label: 'Active',          css: 'badge-active' },
+  Inactive:       { label: 'Inactive',        css: 'badge-inactive' },
   Locked:         { label: 'Locked',          css: 'badge-locked' },
   Disabled:       { label: 'Disabled',        css: 'badge-disabled' },
   Cancelled:      { label: 'Cancelled',       css: 'badge-declined' },
