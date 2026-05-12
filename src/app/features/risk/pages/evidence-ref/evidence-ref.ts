@@ -1,9 +1,10 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { RiskApiService } from '../../services/risk-api.service';
 import { EvidenceRef, EvidenceType, EvidenceStatus } from '../../models/risk.model';
 
@@ -13,7 +14,7 @@ const EVIDENCE_STATUSES: EvidenceStatus[] = ['Requested', 'Received', 'NotAvaila
 @Component({
   selector: 'app-evidence-ref',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './evidence-ref.html',
   styleUrl: './evidence-ref.css',
 })
@@ -33,6 +34,21 @@ export class EvidenceRefPage implements OnInit {
   readonly deletingId    = signal<string | null>(null);
   readonly editingId     = signal<string | null>(null);
   readonly editStatus    = signal<EvidenceStatus>('Requested');
+
+  // Pagination
+  readonly currentPage   = signal(0);
+  readonly pageSize      = signal(10);
+  readonly totalElements = computed(() => this.evidence().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly paged         = computed(() => {
+    const size  = this.pageSize();
+    const page  = Math.min(this.currentPage(), this.totalPages() - 1);
+    const start = page * size;
+    return this.evidence().slice(start, start + size);
+  });
+
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },

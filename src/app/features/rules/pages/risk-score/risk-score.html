@@ -122,7 +122,7 @@
                 </table>
               </div>
 
-              <app-pager
+              <app-pagination
                 [page]="historyPage()"
                 [size]="historySize()"
                 [totalElements]="historyTotal()"
@@ -131,7 +131,7 @@
                 [disabled]="loading()"
                 (pageChange)="onHistoryPageChange($event)"
                 (sizeChange)="onHistorySizeChange($event)">
-              </app-pager>
+              </app-pagination>
             }
           </div>
         </div>
@@ -189,7 +189,7 @@
           </table>
         </div>
 
-        <app-pager
+        <app-pagination
           [page]="bandPage()"
           [size]="bandSize()"
           [totalElements]="bandTotal()"
@@ -197,7 +197,7 @@
           [disabled]="bandLoading()"
           (pageChange)="onBandPageChange($event)"
           (sizeChange)="onBandSizeChange($event)">
-        </app-pager>
+        </app-pagination>
       }
     </div>
   </div>

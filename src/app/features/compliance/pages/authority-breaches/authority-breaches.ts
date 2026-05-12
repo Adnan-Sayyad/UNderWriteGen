@@ -5,6 +5,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { ComplianceApiService } from '../../services/compliance-api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { SubmissionApiService } from '../../../submission/services/submission-api.service';
@@ -23,7 +24,7 @@ const REVIEW_STATUSES: BreachStatus[] = ['Approved', 'Rejected'];
 @Component({
   selector: 'app-authority-breaches',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState, Pagination],
   templateUrl: './authority-breaches.html',
   styleUrl: './authority-breaches.css',
 })
@@ -71,21 +72,21 @@ export class AuthorityBreachesPage implements OnInit {
   });
 
   // ── Pagination ────────────────────────────────────────────────
-  readonly currentPage = signal(1);
-  readonly pageSize    = 10;
-  readonly totalPages  = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
-  readonly paged       = computed(() => {
-    const page  = Math.min(this.currentPage(), this.totalPages());
-    const start = (page - 1) * this.pageSize;
-    return this.filtered().slice(start, start + this.pageSize);
+  readonly currentPage   = signal(0);
+  readonly pageSize      = signal(10);
+  readonly totalElements = computed(() => this.filtered().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly paged         = computed(() => {
+    const size  = this.pageSize();
+    const page  = Math.min(this.currentPage(), this.totalPages() - 1);
+    const start = page * size;
+    return this.filtered().slice(start, start + size);
   });
-  readonly pageNumbers = computed(() => Array.from({ length: this.totalPages() }, (_, i) => i + 1));
 
-  prevPage(): void  { if (this.currentPage() > 1) this.currentPage.update(p => p - 1); }
-  nextPage(): void  { if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1); }
-  goToPage(n: number): void { this.currentPage.set(n); }
-  setFilterType(val: string): void   { this.filterType.set(val);   this.currentPage.set(1); }
-  setFilterStatus(val: string): void { this.filterStatus.set(val); this.currentPage.set(1); }
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
+  setFilterType(val: string): void   { this.filterType.set(val);   this.currentPage.set(0); }
+  setFilterStatus(val: string): void { this.filterStatus.set(val); this.currentPage.set(0); }
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },

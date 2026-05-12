@@ -5,6 +5,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { IamApiService, UserDto } from '../../../../core/services/iam-api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 
@@ -26,7 +27,7 @@ const STATUSES: ('Active'|'Locked'|'Disabled')[] = ['Active','Locked','Disabled'
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState, Pagination],
   templateUrl: './user-management.html',
   styleUrl: './user-management.css',
 })
@@ -45,8 +46,8 @@ export class UserManagementPage implements OnInit {
   readonly alertMsg   = signal<{ type: 'success'|'danger'; text: string } | null>(null);
 
   // Pagination
-  readonly currentPage = signal(1);
-  readonly pageSize    = 10;
+  readonly currentPage = signal(0);
+  readonly pageSize    = signal(10);
 
   readonly filtered = computed(() => {
     const q    = this.searchTerm().toLowerCase();
@@ -57,23 +58,20 @@ export class UserManagementPage implements OnInit {
     );
   });
 
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
+  readonly totalElements = computed(() => this.filtered().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
 
   readonly paged = computed(() => {
-    const page = Math.min(this.currentPage(), this.totalPages());
-    const start = (page - 1) * this.pageSize;
-    return this.filtered().slice(start, start + this.pageSize);
+    const size  = this.pageSize();
+    const page  = Math.min(this.currentPage(), this.totalPages() - 1);
+    const start = page * size;
+    return this.filtered().slice(start, start + size);
   });
 
-  readonly pageNumbers = computed(() =>
-    Array.from({ length: this.totalPages() }, (_, i) => i + 1)
-  );
-
-  setSearch(val: string): void  { this.searchTerm.set(val); this.currentPage.set(1); }
-  setRoleFilter(val: string): void { this.roleFilter.set(val); this.currentPage.set(1); }
-  prevPage(): void { if (this.currentPage() > 1) this.currentPage.update(p => p - 1); }
-  nextPage(): void { if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1); }
-  goToPage(n: number): void { this.currentPage.set(n); }
+  setSearch(val: string): void     { this.searchTerm.set(val); this.currentPage.set(0); }
+  setRoleFilter(val: string): void { this.roleFilter.set(val); this.currentPage.set(0); }
+  onPageChange(p: number): void    { this.currentPage.set(p); }
+  onSizeChange(s: number): void    { this.pageSize.set(s); this.currentPage.set(0); }
 
   readonly breadcrumbs = [{ label: 'Home', route: '/' }, { label: 'Admin', route: '/admin' }, { label: 'User Management' }];
 

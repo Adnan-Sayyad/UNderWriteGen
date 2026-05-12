@@ -99,7 +99,7 @@
           </table>
         </div>
 
-        <app-pager
+        <app-pagination
           [page]="page()"
           [size]="size()"
           [totalElements]="totalElements()"
@@ -107,7 +107,7 @@
           [disabled]="loading()"
           (pageChange)="onPageChange($event)"
           (sizeChange)="onSizeChange($event)">
-        </app-pager>
+        </app-pagination>
       }
     </div>
   </div>

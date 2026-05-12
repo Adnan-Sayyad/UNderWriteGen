@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
-import { Pager } from '../../components/pager/pager';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { RulesApiService } from '../../services/rules-api.service';
 import {
   RiskScore, RiskBand,
@@ -14,7 +14,7 @@ import {
 @Component({
   selector: 'app-risk-score',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState, Pager],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './risk-score.html',
   styleUrl: './risk-score.css',
 })
