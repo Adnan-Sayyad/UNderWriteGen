@@ -18,7 +18,10 @@ namespace ComplianceAuditAndQA.Data.Configurations
             builder.Property(e => e.ItemsJson).IsRequired().HasColumnType("nvarchar(max)");
             builder.Property(e => e.CompletedBy).HasMaxLength(256);
             builder.Property(e => e.Status).IsRequired().HasMaxLength(50).HasDefaultValue("Pending");
-            builder.Property(e => e.CreatedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            builder.Property(e => e.CreatedAt)
+                   .IsRequired()
+                   .HasDefaultValueSql("GETUTCDATE()")
+                   .ValueGeneratedNever();
             builder.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
 
             builder.HasIndex(e => e.SubmissionId).HasDatabaseName("IX_ComplianceChecklists_SubmissionId");

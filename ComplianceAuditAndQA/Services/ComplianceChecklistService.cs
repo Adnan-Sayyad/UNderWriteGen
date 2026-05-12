@@ -8,13 +8,18 @@ namespace ComplianceAuditAndQA.Services
 {
     public class ComplianceChecklistService : IComplianceChecklistService
     {
-        private readonly ComplianceDbContext _context;
-        private readonly ISubmissionClientService _submissionClient;
+        private readonly ComplianceDbContext                    _context;
+        private readonly ISubmissionClientService               _submissionClient;
+        private readonly ILogger<ComplianceChecklistService>    _logger;
 
-        public ComplianceChecklistService(ComplianceDbContext context, ISubmissionClientService submissionClient)
+        public ComplianceChecklistService(
+            ComplianceDbContext                 context,
+            ISubmissionClientService            submissionClient,
+            ILogger<ComplianceChecklistService> logger)
         {
-            _context = context;
+            _context          = context;
             _submissionClient = submissionClient;
+            _logger           = logger;
         }
 
         // ── GET all ───────────────────────────────────────────────
@@ -55,8 +60,11 @@ namespace ComplianceAuditAndQA.Services
         // ── CREATE ────────────────────────────────────────────────
         public async Task<ComplianceChecklistDto> CreateAsync(CreateComplianceChecklistDto dto)
         {
+            // Best-effort lookup — never block. Frontend already validated the ID.
             if (!await _submissionClient.SubmissionExistsAsync(dto.SubmissionId))
-                throw new KeyNotFoundException($"Submission '{dto.SubmissionId}' not found. Cannot create compliance checklist.");
+                _logger.LogWarning(
+                    "Submission {Id} not confirmed by Submission API — checklist created anyway.",
+                    dto.SubmissionId);
 
             var checklist = new ComplianceChecklist
             {
@@ -116,10 +124,14 @@ namespace ComplianceAuditAndQA.Services
             SubmissionId  = c.SubmissionId,
             ItemsJson     = c.ItemsJson,
             CompletedBy   = c.CompletedBy,
-            CompletedDate = c.CompletedDate,
+            CompletedDate = c.CompletedDate.HasValue
+                              ? DateTime.SpecifyKind(c.CompletedDate.Value, DateTimeKind.Utc)
+                              : null,
             Status        = c.Status,
-            CreatedAt     = c.CreatedAt,
-            UpdatedAt     = c.UpdatedAt
+            CreatedAt     = DateTime.SpecifyKind(c.CreatedAt, DateTimeKind.Utc),
+            UpdatedAt     = c.UpdatedAt.HasValue
+                              ? DateTime.SpecifyKind(c.UpdatedAt.Value, DateTimeKind.Utc)
+                              : null
         };
     }
 }

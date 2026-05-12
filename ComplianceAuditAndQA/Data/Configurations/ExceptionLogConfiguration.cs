@@ -17,9 +17,15 @@ namespace ComplianceAuditAndQA.Data.Configurations
             builder.Property(e => e.SubmissionId).IsRequired();
             builder.Property(e => e.Category).IsRequired().HasMaxLength(50);
             builder.Property(e => e.Details).IsRequired().HasColumnType("nvarchar(max)");
-            builder.Property(e => e.LoggedDate).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            builder.Property(e => e.LoggedDate)
+                   .IsRequired()
+                   .HasDefaultValueSql("GETUTCDATE()")
+                   .ValueGeneratedNever();
             builder.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Open");
-            builder.Property(e => e.CreatedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            builder.Property(e => e.CreatedAt)
+                   .IsRequired()
+                   .HasDefaultValueSql("GETUTCDATE()")
+                   .ValueGeneratedNever();
             builder.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
 
             builder.HasIndex(e => e.SubmissionId).HasDatabaseName("IX_ExceptionLogs_SubmissionId");
