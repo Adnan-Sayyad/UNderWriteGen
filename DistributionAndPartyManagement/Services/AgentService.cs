@@ -41,14 +41,15 @@ namespace DistributionAndPartyManagement.Services
 
 		public async Task<AgentResponseDto> CreateAsync(CreateAgentDto dto)
 		{
-			if (await _repo.ProducerCodeExistsAsync(dto.ProducerCode))
-				throw new DuplicateException($"ProducerCode '{dto.ProducerCode}' already exists.");
+			var count = await _repo.GetCountAsync();
+			var sequence = (count + 1).ToString("D4");
+			var date = DateTime.UtcNow.ToString("yyyyMMdd");
 
 			var agent = new Agent
 			{
-				AgentID = await GenerateAgentIdAsync(),
+				AgentID = $"AGT-{date}-{sequence}",
 				Name = dto.Name.Trim(),
-				ProducerCode = dto.ProducerCode.Trim(),
+				ProducerCode = $"PC-{date}-{sequence}",
 				ContactInfo = dto.ContactInfo?.Trim(),
 				Region = dto.Region?.Trim(),
 				Status = "Active"
@@ -98,14 +99,6 @@ namespace DistributionAndPartyManagement.Services
 			agent.Status = "Inactive";
 			await _repo.SaveChangesAsync();
 			return MapToDto(agent);
-		}
-
-		private async Task<string> GenerateAgentIdAsync()
-		{
-			var count = await _repo.GetCountAsync();
-			var sequence = (count + 1).ToString("D4");
-			var date = DateTime.UtcNow.ToString("yyyyMMdd");
-			return $"AGT-{date}-{sequence}";
 		}
 
 		private static AgentResponseDto MapToDto(Agent agent)

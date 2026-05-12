@@ -63,5 +63,6 @@ namespace DistributionAndPartyManagement.Models.DTOs
 		public string? ContactInfo { get; set; }
 		public string Segment { get; set; } = string.Empty;
 		public string Status { get; set; } = string.Empty;
+		public string? CreatedByUserId { get; set; }
 	}
 }

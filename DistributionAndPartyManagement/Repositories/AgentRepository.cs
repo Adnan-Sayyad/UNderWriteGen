@@ -38,7 +38,10 @@ namespace DistributionAndPartyManagement.Repositories
 			if (!string.IsNullOrWhiteSpace(status))
 				query = query.Where(a => a.Status == status);
 
-			return await query.OrderBy(a => a.Name).ToListAsync();
+			return await query
+				.OrderBy(a => a.Status == "Active" ? 0 : 1)
+				.ThenBy(a => a.Name)
+				.ToListAsync();
 		}
 
 		public async Task<bool> ProducerCodeExistsAsync(string producerCode)

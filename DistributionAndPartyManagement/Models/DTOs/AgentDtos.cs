@@ -13,13 +13,6 @@ namespace DistributionAndPartyManagement.Models.DTOs
 			ErrorMessage = "Name may only contain letters, spaces, hyphens, apostrophes, and periods.")]
 		public string Name { get; set; } = string.Empty;
 
-		[Required(ErrorMessage = "ProducerCode is required.")]
-		[MinLength(3, ErrorMessage = "ProducerCode must be at least 3 characters.")]
-		[MaxLength(50, ErrorMessage = "ProducerCode must not exceed 50 characters.")]
-		[RegularExpression(@"^[a-zA-Z0-9\-_]+$",
-			ErrorMessage = "ProducerCode may only contain letters, digits, hyphens, and underscores.")]
-		public string ProducerCode { get; set; } = string.Empty;
-
 		[SmartContactInfo]
 		[MaxLength(500, ErrorMessage = "ContactInfo must not exceed 500 characters.")]
 		public string? ContactInfo { get; set; }
