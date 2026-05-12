@@ -32,6 +32,19 @@ namespace RulesScoringAndReferralMatrix.Repositories
                 .ToListAsync();
         }
 
+        public async Task<(IEnumerable<RiskScore> Items, int Total)> GetPagedBySubmissionIdAsync(
+            Guid submissionId, int page, int size)
+        {
+            var query = _context.RiskScores.Where(s => s.SubmissionID == submissionId);
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(s => s.ScoredDate)
+                .Skip(page * size)
+                .Take(size)
+                .ToListAsync();
+            return (items, total);
+        }
+
         public async Task<RiskScore?> GetLatestBySubmissionIdAsync(Guid submissionId)
         {
             return await _context.RiskScores
@@ -45,6 +58,19 @@ namespace RulesScoringAndReferralMatrix.Repositories
             return await _context.RiskScores
                 .Where(s => s.Band == band)
                 .ToListAsync();
+        }
+
+        public async Task<(IEnumerable<RiskScore> Items, int Total)> GetPagedByBandAsync(
+            Band band, int page, int size)
+        {
+            var query = _context.RiskScores.Where(s => s.Band == band);
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(s => s.ScoredDate)
+                .Skip(page * size)
+                .Take(size)
+                .ToListAsync();
+            return (items, total);
         }
 
         public async Task<RiskScore> CreateAsync(RiskScore riskScore)

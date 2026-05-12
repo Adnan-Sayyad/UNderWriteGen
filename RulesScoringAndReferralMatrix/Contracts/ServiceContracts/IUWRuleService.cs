@@ -6,6 +6,10 @@ namespace RulesScoringAndReferralMatrix.Contracts.ServiceContracts
     public interface IUWRuleService
     {
         Task<IEnumerable<UWRuleResponseDto>> GetAllRulesAsync();
+
+        Task<PagedResultDto<UWRuleResponseDto>> GetRulesPagedAsync(
+            int page, int size,
+            string? productLine, Severity? severity, UWStatus? status);
         Task<UWRuleResponseDto?> GetRuleByIdAsync(Guid id);
         Task<IEnumerable<UWRuleResponseDto>> GetRulesByProductLineAsync(string productLine);
         Task<IEnumerable<UWRuleResponseDto>> GetActiveRulesAsync();

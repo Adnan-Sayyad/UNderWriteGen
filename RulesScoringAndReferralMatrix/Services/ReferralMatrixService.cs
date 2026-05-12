@@ -1,3 +1,4 @@
+using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.Contracts.RepositoryContracts;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
 using RulesScoringAndReferralMatrix.DTOs;
@@ -18,6 +19,21 @@ namespace RulesScoringAndReferralMatrix.Services
         {
             var matrices = await _repository.GetAllAsync();
             return matrices.Select(MapToResponseDto);
+        }
+
+        public async Task<PagedResultDto<ReferralMatrixResponseDto>> GetMatricesPagedAsync(
+            int page, int size,
+            string? productLine, RequiredAuthority? authority, UWStatus? status)
+        {
+            var (items, total) = await _repository.GetPagedAsync(page, size, productLine, authority, status);
+            return new PagedResultDto<ReferralMatrixResponseDto>
+            {
+                Content       = items.Select(MapToResponseDto),
+                Page          = page,
+                Size          = size,
+                TotalElements = total,
+                TotalPages    = size > 0 ? (int)Math.Ceiling(total / (double)size) : 0,
+            };
         }
 
         public async Task<ReferralMatrixResponseDto?> GetMatrixByIdAsync(Guid id)

@@ -1,3 +1,4 @@
+using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.DTOs;
 
 namespace RulesScoringAndReferralMatrix.Contracts.ServiceContracts
@@ -5,6 +6,10 @@ namespace RulesScoringAndReferralMatrix.Contracts.ServiceContracts
     public interface IReferralMatrixService
     {
         Task<IEnumerable<ReferralMatrixResponseDto>> GetAllMatricesAsync();
+
+        Task<PagedResultDto<ReferralMatrixResponseDto>> GetMatricesPagedAsync(
+            int page, int size,
+            string? productLine, RequiredAuthority? authority, UWStatus? status);
         Task<ReferralMatrixResponseDto?> GetMatrixByIdAsync(Guid id);
         Task<IEnumerable<ReferralMatrixResponseDto>> GetMatricesByProductLineAsync(string productLine);
         Task<IEnumerable<ReferralMatrixResponseDto>> GetActiveMatricesAsync();

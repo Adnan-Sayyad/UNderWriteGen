@@ -20,6 +20,25 @@ namespace RulesScoringAndReferralMatrix.Repositories
             return await _context.Rules.ToListAsync();
         }
 
+        public async Task<(IEnumerable<UWRule> Items, int Total)> GetPagedAsync(
+            int page, int size,
+            string? productLine, Severity? severity, UWStatus? status)
+        {
+            var query = _context.Rules.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(productLine)) query = query.Where(r => r.ProductLine == productLine);
+            if (severity.HasValue) query = query.Where(r => r.Severity == severity.Value);
+            if (status.HasValue)   query = query.Where(r => r.Status   == status.Value);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderBy(r => r.ProductLine)
+                .ThenBy(r => r.UWRuleID)
+                .Skip(page * size)
+                .Take(size)
+                .ToListAsync();
+            return (items, total);
+        }
+
         public async Task<UWRule?> GetByIdAsync(Guid id)
         {
             return await _context.Rules.FirstOrDefaultAsync(r => r.UWRuleID == id);

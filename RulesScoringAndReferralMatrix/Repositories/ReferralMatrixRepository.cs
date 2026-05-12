@@ -20,6 +20,25 @@ namespace RulesScoringAndReferralMatrix.Repositories
             return await _context.ReferralMatrices.ToListAsync();
         }
 
+        public async Task<(IEnumerable<ReferralMatrix> Items, int Total)> GetPagedAsync(
+            int page, int size,
+            string? productLine, RequiredAuthority? authority, UWStatus? status)
+        {
+            var query = _context.ReferralMatrices.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(productLine)) query = query.Where(m => m.ProductLine == productLine);
+            if (authority.HasValue) query = query.Where(m => m.RequiredAuthority == authority.Value);
+            if (status.HasValue)    query = query.Where(m => m.Status == status.Value);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderBy(m => m.ProductLine)
+                .ThenBy(m => m.CriteriaJSON)
+                .Skip(page * size)
+                .Take(size)
+                .ToListAsync();
+            return (items, total);
+        }
+
         public async Task<ReferralMatrix?> GetByIdAsync(Guid id)
         {
             return await _context.ReferralMatrices.FirstOrDefaultAsync(m => m.ReferralMatrixID == id);

@@ -20,6 +20,24 @@ namespace RulesScoringAndReferralMatrix.Repositories
             return await _context.Referrals.ToListAsync();
         }
 
+        public async Task<(IEnumerable<Referral> Items, int Total)> GetPagedAsync(
+            int page, int size,
+            ReferralStatus? status, RequiredAuthority? authority, Guid? submissionId)
+        {
+            var query = _context.Referrals.AsQueryable();
+            if (status.HasValue)       query = query.Where(r => r.Status == status.Value);
+            if (authority.HasValue)    query = query.Where(r => r.RequiredAuthority == authority.Value);
+            if (submissionId.HasValue) query = query.Where(r => r.SubmissionID == submissionId.Value);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(r => r.CreatedDate)
+                .Skip(page * size)
+                .Take(size)
+                .ToListAsync();
+            return (items, total);
+        }
+
         public async Task<Referral?> GetByIdAsync(Guid id)
         {
             return await _context.Referrals.FirstOrDefaultAsync(r => r.ReferralID == id);

@@ -21,6 +21,21 @@ namespace RulesScoringAndReferralMatrix.Services
             return rules.Select(MapToResponseDto);
         }
 
+        public async Task<PagedResultDto<UWRuleResponseDto>> GetRulesPagedAsync(
+            int page, int size,
+            string? productLine, Severity? severity, UWStatus? status)
+        {
+            var (items, total) = await _repository.GetPagedAsync(page, size, productLine, severity, status);
+            return new PagedResultDto<UWRuleResponseDto>
+            {
+                Content       = items.Select(MapToResponseDto),
+                Page          = page,
+                Size          = size,
+                TotalElements = total,
+                TotalPages    = size > 0 ? (int)Math.Ceiling(total / (double)size) : 0,
+            };
+        }
+
         public async Task<UWRuleResponseDto?> GetRuleByIdAsync(Guid id)
         {
             var rule = await _repository.GetByIdAsync(id);
