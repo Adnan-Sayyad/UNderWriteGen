@@ -20,9 +20,12 @@ namespace DistributionAndPartyManagement.Repositories
 		}
 
 		public async Task<List<CustomerParty>> SearchAsync(
-			string? name, string? partyType, string? segment, string? status)
+			string? name, string? partyType, string? segment, string? status, string? createdByUserId = null)
 		{
 			var query = _context.CustomerParties.AsQueryable();
+
+			if (!string.IsNullOrWhiteSpace(createdByUserId))
+				query = query.Where(c => c.CreatedByUserId == createdByUserId);
 
 			if (!string.IsNullOrWhiteSpace(name))
 				query = query.Where(c => c.Name.Contains(name));
@@ -36,7 +39,10 @@ namespace DistributionAndPartyManagement.Repositories
 			if (!string.IsNullOrWhiteSpace(status))
 				query = query.Where(c => c.Status == status);
 
-			return await query.OrderBy(c => c.Name).ToListAsync();
+			return await query
+				.OrderBy(c => c.Status == "Active" ? 0 : 1)
+				.ThenBy(c => c.Name)
+				.ToListAsync();
 		}
 
 		public async Task<List<CustomerParty>> CheckDuplicatesAsync(string name)

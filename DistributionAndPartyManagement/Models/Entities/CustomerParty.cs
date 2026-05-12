@@ -26,5 +26,8 @@ namespace DistributionAndPartyManagement.Models.Entities
 
 		[Required, MaxLength(20)]
 		public string Status { get; set; } = "Active";
+
+		[MaxLength(50)]
+		public string? CreatedByUserId { get; set; }
 	}
 }

@@ -35,6 +35,7 @@ namespace DistributionAndPartyManagement.Middleware
 				NotFoundException => (HttpStatusCode.NotFound, exception.Message),
 				DuplicateException => (HttpStatusCode.Conflict, exception.Message),
 				BusinessRuleException => (HttpStatusCode.BadRequest, exception.Message),
+				ForbiddenException => (HttpStatusCode.Forbidden, exception.Message),
 				_ => (HttpStatusCode.InternalServerError, "An internal server error occurred.")
 			};
 
