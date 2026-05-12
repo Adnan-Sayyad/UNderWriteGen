@@ -1,19 +1,19 @@
 <div class="page-container">
   <app-page-header
-    title="UW Rules &amp; Scoring"
-    subtitle="Underwriting rules engine and referral matrices"
+    title="UW Rules"
+    subtitle="Eligibility, blocking, referral and loading rules per product line"
     icon="bi-diagram-3"
     [breadcrumbs]="breadcrumbs">
-    <div class="d-flex gap-2">
-      <a routerLink="/rules/referral-matrix" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-table me-1"></i>Referral Matrix
-      </a>
-      <a routerLink="/rules/referrals" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-send me-1"></i>Referrals
-      </a>
-      <button class="btn btn-sm btn-primary" (click)="openCreate()">
-        <i class="bi bi-plus-lg me-1"></i>Add Rule
+    <div class="d-flex gap-2 flex-wrap">
+      <a routerLink="/rules/risk-scores"     class="btn btn-sm btn-outline-secondary"><i class="bi bi-speedometer2 me-1"></i>Risk Scoring</a>
+      <a routerLink="/rules/referral-matrix" class="btn btn-sm btn-outline-secondary"><i class="bi bi-grid-3x3 me-1"></i>Referral Matrix</a>
+      <a routerLink="/rules/referrals"       class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left-right me-1"></i>Referrals</a>
+      <button class="btn btn-sm btn-outline-primary" (click)="openEvaluate()">
+        <i class="bi bi-play-circle me-1"></i>Evaluate
       </button>
+      <a routerLink="/rules/new" class="btn btn-sm btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>New Rule
+      </a>
     </div>
   </app-page-header>
 
@@ -30,22 +30,28 @@
       <div class="row g-2 align-items-center">
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="filterSev()" (change)="filterSev.set($any($event.target).value)">
+                  [value]="filterProd()" (change)="setProd($any($event.target).value)">
+            <option value="">All Product Lines</option>
+            @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="filterSev()" (change)="setSev($any($event.target).value)">
             <option value="">All Severities</option>
             @for (s of severities; track s) { <option [value]="s">{{ s }}</option> }
           </select>
         </div>
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
+                  [value]="filterStatus()" (change)="setStatus($any($event.target).value)">
             <option value="">All Statuses</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
+            @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
           </select>
         </div>
         <div class="col text-end">
-          <small class="text-muted">{{ filtered().length }} of {{ rules().length }} rule(s)</small>
-          <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()">
+          <small class="text-muted">{{ totalElements() }} rule(s)</small>
+          <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()" title="Refresh">
             <i class="bi bi-arrow-clockwise"></i>
           </button>
         </div>
@@ -57,35 +63,49 @@
     <div class="card-body p-0">
       @if (loading()) {
         <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
-      } @else if (!filtered().length) {
+      } @else if (!rules().length) {
         <app-empty-state icon="bi-diagram-3" title="No rules found"
-                         message="Add underwriting rules to automate risk assessment."></app-empty-state>
+                         message="Configure underwriting rules to automate risk decisions."></app-empty-state>
       } @else {
         <div class="table-responsive">
           <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
               <tr>
-                <th>Rule ID</th>
+                <th>Rule</th>
                 <th>Product Line</th>
                 <th>Severity</th>
-                <th>Expression</th>
+                <th>When</th>
                 <th>Status</th>
                 <th class="table-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
-              @for (r of filtered(); track r.ruleId) {
+              @for (r of rules(); track r.uwRuleID) {
                 <tr>
-                  <td class="font-monospace small">{{ r.ruleId | slice:0:8 }}…</td>
+                  <td>
+                    <div class="fw-medium">{{ ruleTitle(r) }}</div>
+                    @if (r.description) {
+                      <small class="text-muted text-truncate-2 d-block" style="max-width:260px">{{ r.description }}</small>
+                    }
+                  </td>
                   <td><span class="badge bg-primary">{{ r.productLine }}</span></td>
                   <td><span class="badge" [ngClass]="severityClass(r.severity)">{{ r.severity }}</span></td>
-                  <td class="small text-muted text-truncate" style="max-width:200px">
-                    {{ r.expressionJSON | json }}
-                  </td>
+                  <td class="small text-muted expr-preview">{{ exprPreview(r) }}</td>
                   <td><app-status-badge [status]="r.status"></app-status-badge></td>
                   <td class="table-actions">
-                    <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(r)">
+                    <button class="btn btn-sm btn-outline-secondary me-1"
+                            title="Toggle status" (click)="toggleStatus(r)" [disabled]="toggling() === r.uwRuleID">
+                      @if (toggling() === r.uwRuleID) { <span class="spinner-border spinner-border-sm"></span> }
+                      @else { <i class="bi" [class.bi-toggle-on]="r.status==='Active'" [class.bi-toggle-off]="r.status==='Inactive'"></i> }
+                    </button>
+                    <a class="btn btn-sm btn-outline-primary me-1" title="Edit"
+                       [routerLink]="['/rules', r.uwRuleID, 'edit']">
                       <i class="bi bi-pencil"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger"
+                            title="Delete" (click)="remove(r)" [disabled]="deleting() === r.uwRuleID">
+                      @if (deleting() === r.uwRuleID) { <span class="spinner-border spinner-border-sm"></span> }
+                      @else { <i class="bi bi-trash"></i> }
                     </button>
                   </td>
                 </tr>
@@ -93,61 +113,83 @@
             </tbody>
           </table>
         </div>
+
+        <app-pager
+          [page]="page()"
+          [size]="size()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pager>
       }
     </div>
   </div>
 </div>
 
-@if (modalMode()) {
-  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+@if (evaluateOpen()) {
+  <div class="modal-backdrop-custom" (click)="closeEvaluate()"></div>
   <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">
       <h6 class="mb-0 fw-semibold">
-        <i class="bi bi-diagram-3 me-2 text-primary"></i>
-        {{ modalMode() === 'create' ? 'Add Rule' : 'Edit Rule' }}
+        <i class="bi bi-play-circle me-2 text-primary"></i>
+        Evaluate Rules for Submission
       </h6>
-      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+      <button class="btn-close btn-sm" (click)="closeEvaluate()"></button>
     </div>
     <div class="modal-panel-body">
-      <form [formGroup]="form" novalidate>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Product Line</label>
-            <input type="text" class="form-control form-control-sm"
-                   [class.is-invalid]="form.controls.productLine.invalid && form.controls.productLine.touched"
-                   formControlName="productLine" placeholder="e.g. Life, Health" />
-            <div class="invalid-feedback">Product line is required.</div>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Severity</label>
-            <select class="form-select form-select-sm" formControlName="severity">
-              @for (s of severities; track s) { <option [value]="s">{{ s }}</option> }
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Status</label>
-            <select class="form-select form-select-sm" formControlName="status">
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label small fw-medium required-mark">Expression (JSON)</label>
-            <textarea class="form-control form-control-sm font-monospace" rows="4"
-                      [class.is-invalid]="form.controls.expression.invalid && form.controls.expression.touched"
-                      formControlName="expression"
-                      placeholder='{"field":"sumInsured","op":"gt","value":1000000}'></textarea>
-            <div class="invalid-feedback">Expression is required.</div>
-          </div>
+      <form [formGroup]="evalForm" novalidate (ngSubmit)="runEvaluate()">
+        <label class="form-label small fw-medium required-mark">Submission ID</label>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control form-control-sm font-monospace"
+                 [class.is-invalid]="evalForm.controls.submissionId.invalid && evalForm.controls.submissionId.touched"
+                 formControlName="submissionId" placeholder="e.g. 3f1c2a90-…" />
+          <button class="btn btn-sm btn-primary" type="submit" [disabled]="evaluating()">
+            @if (evaluating()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Run
+          </button>
+        </div>
+        <div class="invalid-feedback d-block" *ngIf="evalForm.controls.submissionId.invalid && evalForm.controls.submissionId.touched">
+          A valid submission id is required.
         </div>
       </form>
+
+      @if (evaluation(); as ev) {
+        <hr/>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <strong>Submission:</strong>
+            <code class="ms-1 small">{{ ev.submissionID }}</code>
+          </div>
+          <span class="badge" [class.bg-danger]="ev.hasBlockingRules" [class.bg-success]="!ev.hasBlockingRules">
+            {{ ev.hasBlockingRules ? 'Blocking rules triggered' : 'Clear' }}
+          </span>
+        </div>
+        <small class="text-muted d-block mb-2">Evaluated at {{ ev.evaluatedAt | date:'medium' }}</small>
+
+        @if (!ev.results.length) {
+          <div class="text-center text-muted small py-3">No rules evaluated.</div>
+        } @else {
+          <ul class="list-group list-group-flush">
+            @for (r of ev.results; track r.uwRuleID) {
+              <li class="list-group-item d-flex align-items-center gap-2 py-2 px-0 border-0 border-bottom">
+                <span class="badge" [ngClass]="severityClass(r.severity)" style="min-width:60px">{{ r.severity }}</span>
+                <span class="badge bg-primary">{{ r.productLine }}</span>
+                <div class="flex-grow-1 small">
+                  @if (r.ruleName) { <div class="fw-medium">{{ r.ruleName }}</div> }
+                  <small class="text-muted">{{ r.message }}</small>
+                </div>
+                <i class="bi" [class.bi-check-circle-fill]="r.triggered" [class.text-success]="r.triggered"
+                              [class.bi-dash-circle]="!r.triggered" [class.text-muted]="!r.triggered"></i>
+              </li>
+            }
+          </ul>
+        }
+      }
     </div>
     <div class="modal-panel-footer">
-      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
-      <button class="btn btn-sm btn-primary" (click)="save()" [disabled]="saving()">
-        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-        Save Rule
-      </button>
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeEvaluate()">Close</button>
     </div>
   </div>
 }

@@ -1,0 +1,16 @@
+.pager .page-link {
+  color: var(--uwpro-primary, #1a3c6e);
+  border: 1px solid #dee2e6;
+}
+.pager .page-item.active .page-link {
+  background-color: var(--uwpro-primary, #1a3c6e);
+  border-color: var(--uwpro-primary, #1a3c6e);
+  color: #fff;
+}
+.pager .page-item.disabled .page-link {
+  color: #adb5bd;
+}
+.pager .pager-size {
+  width: auto;
+  min-width: 4.5rem;
+}

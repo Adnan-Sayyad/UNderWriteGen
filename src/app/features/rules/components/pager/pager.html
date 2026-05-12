@@ -1,0 +1,56 @@
+@if (_totalPages() > 0) {
+  <div class="pager d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2 border-top">
+    <small class="text-muted">
+      Showing <strong>{{ fromIndex() }}</strong> – <strong>{{ toIndex() }}</strong>
+      of <strong>{{ _total() }}</strong>
+    </small>
+
+    <div class="d-flex align-items-center gap-2">
+      <label class="small text-muted mb-0">Rows:</label>
+      <select class="form-select form-select-sm pager-size"
+              [disabled]="disabled"
+              [value]="_size()"
+              (change)="changeSize($any($event.target).value)">
+        @for (s of pageSizes; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+
+      <nav aria-label="Pagination">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="!hasPrev()">
+            <button class="page-link" type="button" (click)="first()" title="First" [disabled]="!hasPrev()">
+              <i class="bi bi-chevron-bar-left"></i>
+            </button>
+          </li>
+          <li class="page-item" [class.disabled]="!hasPrev()">
+            <button class="page-link" type="button" (click)="prev()" title="Previous" [disabled]="!hasPrev()">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+          </li>
+
+          @for (p of visiblePages(); track $index) {
+            @if (p === '…') {
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            } @else {
+              <li class="page-item" [class.active]="p === _page()">
+                <button class="page-link" type="button" (click)="goTo(p)" [disabled]="disabled">
+                  {{ p + 1 }}
+                </button>
+              </li>
+            }
+          }
+
+          <li class="page-item" [class.disabled]="!hasNext()">
+            <button class="page-link" type="button" (click)="next()" title="Next" [disabled]="!hasNext()">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </li>
+          <li class="page-item" [class.disabled]="!hasNext()">
+            <button class="page-link" type="button" (click)="last()" title="Last" [disabled]="!hasNext()">
+              <i class="bi bi-chevron-bar-right"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+}
