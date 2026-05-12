@@ -32,6 +32,17 @@ builder.Services.AddScoped<ICompletenessCheckService, CompletenessCheckService>(
 builder.Services.AddHttpClient<IDistributionValidationService, HttpDistributionValidationService>(c =>
     c.BaseAddress = new Uri(builder.Configuration["Services:DistributionApi"]!));
 
+// Fall back to the default port if Services:NotificationApi is not configured —
+// avoids a hard startup crash when appsettings drifts and lets the operator see a clear warning.
+var notificationApiUrl = builder.Configuration["Services:NotificationApi"];
+if (string.IsNullOrWhiteSpace(notificationApiUrl))
+{
+    notificationApiUrl = "http://localhost:8084/";
+    Console.WriteLine($"[WARN] Services:NotificationApi not configured — defaulting to {notificationApiUrl}");
+}
+builder.Services.AddHttpClient<INotificationClientService, HttpNotificationClientService>(c =>
+    c.BaseAddress = new Uri(notificationApiUrl));
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

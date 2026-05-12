@@ -1,4 +1,4 @@
-namespace RulesScoringAndReferralMatrix.Services
+namespace PricingQuotationAndTerms.Application.Interfaces
 {
     public interface INotificationClientService
     {

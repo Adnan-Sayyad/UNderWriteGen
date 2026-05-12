@@ -10,15 +10,18 @@ namespace ComplianceAuditAndQA.Services
     {
         private readonly ComplianceDbContext              _context;
         private readonly ISubmissionClientService         _submissionClient;
+        private readonly INotificationClientService       _notifications;
         private readonly ILogger<ExceptionLogService>     _logger;
 
         public ExceptionLogService(
             ComplianceDbContext            context,
             ISubmissionClientService       submissionClient,
+            INotificationClientService     notifications,
             ILogger<ExceptionLogService>   logger)
         {
             _context          = context;
             _submissionClient = submissionClient;
+            _notifications    = notifications;
             _logger           = logger;
         }
 
@@ -99,6 +102,11 @@ namespace ComplianceAuditAndQA.Services
 
             await _context.ExceptionLogs.AddAsync(log);
             await _context.SaveChangesAsync();
+
+            // PDF §2.10/§4.9: exceptions feed the QA workflow.
+            var message = $"Exception logged: {dto.Category} — submission '{dto.SubmissionId}'. {dto.Details}";
+            _ = _notifications.BroadcastAsync("Compliance", message, "Compliance");
+
             return MapToDto(log);
         }
 

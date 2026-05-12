@@ -9,10 +9,12 @@ namespace SubmissionAndIntake.Services
     public class AttachmentService : IAttachmentService
     {
         private readonly IAttachmentRepository _repository;
+        private readonly INotificationClientService _notifications;
 
-        public AttachmentService(IAttachmentRepository repository)
+        public AttachmentService(IAttachmentRepository repository, INotificationClientService notifications)
         {
             _repository = repository;
+            _notifications = notifications;
         }
 
         public async Task<IEnumerable<AttachmentResponseDto>> GetAllAttachmentsAsync()
@@ -50,6 +52,13 @@ namespace SubmissionAndIntake.Services
             };
 
             var created = await _repository.CreateAsync(attachment);
+
+            // PDF §2.11: docs missing alert — once a doc arrives, let UW assistants know
+            _ = _notifications.BroadcastAsync(
+                "UWAssistant",
+                $"{created.DocType} document uploaded for submission '{created.SubmissionID}'.",
+                "Compliance");
+
             return MapToResponseDto(created);
         }
 

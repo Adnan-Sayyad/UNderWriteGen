@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 
-namespace UnderwritingWorkflowAndDecisions.Services
+namespace ComplianceAuditAndQA.Services
 {
     public class HttpNotificationClientService : INotificationClientService
     {

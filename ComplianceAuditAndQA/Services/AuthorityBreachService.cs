@@ -10,15 +10,18 @@ namespace ComplianceAuditAndQA.Services
     {
         private readonly ComplianceDbContext                 _context;
         private readonly ISubmissionClientService            _submissionClient;
+        private readonly INotificationClientService          _notifications;
         private readonly ILogger<AuthorityBreachService>     _logger;
 
         public AuthorityBreachService(
             ComplianceDbContext              context,
             ISubmissionClientService         submissionClient,
+            INotificationClientService       notifications,
             ILogger<AuthorityBreachService>  logger)
         {
             _context          = context;
             _submissionClient = submissionClient;
+            _notifications    = notifications;
             _logger           = logger;
         }
 
@@ -101,6 +104,12 @@ namespace ComplianceAuditAndQA.Services
 
             await _context.AuthorityBreaches.AddAsync(breach);
             await _context.SaveChangesAsync();
+
+            // PDF §2.11: authority breach raised → Compliance & Admin must review.
+            var message = $"Authority breach ({dto.BreachType}) logged for submission '{dto.SubmissionId}'. {dto.Description}";
+            _ = _notifications.BroadcastAsync("Compliance", message, "Compliance");
+            _ = _notifications.BroadcastAsync("Admin",      message, "Compliance");
+
             return MapToDto(breach);
         }
 
@@ -148,6 +157,14 @@ namespace ComplianceAuditAndQA.Services
                 breach.ApprovedDate = null;
 
             await _context.SaveChangesAsync();
+
+            if (dto.Status is "Approved" or "Rejected")
+            {
+                var message = $"Authority breach '{breach.BreachId}' on submission '{breach.SubmissionId}' was {dto.Status} by {dto.ApprovedBy ?? "Compliance"}.";
+                _ = _notifications.BroadcastAsync("Underwriter", message, "Compliance");
+                _ = _notifications.BroadcastAsync("UWManager",   message, "Compliance");
+            }
+
             return MapToDto(breach);
         }
 

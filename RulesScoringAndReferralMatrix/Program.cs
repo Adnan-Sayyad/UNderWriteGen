@@ -34,8 +34,14 @@ builder.Services.AddScoped<IReferralMatrixService, ReferralMatrixService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 
 // Inter-service HTTP clients
+var notificationApiUrl = builder.Configuration["Services:NotificationApi"];
+if (string.IsNullOrWhiteSpace(notificationApiUrl))
+{
+    notificationApiUrl = "http://localhost:8084/";
+    Console.WriteLine($"[WARN] Services:NotificationApi not configured — defaulting to {notificationApiUrl}");
+}
 builder.Services.AddHttpClient<INotificationClientService, HttpNotificationClientService>(c =>
-    c.BaseAddress = new Uri(builder.Configuration["Services:NotificationApi"]!));
+    c.BaseAddress = new Uri(notificationApiUrl));
 
 var app = builder.Build();
 

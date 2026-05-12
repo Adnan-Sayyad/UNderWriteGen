@@ -1,4 +1,4 @@
-namespace RulesScoringAndReferralMatrix.Services
+namespace RiskDataAndEvidence.Services
 {
     public interface INotificationClientService
     {

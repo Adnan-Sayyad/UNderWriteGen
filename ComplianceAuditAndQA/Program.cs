@@ -53,6 +53,15 @@ builder.Services.AddHttpClient<ISubmissionClientService, HttpSubmissionClientSer
     c.Timeout     = TimeSpan.FromSeconds(6); // outer safety net (inner uses 5 s)
 });
 
+var notificationApiUrl = builder.Configuration["Services:NotificationApi"];
+if (string.IsNullOrWhiteSpace(notificationApiUrl))
+{
+    notificationApiUrl = "http://localhost:8084/";
+    Console.WriteLine($"[WARN] Services:NotificationApi not configured — defaulting to {notificationApiUrl}");
+}
+builder.Services.AddHttpClient<INotificationClientService, HttpNotificationClientService>(c =>
+    c.BaseAddress = new Uri(notificationApiUrl));
+
 // ── Controllers + Swagger ─────────────────────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

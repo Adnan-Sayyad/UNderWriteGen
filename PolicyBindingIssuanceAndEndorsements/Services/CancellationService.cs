@@ -7,8 +7,13 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
     public class CancellationService : ICancellationService
     {
         private readonly PolicyDbContext _db;
+        private readonly INotificationClientService _notifications;
 
-        public CancellationService(PolicyDbContext db) => _db = db;
+        public CancellationService(PolicyDbContext db, INotificationClientService notifications)
+        {
+            _db = db;
+            _notifications = notifications;
+        }
 
         public Cancellation? GetByPolicy(Guid policyId) =>
             _db.Cancellations.FirstOrDefault(c => c.PolicyID == policyId);
@@ -27,6 +32,11 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
             };
             _db.Cancellations.Add(cancellation);
             _db.SaveChanges();
+
+            var message = $"Cancellation requested for policy '{dto.PolicyID}'. Reason: {dto.CancelReason}. Refund: {dto.RefundPremium:C}.";
+            _ = _notifications.BroadcastAsync("Underwriter", message, "Compliance");
+            _ = _notifications.BroadcastAsync("Operations",  message, "Compliance");
+
             return cancellation;
         }
 
@@ -36,6 +46,14 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
             if (c is null) return null;
             c.Status = dto.Status;
             _db.SaveChanges();
+
+            if (dto.Status is "Approved" or "Posted")
+            {
+                var message = $"Cancellation '{c.CancellationID}' on policy '{c.PolicyID}' is now {dto.Status}.";
+                _ = _notifications.BroadcastAsync("Agent",      message, "Compliance");
+                _ = _notifications.BroadcastAsync("Operations", message, "Compliance");
+            }
+
             return c;
         }
     }
