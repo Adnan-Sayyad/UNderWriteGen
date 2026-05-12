@@ -8,10 +8,19 @@ namespace ComplianceAuditAndQA.Services
 {
     public class ExceptionLogService : IExceptionLogService
     {
-        private readonly ComplianceDbContext _context;
+        private readonly ComplianceDbContext              _context;
+        private readonly ISubmissionClientService         _submissionClient;
+        private readonly ILogger<ExceptionLogService>     _logger;
 
-        public ExceptionLogService(ComplianceDbContext context)
-            => _context = context;
+        public ExceptionLogService(
+            ComplianceDbContext            context,
+            ISubmissionClientService       submissionClient,
+            ILogger<ExceptionLogService>   logger)
+        {
+            _context          = context;
+            _submissionClient = submissionClient;
+            _logger           = logger;
+        }
 
         // ── GET all ───────────────────────────────────────────────
         public async Task<IEnumerable<ExceptionLogDto>> GetAllAsync()
@@ -71,6 +80,12 @@ namespace ComplianceAuditAndQA.Services
         // ── CREATE ────────────────────────────────────────────────
         public async Task<ExceptionLogDto> CreateAsync(CreateExceptionLogDto dto)
         {
+            // Best-effort lookup — never block. Frontend already validated the ID.
+            if (!await _submissionClient.SubmissionExistsAsync(dto.SubmissionId))
+                _logger.LogWarning(
+                    "Submission {Id} not confirmed by Submission API — exception logged anyway.",
+                    dto.SubmissionId);
+
             var log = new ExceptionLog
             {
                 ExceptionId  = Guid.NewGuid(),
@@ -125,10 +140,12 @@ namespace ComplianceAuditAndQA.Services
             SubmissionId = e.SubmissionId,
             Category     = e.Category,
             Details      = e.Details,
-            LoggedDate   = e.LoggedDate,
+            LoggedDate   = DateTime.SpecifyKind(e.LoggedDate, DateTimeKind.Utc),
             Status       = e.Status,
-            CreatedAt    = e.CreatedAt,
-            UpdatedAt    = e.UpdatedAt
+            CreatedAt    = DateTime.SpecifyKind(e.CreatedAt, DateTimeKind.Utc),
+            UpdatedAt    = e.UpdatedAt.HasValue
+                             ? DateTime.SpecifyKind(e.UpdatedAt.Value, DateTimeKind.Utc)
+                             : null
         };
     }
 }

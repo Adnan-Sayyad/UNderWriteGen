@@ -48,10 +48,22 @@ builder.Services.AddScoped<IExceptionLogService,        ExceptionLogService>();
 
 // Inter-service HTTP clients
 builder.Services.AddHttpClient<ISubmissionClientService, HttpSubmissionClientService>(c =>
-    c.BaseAddress = new Uri(builder.Configuration["Services:SubmissionApi"]!));
+{
+    c.BaseAddress = new Uri(builder.Configuration["Services:SubmissionApi"]!);
+    c.Timeout     = TimeSpan.FromSeconds(6); // outer safety net (inner uses 5 s)
+});
 
 // ── Controllers + Swagger ─────────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Serialise response DTOs in camelCase so Angular can read
+        // r.data / r.success / r.message without a PascalCase mismatch.
+        options.JsonSerializerOptions.PropertyNamingPolicy =
+            System.Text.Json.JsonNamingPolicy.CamelCase;
+        // Also deserialise case-insensitively so incoming payloads are flexible.
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -90,12 +102,21 @@ builder.Services.AddSwaggerGen(options =>
 // ── Build ─────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
+// ── Seed data (run with: dotnet run seed-data) ────────────────────────────
+if (args.Contains("seed-data"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ComplianceDbContext>();
+    await DatabaseSeeder.SeedAsync(db);
+    Console.WriteLine("[Seeder] Done. Exiting.");
+    return;
+}
+
 // ── Global Exception Handler ──────────────────────────────────────────────
 app.UseExceptionHandler(errApp =>
 {
     errApp.Run(async ctx =>
     {
-        ctx.Response.ContentType = "application/json";
         var feature = ctx.Features
             .Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
         if (feature?.Error is not null)
@@ -108,8 +129,17 @@ app.UseExceptionHandler(errApp =>
                 ArgumentException           => (400, feature.Error.Message),
                 _                           => (500, "An unexpected error occurred.")
             };
-            ctx.Response.StatusCode = status;
-            await ctx.Response.WriteAsJsonAsync(new { Success = false, Message = message });
+            // Explicitly serialise to a JSON string so Angular's HttpClient
+            // always receives a parseable body regardless of content-type negotiation.
+            var json = System.Text.Json.JsonSerializer.Serialize(
+                new { success = false, message },
+                new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+                });
+            ctx.Response.StatusCode  = status;
+            ctx.Response.ContentType = "application/json; charset=utf-8";
+            await ctx.Response.WriteAsync(json);
         }
     });
 });

@@ -19,7 +19,15 @@ namespace ComplianceAuditAndQA.Data.Configurations
             builder.Property(e => e.Description).IsRequired().HasColumnType("nvarchar(max)");
             builder.Property(e => e.ApprovedBy).HasMaxLength(256);
             builder.Property(e => e.Status).IsRequired().HasMaxLength(50).HasDefaultValue("Pending");
-            builder.Property(e => e.CreatedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            // ValueGeneratedNever() ensures EF Core always includes CreatedAt
+            // in the INSERT statement using the value set by application code
+            // (DateTime.UtcNow), rather than deferring to the DB default.
+            // The GETUTCDATE() default remains in the schema as a safety net
+            // for any direct SQL inserts.
+            builder.Property(e => e.CreatedAt)
+                   .IsRequired()
+                   .HasDefaultValueSql("GETUTCDATE()")
+                   .ValueGeneratedNever();
             builder.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
 
             builder.HasIndex(e => e.SubmissionId).HasDatabaseName("IX_AuthorityBreaches_SubmissionId");

@@ -7,7 +7,6 @@ namespace ComplianceAuditAndQA.Controllers
 {
     [ApiController]
     [Route("api/compliance-checklists")]
-    [Authorize]
     public class ComplianceChecklistsController : ControllerBase
     {
         private readonly IComplianceChecklistService _service;
@@ -17,6 +16,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/compliance-checklists ────────────────────────
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var data = await _service.GetAllAsync();
@@ -26,6 +26,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/compliance-checklists/{checklistId} ──────────
         [HttpGet("{checklistId:guid}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(Guid checklistId)
         {
             var data = await _service.GetByIdAsync(checklistId);
@@ -35,6 +36,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/compliance-checklists/submission/{submissionId}
         [HttpGet("submission/{submissionId:guid}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetBySubmissionId(Guid submissionId)
         {
             var data = await _service.GetBySubmissionIdAsync(submissionId);
@@ -44,6 +46,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── POST /api/compliance-checklists ───────────────────────
         [HttpPost]
+        [Authorize(Roles = "Compliance,Admin")]
         public async Task<IActionResult> Create([FromBody] CreateComplianceChecklistDto dto)
         {
             var data = await _service.CreateAsync(dto);
@@ -54,6 +57,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── PUT /api/compliance-checklists/{checklistId} ──────────
         [HttpPut("{checklistId:guid}")]
+        [Authorize(Roles = "Compliance,Admin")]
         public async Task<IActionResult> Update(
             Guid checklistId, [FromBody] UpdateComplianceChecklistDto dto)
         {
@@ -64,6 +68,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── PATCH /api/compliance-checklists/{checklistId}/status ─
         [HttpPatch("{checklistId:guid}/status")]
+        [Authorize(Roles = "Compliance,Admin")]
         public async Task<IActionResult> UpdateStatus(
             Guid checklistId, [FromBody] UpdateChecklistStatusDto dto)
         {

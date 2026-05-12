@@ -8,10 +8,19 @@ namespace ComplianceAuditAndQA.Services
 {
     public class AuthorityBreachService : IAuthorityBreachService
     {
-        private readonly ComplianceDbContext _context;
+        private readonly ComplianceDbContext                 _context;
+        private readonly ISubmissionClientService            _submissionClient;
+        private readonly ILogger<AuthorityBreachService>     _logger;
 
-        public AuthorityBreachService(ComplianceDbContext context)
-            => _context = context;
+        public AuthorityBreachService(
+            ComplianceDbContext              context,
+            ISubmissionClientService         submissionClient,
+            ILogger<AuthorityBreachService>  logger)
+        {
+            _context          = context;
+            _submissionClient = submissionClient;
+            _logger           = logger;
+        }
 
         // ── GET all ───────────────────────────────────────────────
         public async Task<IEnumerable<AuthorityBreachDto>> GetAllAsync()
@@ -71,6 +80,15 @@ namespace ComplianceAuditAndQA.Services
         // ── CREATE ────────────────────────────────────────────────
         public async Task<AuthorityBreachDto> CreateAsync(CreateAuthorityBreachDto dto)
         {
+            // Best-effort lookup: the frontend already validated the submission ID.
+            // We never block creation here — the Submission API may be unavailable,
+            // or the user may legitimately log a breach against an archived submission.
+            var submissionFound = await _submissionClient.SubmissionExistsAsync(dto.SubmissionId);
+            if (!submissionFound)
+                _logger.LogWarning(
+                    "Submission {Id} not confirmed by Submission API — breach logged anyway.",
+                    dto.SubmissionId);
+
             var breach = new AuthorityBreach
             {
                 BreachId     = Guid.NewGuid(),
@@ -104,7 +122,7 @@ namespace ComplianceAuditAndQA.Services
             return MapToDto(breach);
         }
 
-        // ── PATCH status ──────────────────────────────────────────
+        // ── PATCH status / details ────────────────────────────────
         public async Task<AuthorityBreachDto> UpdateStatusAsync(
             Guid breachId, UpdateBreachStatusDto dto)
         {
@@ -115,11 +133,19 @@ namespace ComplianceAuditAndQA.Services
             breach.Status    = dto.Status;
             breach.UpdatedAt = DateTime.UtcNow;
 
-            if (dto.Status == "Approved")
-            {
-                breach.ApprovedBy   = dto.ApprovedBy;
-                breach.ApprovedDate = dto.ApprovedDate ?? DateTime.UtcNow;
-            }
+            // Always persist ApprovedBy so edits can set or clear it.
+            breach.ApprovedBy = dto.ApprovedBy;
+
+            // ApprovedDate logic:
+            //   • If caller provided a date → use it (normalise to UTC).
+            //   • If status is Approved/Rejected and no date → default to now.
+            //   • If status is Pending and no date → clear it.
+            if (dto.ApprovedDate.HasValue)
+                breach.ApprovedDate = DateTime.SpecifyKind(dto.ApprovedDate.Value, DateTimeKind.Utc);
+            else if (dto.Status is "Approved" or "Rejected")
+                breach.ApprovedDate = DateTime.UtcNow;
+            else
+                breach.ApprovedDate = null;
 
             await _context.SaveChangesAsync();
             return MapToDto(breach);
@@ -133,10 +159,14 @@ namespace ComplianceAuditAndQA.Services
             BreachType   = b.BreachType,
             Description  = b.Description,
             ApprovedBy   = b.ApprovedBy,
-            ApprovedDate = b.ApprovedDate,
+            ApprovedDate = b.ApprovedDate.HasValue
+                           ? DateTime.SpecifyKind(b.ApprovedDate.Value, DateTimeKind.Utc)
+                           : null,
             Status       = b.Status,
-            CreatedAt    = b.CreatedAt,
-            UpdatedAt    = b.UpdatedAt
+            CreatedAt    = DateTime.SpecifyKind(b.CreatedAt, DateTimeKind.Utc),
+            UpdatedAt    = b.UpdatedAt.HasValue
+                           ? DateTime.SpecifyKind(b.UpdatedAt.Value, DateTimeKind.Utc)
+                           : null
         };
     }
 }
