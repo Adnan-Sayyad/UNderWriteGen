@@ -7,71 +7,211 @@ import {
   AuthorityBreach, CreateBreachPayload, UpdateBreachStatusPayload,
   ExceptionLog, CreateExceptionPayload, UpdateExceptionStatusPayload,
 } from '../models/compliance.model';
-import { AuditLogDto } from '../../../core/services/iam-api.service';
 
-interface ApiResp<T> { success: boolean; message: string; data: T; }
+// ── Response wrapper: backend may return camelCase OR PascalCase ──────────
+function unwrap<T>(r: any): T {
+  return (r?.data ?? r?.Data ?? r) as T;
+}
+
+function unwrapArray<T>(r: any, normalize: (x: any) => T): T[] {
+  // Handle ApiResponseDto<IEnumerable<T>>: { success, message, data: [...] }
+  const raw = r?.data ?? r?.Data;
+
+  // data is an array — normal case
+  if (Array.isArray(raw)) return raw.map(normalize);
+
+  // data is a single object (shouldn't happen for list endpoints, but guard anyway)
+  if (raw && typeof raw === 'object') return [normalize(raw)];
+
+  // The whole response is an array (no wrapper)
+  if (Array.isArray(r)) return r.map(normalize);
+
+  // Fallback: log to console so the developer can see what came back
+  if (r !== null && r !== undefined) {
+    console.warn('[ComplianceApiService] unwrapArray: unexpected response shape', r);
+  }
+  return [];
+}
+
+// ── Normalise a raw breach object (handles camelCase & PascalCase keys) ──
+function normalizeBreach(r: any): AuthorityBreach {
+  return {
+    breachId:     r.breachId     ?? r.BreachId     ?? '',
+    submissionId: r.submissionId ?? r.SubmissionId ?? '',
+    breachType:   r.breachType   ?? r.BreachType   ?? '',
+    description:  r.description  ?? r.Description  ?? '',
+    approvedBy:   r.approvedBy   ?? r.ApprovedBy,
+    approvedDate: r.approvedDate ?? r.ApprovedDate,
+    status:       r.status       ?? r.Status       ?? 'Pending',
+    createdAt:    r.createdAt    ?? r.CreatedAt     ?? '',
+    updatedAt:    r.updatedAt    ?? r.UpdatedAt,
+  };
+}
+
+// ── Normalise a raw checklist object ─────────────────────────────────────
+function normalizeChecklist(r: any): ComplianceChecklist {
+  return {
+    checklistId:   r.checklistId   ?? r.ChecklistId   ?? '',
+    submissionId:  r.submissionId  ?? r.SubmissionId  ?? '',
+    itemsJson:     r.itemsJson     ?? r.ItemsJson     ?? '[]',
+    completedBy:   r.completedBy   ?? r.CompletedBy,
+    completedDate: r.completedDate ?? r.CompletedDate,
+    status:        r.status        ?? r.Status        ?? 'Pending',
+    createdAt:     r.createdAt     ?? r.CreatedAt     ?? '',
+    updatedAt:     r.updatedAt     ?? r.UpdatedAt,
+  };
+}
+
+// ── Normalise a raw exception object ─────────────────────────────────────
+function normalizeException(r: any): ExceptionLog {
+  return {
+    exceptionId:  r.exceptionId  ?? r.ExceptionId  ?? '',
+    submissionId: r.submissionId ?? r.SubmissionId ?? '',
+    category:     r.category     ?? r.Category     ?? 'Data',
+    details:      r.details      ?? r.Details      ?? '',
+    loggedDate:   r.loggedDate   ?? r.LoggedDate   ?? '',
+    status:       r.status       ?? r.Status       ?? 'Open',
+    createdAt:    r.createdAt    ?? r.CreatedAt     ?? '',
+    updatedAt:    r.updatedAt    ?? r.UpdatedAt,
+  };
+}
 
 @Injectable({ providedIn: 'root' })
 export class ComplianceApiService {
-  private readonly cl  = `${environment.apiBaseUrl}/compliance-checklists`;
-  private readonly ab  = `${environment.apiBaseUrl}/authority-breaches`;
-  private readonly el  = `${environment.apiBaseUrl}/exception-logs`;
-  private readonly aud = `${environment.apiBaseUrl}/audit-logs`;
+  private readonly cl = `${environment.apiBaseUrl}/compliance-checklists`;
+  private readonly ab = `${environment.apiBaseUrl}/authority-breaches`;
+  private readonly el = `${environment.apiBaseUrl}/exception-logs`;
 
   constructor(private http: HttpClient) {}
 
-  // ── Compliance Checklists ──────────────────────────────────────
+  // ── Compliance Checklists ──────────────────────────────────────────────
   getChecklists() {
-    return this.http.get<ApiResp<ComplianceChecklist[]>>(this.cl).pipe(map(r => r.data ?? []));
+    return this.http.get<any>(this.cl).pipe(
+      map(r => {
+        console.log('[ComplianceAPI] GET checklists raw:', r);
+        return unwrapArray<ComplianceChecklist>(r, normalizeChecklist);
+      })
+    );
   }
+
   getChecklistById(id: string) {
-    return this.http.get<ApiResp<ComplianceChecklist>>(`${this.cl}/${id}`).pipe(map(r => r.data));
+    return this.http.get<any>(`${this.cl}/${id}`).pipe(
+      map(r => normalizeChecklist(unwrap<any>(r)))
+    );
   }
+
   getChecklistBySubmission(submissionId: string) {
-    return this.http.get<ApiResp<ComplianceChecklist>>(`${this.cl}/submission/${submissionId}`).pipe(map(r => r.data));
+    return this.http.get<any>(`${this.cl}/submission/${submissionId}`).pipe(
+      map(r => normalizeChecklist(unwrap<any>(r)))
+    );
   }
+
   createChecklist(payload: CreateChecklistPayload) {
-    return this.http.post<ApiResp<ComplianceChecklist>>(this.cl, payload).pipe(map(r => r.data));
+    // Send PascalCase keys — works with both old (no case-insensitive) and new backend
+    const body = {
+      SubmissionId:  payload.submissionId,
+      ItemsJson:     payload.itemsJson,
+      CompletedBy:   payload.completedBy,
+      CompletedDate: payload.completedDate,
+      Status:        payload.status,
+    };
+    return this.http.post<any>(this.cl, body).pipe(
+      map(r => normalizeChecklist(unwrap<any>(r)))
+    );
   }
+
   updateChecklist(id: string, payload: UpdateChecklistPayload) {
-    return this.http.put<ApiResp<ComplianceChecklist>>(`${this.cl}/${id}`, payload).pipe(map(r => r.data));
+    const body = {
+      ItemsJson:     payload.itemsJson,
+      CompletedBy:   payload.completedBy,
+      CompletedDate: payload.completedDate,
+    };
+    return this.http.put<any>(`${this.cl}/${id}`, body).pipe(
+      map(r => normalizeChecklist(unwrap<any>(r)))
+    );
   }
+
   updateChecklistStatus(id: string, payload: UpdateChecklistStatusPayload) {
-    return this.http.patch<ApiResp<ComplianceChecklist>>(`${this.cl}/${id}/status`, payload).pipe(map(r => r.data));
+    return this.http.patch<any>(`${this.cl}/${id}/status`, { Status: payload.status }).pipe(
+      map(r => normalizeChecklist(unwrap<any>(r)))
+    );
   }
 
-  // ── Authority Breaches ────────────────────────────────────────
+  // ── Authority Breaches ────────────────────────────────────────────────
   getBreaches() {
-    return this.http.get<ApiResp<AuthorityBreach[]>>(this.ab).pipe(map(r => r.data ?? []));
+    return this.http.get<any>(this.ab).pipe(
+      map(r => {
+        console.log('[ComplianceAPI] GET breaches raw:', r);
+        const result = unwrapArray<AuthorityBreach>(r, normalizeBreach);
+        console.log('[ComplianceAPI] GET breaches parsed:', result);
+        return result;
+      })
+    );
   }
+
   getBreachesByType(breachType: string) {
-    return this.http.get<ApiResp<AuthorityBreach[]>>(`${this.ab}/type/${breachType}`).pipe(map(r => r.data ?? []));
+    return this.http.get<any>(`${this.ab}/type/${breachType}`).pipe(
+      map(r => unwrapArray<AuthorityBreach>(r, normalizeBreach))
+    );
   }
+
   createBreach(payload: CreateBreachPayload) {
-    return this.http.post<ApiResp<AuthorityBreach>>(this.ab, payload).pipe(map(r => r.data));
+    // Send PascalCase keys — works with both old (no PropertyNameCaseInsensitive) and new backend
+    const body = {
+      SubmissionId: payload.submissionId,
+      BreachType:   payload.breachType,
+      Description:  payload.description,
+    };
+    console.log('[ComplianceAPI] POST breach body:', body);
+    return this.http.post<any>(this.ab, body).pipe(
+      map(r => {
+        console.log('[ComplianceAPI] POST breach response:', r);
+        return normalizeBreach(unwrap<any>(r));
+      })
+    );
   }
+
   updateBreachStatus(id: string, payload: UpdateBreachStatusPayload) {
-    return this.http.patch<ApiResp<AuthorityBreach>>(`${this.ab}/${id}/status`, payload).pipe(map(r => r.data));
+    const body = {
+      Status:      payload.status,
+      ApprovedBy:  payload.approvedBy,
+      ApprovedDate: payload.approvedDate,
+    };
+    return this.http.patch<any>(`${this.ab}/${id}/status`, body).pipe(
+      map(r => normalizeBreach(unwrap<any>(r)))
+    );
   }
 
-  // ── Exception Logs ────────────────────────────────────────────
+  // ── Exception Logs ────────────────────────────────────────────────────
   getExceptions() {
-    return this.http.get<ApiResp<ExceptionLog[]>>(this.el).pipe(map(r => r.data ?? []));
-  }
-  getExceptionsByCategory(category: string) {
-    return this.http.get<ApiResp<ExceptionLog[]>>(`${this.el}/category/${category}`).pipe(map(r => r.data ?? []));
-  }
-  createException(payload: CreateExceptionPayload) {
-    return this.http.post<ApiResp<ExceptionLog>>(this.el, payload).pipe(map(r => r.data));
-  }
-  updateExceptionStatus(id: string, payload: UpdateExceptionStatusPayload) {
-    return this.http.patch<ApiResp<ExceptionLog>>(`${this.el}/${id}/status`, payload).pipe(map(r => r.data));
+    return this.http.get<any>(this.el).pipe(
+      map(r => {
+        console.log('[ComplianceAPI] GET exceptions raw:', r);
+        return unwrapArray<ExceptionLog>(r, normalizeException);
+      })
+    );
   }
 
-  // ── Audit Logs (from IAM service) ─────────────────────────────
-  getAuditLogs(adminId: string) {
-    return this.http.get<ApiResp<AuditLogDto[]>>(this.aud, {
-      params: { adminId },
-    }).pipe(map(r => r.data ?? []));
+  getExceptionsByCategory(category: string) {
+    return this.http.get<any>(`${this.el}/category/${category}`).pipe(
+      map(r => unwrapArray<ExceptionLog>(r, normalizeException))
+    );
+  }
+
+  createException(payload: CreateExceptionPayload) {
+    const body = {
+      SubmissionId: payload.submissionId,
+      Category:     payload.category,
+      Details:      payload.details,
+    };
+    return this.http.post<any>(this.el, body).pipe(
+      map(r => normalizeException(unwrap<any>(r)))
+    );
+  }
+
+  updateExceptionStatus(id: string, payload: UpdateExceptionStatusPayload) {
+    return this.http.patch<any>(`${this.el}/${id}/status`, { Status: payload.status }).pipe(
+      map(r => normalizeException(unwrap<any>(r)))
+    );
   }
 }

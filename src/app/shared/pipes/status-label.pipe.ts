@@ -13,13 +13,16 @@ const STATUS_MAP: Record<string, { label: string; css: string }> = {
   Disabled:       { label: 'Disabled',        css: 'badge-disabled' },
   Cancelled:      { label: 'Cancelled',       css: 'badge-declined' },
   Pending:        { label: 'Pending',         css: 'badge-pending' },
-  Approved:       { label: 'Approved',        css: 'badge-approved' },
+  Approved:       { label: 'Approved',        css: 'badge-completed' },
   Rejected:       { label: 'Rejected',        css: 'badge-declined' },
-  Offered:        { label: 'Offered',          css: 'badge-approved' },
-  Presented:      { label: 'Presented',        css: 'badge-approved' },
-  Accepted:       { label: 'Accepted',         css: 'badge-active' },
+  Offered:        { label: 'Offered',         css: 'badge-approved' },
+  Presented:      { label: 'Presented',       css: 'badge-approved' },
+  Accepted:       { label: 'Accepted',        css: 'badge-active' },
   Open:           { label: 'Open',            css: 'badge-pending' },
   Closed:         { label: 'Closed',          css: 'badge-expired' },
+  // ── Compliance Checklist statuses ──────────────────────────────
+  InProgress:     { label: 'In Progress',     css: 'badge-inprogress' },
+  Completed:      { label: 'Completed',       css: 'badge-completed' },
 };
 
 @Pipe({ name: 'statusLabel', standalone: true })

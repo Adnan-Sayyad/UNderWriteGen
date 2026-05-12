@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
@@ -57,7 +57,26 @@ export class SubmissionDetailPage implements OnInit {
 
   private submissionId = '';
 
-  constructor(private svc: SubmissionApiService, private route: ActivatedRoute) {}
+  constructor(
+    private svc: SubmissionApiService,
+    private route: ActivatedRoute,
+    private router: Router,
+  ) {}
+
+  logBreach(): void {
+    this.router.navigate(['/compliance/authority-breaches'],
+      { queryParams: { submissionId: this.submissionId } });
+  }
+
+  logException(): void {
+    this.router.navigate(['/compliance/exceptions'],
+      { queryParams: { submissionId: this.submissionId } });
+  }
+
+  newChecklist(): void {
+    this.router.navigate(['/compliance/checklists'],
+      { queryParams: { submissionId: this.submissionId } });
+  }
 
   ngOnInit(): void {
     this.submissionId = this.route.snapshot.paramMap.get('id')!;
