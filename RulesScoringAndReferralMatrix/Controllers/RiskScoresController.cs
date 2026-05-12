@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
 using RulesScoringAndReferralMatrix.DTOs;
+using static RulesScoringAndReferralMatrix.DTOs.PaginationHelpers;
 
 namespace RulesScoringAndReferralMatrix.Controllers
 {
@@ -25,20 +26,28 @@ namespace RulesScoringAndReferralMatrix.Controllers
             return Ok(score);
         }
 
-        // GET /api/risk-scores/{submissionId}/history
+        // GET /api/risk-scores/{submissionId}/history?page=0&size=20
         [HttpGet("{submissionId:guid}/history")]
-        public async Task<IActionResult> GetHistoryBySubmissionId(Guid submissionId)
+        public async Task<IActionResult> GetHistoryBySubmissionId(
+            Guid submissionId,
+            [FromQuery] int? page,
+            [FromQuery] int? size)
         {
-            var scores = await _service.GetScoresBySubmissionIdAsync(submissionId);
-            return Ok(scores);
+            var (p, s) = Normalize(page, size);
+            var result = await _service.GetScoresBySubmissionPagedAsync(submissionId, p, s);
+            return Ok(result);
         }
 
-        // GET /api/risk-scores/band/{band}
+        // GET /api/risk-scores/band/{band}?page=0&size=20
         [HttpGet("band/{band}")]
-        public async Task<IActionResult> GetByBand(Band band)
+        public async Task<IActionResult> GetByBand(
+            Band band,
+            [FromQuery] int? page,
+            [FromQuery] int? size)
         {
-            var scores = await _service.GetScoresByBandAsync(band);
-            return Ok(scores);
+            var (p, s) = Normalize(page, size);
+            var result = await _service.GetScoresByBandPagedAsync(band, p, s);
+            return Ok(result);
         }
 
         // POST /api/risk-scores/calculate/{submissionId}

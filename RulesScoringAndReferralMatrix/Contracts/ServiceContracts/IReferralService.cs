@@ -6,6 +6,10 @@ namespace RulesScoringAndReferralMatrix.Contracts.ServiceContracts
     public interface IReferralService
     {
         Task<IEnumerable<ReferralResponseDto>> GetAllReferralsAsync();
+
+        Task<PagedResultDto<ReferralResponseDto>> GetReferralsPagedAsync(
+            int page, int size,
+            ReferralStatus? status, RequiredAuthority? authority, Guid? submissionId);
         Task<ReferralResponseDto?> GetReferralByIdAsync(Guid id);
         Task<IEnumerable<ReferralResponseDto>> GetReferralsBySubmissionIdAsync(Guid submissionId);
         Task<IEnumerable<ReferralResponseDto>> GetReferralsByStatusAsync(ReferralStatus status);

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
 using RulesScoringAndReferralMatrix.DTOs;
+using static RulesScoringAndReferralMatrix.DTOs.PaginationHelpers;
 
 namespace RulesScoringAndReferralMatrix.Controllers
 {
@@ -16,12 +17,18 @@ namespace RulesScoringAndReferralMatrix.Controllers
             _service = service;
         }
 
-        // GET /api/uw-rules
+        // GET /api/uw-rules?page=0&size=20&productLine=Life&severity=Block&status=Active
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int? page,
+            [FromQuery] int? size,
+            [FromQuery] string? productLine,
+            [FromQuery] Severity? severity,
+            [FromQuery] UWStatus? status)
         {
-            var rules = await _service.GetAllRulesAsync();
-            return Ok(rules);
+            var (p, s) = Normalize(page, size);
+            var result = await _service.GetRulesPagedAsync(p, s, productLine, severity, status);
+            return Ok(result);
         }
 
         // GET /api/uw-rules/{ruleId}

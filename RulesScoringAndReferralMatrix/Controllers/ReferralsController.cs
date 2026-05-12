@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
 using RulesScoringAndReferralMatrix.DTOs;
+using static RulesScoringAndReferralMatrix.DTOs.PaginationHelpers;
 
 namespace RulesScoringAndReferralMatrix.Controllers
 {
@@ -16,12 +17,18 @@ namespace RulesScoringAndReferralMatrix.Controllers
             _service = service;
         }
 
-        // GET /api/referrals
+        // GET /api/referrals?page=0&size=20&status=Pending&authority=UWManager&submissionId=...
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int? page,
+            [FromQuery] int? size,
+            [FromQuery] ReferralStatus? status,
+            [FromQuery] RequiredAuthority? authority,
+            [FromQuery] Guid? submissionId)
         {
-            var referrals = await _service.GetAllReferralsAsync();
-            return Ok(referrals);
+            var (p, s) = Normalize(page, size);
+            var result = await _service.GetReferralsPagedAsync(p, s, status, authority, submissionId);
+            return Ok(result);
         }
 
         // GET /api/referrals/{referralId}

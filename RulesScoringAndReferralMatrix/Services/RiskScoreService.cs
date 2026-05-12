@@ -33,6 +33,20 @@ namespace RulesScoringAndReferralMatrix.Services
             return scores.Select(MapToResponseDto);
         }
 
+        public async Task<PagedResultDto<RiskScoreResponseDto>> GetScoresBySubmissionPagedAsync(
+            Guid submissionId, int page, int size)
+        {
+            var (items, total) = await _repository.GetPagedBySubmissionIdAsync(submissionId, page, size);
+            return new PagedResultDto<RiskScoreResponseDto>
+            {
+                Content       = items.Select(MapToResponseDto),
+                Page          = page,
+                Size          = size,
+                TotalElements = total,
+                TotalPages    = size > 0 ? (int)Math.Ceiling(total / (double)size) : 0,
+            };
+        }
+
         public async Task<RiskScoreResponseDto?> GetLatestScoreBySubmissionIdAsync(Guid submissionId)
         {
             var score = await _repository.GetLatestBySubmissionIdAsync(submissionId);
@@ -43,6 +57,20 @@ namespace RulesScoringAndReferralMatrix.Services
         {
             var scores = await _repository.GetByBandAsync(band);
             return scores.Select(MapToResponseDto);
+        }
+
+        public async Task<PagedResultDto<RiskScoreResponseDto>> GetScoresByBandPagedAsync(
+            Band band, int page, int size)
+        {
+            var (items, total) = await _repository.GetPagedByBandAsync(band, page, size);
+            return new PagedResultDto<RiskScoreResponseDto>
+            {
+                Content       = items.Select(MapToResponseDto),
+                Page          = page,
+                Size          = size,
+                TotalElements = total,
+                TotalPages    = size > 0 ? (int)Math.Ceiling(total / (double)size) : 0,
+            };
         }
 
         public async Task<RiskScoreResponseDto> CreateScoreAsync(CreateRiskScoreDto dto)

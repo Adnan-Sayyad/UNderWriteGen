@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
 using RulesScoringAndReferralMatrix.DTOs;
+using static RulesScoringAndReferralMatrix.DTOs.PaginationHelpers;
 
 namespace RulesScoringAndReferralMatrix.Controllers
 {
@@ -15,12 +17,18 @@ namespace RulesScoringAndReferralMatrix.Controllers
             _service = service;
         }
 
-        // GET /api/referral-matrix
+        // GET /api/referral-matrix?page=0&size=20&productLine=Life&authority=UW1&status=Active
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int? page,
+            [FromQuery] int? size,
+            [FromQuery] string? productLine,
+            [FromQuery] RequiredAuthority? authority,
+            [FromQuery] UWStatus? status)
         {
-            var matrices = await _service.GetAllMatricesAsync();
-            return Ok(matrices);
+            var (p, s) = Normalize(page, size);
+            var result = await _service.GetMatricesPagedAsync(p, s, productLine, authority, status);
+            return Ok(result);
         }
 
         // GET /api/referral-matrix/{matrixId}

@@ -6,6 +6,11 @@ namespace RulesScoringAndReferralMatrix.Contracts.RepositoryContracts
     public interface IReferralMatrixRepository
     {
         Task<IEnumerable<ReferralMatrix>> GetAllAsync();
+
+        Task<(IEnumerable<ReferralMatrix> Items, int Total)> GetPagedAsync(
+            int page, int size,
+            string? productLine, RequiredAuthority? authority, UWStatus? status);
+
         Task<ReferralMatrix?> GetByIdAsync(Guid id);
         Task<IEnumerable<ReferralMatrix>> GetByProductLineAsync(string productLine);
         Task<IEnumerable<ReferralMatrix>> GetActiveMatricesAsync();
