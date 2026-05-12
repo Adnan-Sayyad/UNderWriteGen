@@ -33,6 +33,15 @@ builder.Services.AddCors(opts =>
 builder.Services.AddHttpClient<ISubmissionValidationService, HttpSubmissionValidationService>(c =>
     c.BaseAddress = new Uri(builder.Configuration["Services:SubmissionApi"]!));
 
+var notificationApiUrl = builder.Configuration["Services:NotificationApi"];
+if (string.IsNullOrWhiteSpace(notificationApiUrl))
+{
+    notificationApiUrl = "http://localhost:8084/";
+    Console.WriteLine($"[WARN] Services:NotificationApi not configured — defaulting to {notificationApiUrl}");
+}
+builder.Services.AddHttpClient<INotificationClientService, HttpNotificationClientService>(c =>
+    c.BaseAddress = new Uri(notificationApiUrl));
+
 var app = builder.Build();
 
 // ── Auto-migrate on startup ───────────────────────────────────────────────────

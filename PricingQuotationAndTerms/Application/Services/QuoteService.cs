@@ -14,26 +14,29 @@ namespace PricingQuotationAndTerms.Application.Services;
 
 public class QuoteService : IQuoteService, IQuoteApi
 {
-    private readonly IQuoteRepository      _repo;
-    private readonly IPricingService       _pricingService;
-    private readonly ISubmissionApi        _submissionApi;
-    private readonly IRulesApi             _rulesApi;
-    private readonly IAgentApi             _agentApi;
-    private readonly ILogger<QuoteService> _logger;
+    private readonly IQuoteRepository           _repo;
+    private readonly IPricingService            _pricingService;
+    private readonly ISubmissionApi             _submissionApi;
+    private readonly IRulesApi                  _rulesApi;
+    private readonly IAgentApi                  _agentApi;
+    private readonly INotificationClientService _notifications;
+    private readonly ILogger<QuoteService>      _logger;
 
     public QuoteService(
-        IQuoteRepository      repo,
-        IPricingService       pricingService,
-        ISubmissionApi        submissionApi,
-        IRulesApi             rulesApi,
-        IAgentApi             agentApi,
-        ILogger<QuoteService> logger)
+        IQuoteRepository           repo,
+        IPricingService            pricingService,
+        ISubmissionApi             submissionApi,
+        IRulesApi                  rulesApi,
+        IAgentApi                  agentApi,
+        INotificationClientService notifications,
+        ILogger<QuoteService>      logger)
     {
         _repo           = repo;
         _pricingService = pricingService;
         _submissionApi  = submissionApi;
         _rulesApi       = rulesApi;
         _agentApi       = agentApi;
+        _notifications  = notifications;
         _logger         = logger;
     }
 
@@ -132,6 +135,11 @@ public class QuoteService : IQuoteService, IQuoteApi
             "[EVENT] QuoteGenerated → QuoteId={QId}, Premium={P}, RiskBand={B}, Version={V}, AgentPreferred={A}",
             evt.QuoteId, evt.TotalPremium, riskScore.Band, versionNo, pricingInput.IsPreferredAgent);
 
+        // PDF §2.11: quote generated — agent presents, underwriter reviews.
+        var quoteMsg = $"Quote v{versionNo} generated for submission '{submission.Id}'. Total premium: {quote.TotalPremium:C}. Valid until {quote.ValidUntil:yyyy-MM-dd}.";
+        _ = _notifications.BroadcastAsync("Agent",       quoteMsg, "Quote");
+        _ = _notifications.BroadcastAsync("Underwriter", quoteMsg, "Quote");
+
         return MapToResponse(quote);
     }
 
@@ -170,6 +178,11 @@ public class QuoteService : IQuoteService, IQuoteApi
             "[EVENT] QuoteAccepted → QuoteId={QId}, SubmissionId={SId}, Premium={P}",
             evt.QuoteId, evt.SubmissionId, evt.TotalPremium);
 
+        // PDF §2.11: accepted quote → operations binds the policy.
+        var msg = $"Quote '{quote.Id}' accepted for submission '{quote.SubmissionId}'. Total premium: {quote.TotalPremium:C}. Ready to bind.";
+        _ = _notifications.BroadcastAsync("Operations",  msg, "Quote");
+        _ = _notifications.BroadcastAsync("Underwriter", msg, "Quote");
+
         return true;
     }
 
@@ -197,6 +210,26 @@ public class QuoteService : IQuoteService, IQuoteApi
 
         await _repo.UpdateAsync(quote, ct);
         _logger.LogInformation("Quote {QId} → status={Status}. Reason: {R}", quoteId, newStatus, request.Reason ?? "N/A");
+
+        // Targeted notifications per status transition.
+        var msg = $"Quote '{quote.Id}' for submission '{quote.SubmissionId}' is now {newStatus}." +
+                  (string.IsNullOrWhiteSpace(request.Reason) ? "" : $" Reason: {request.Reason}");
+        switch (newStatus)
+        {
+            case QuoteStatus.Presented:
+                _ = _notifications.BroadcastAsync("Agent",       msg, "Quote");
+                break;
+            case QuoteStatus.Accepted:
+                _ = _notifications.BroadcastAsync("Operations",  msg, "Quote");
+                _ = _notifications.BroadcastAsync("Underwriter", msg, "Quote");
+                break;
+            case QuoteStatus.Declined:
+            case QuoteStatus.Expired:
+                _ = _notifications.BroadcastAsync("Agent",       msg, "Quote");
+                _ = _notifications.BroadcastAsync("Underwriter", msg, "Quote");
+                break;
+        }
+
         return true;
     }
 

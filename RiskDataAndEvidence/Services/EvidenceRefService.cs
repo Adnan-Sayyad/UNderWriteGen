@@ -8,11 +8,16 @@ public class EvidenceRefService : IEvidenceRefService
 {
     private readonly IEvidenceRefRepository _repo;
     private readonly ISubmissionValidationService _submissionValidation;
+    private readonly INotificationClientService _notifications;
 
-    public EvidenceRefService(IEvidenceRefRepository repo, ISubmissionValidationService submissionValidation)
+    public EvidenceRefService(
+        IEvidenceRefRepository repo,
+        ISubmissionValidationService submissionValidation,
+        INotificationClientService notifications)
     {
         _repo = repo;
         _submissionValidation = submissionValidation;
+        _notifications = notifications;
     }
 
     public async Task<IEnumerable<EvidenceRefSummaryDto>> GetBySubmissionIdAsync(Guid submissionId)
@@ -44,6 +49,25 @@ public class EvidenceRefService : IEvidenceRefService
         };
         await _repo.AddAsync(ev);
         await _repo.SaveChangesAsync();
+
+        // PDF §4.4: evidence requested → chase the relevant party.
+        // Requested → Agent (provide it); Received → Underwriter (review it).
+        var message = $"Evidence {dto.EvidenceType} for submission '{dto.SubmissionID}' is now {dto.Status}.";
+        switch (dto.Status)
+        {
+            case "Requested":
+                _ = _notifications.BroadcastAsync("Agent",       message, "Compliance");
+                _ = _notifications.BroadcastAsync("UWAssistant", message, "Compliance");
+                break;
+            case "Received":
+                _ = _notifications.BroadcastAsync("Underwriter", message, "Compliance");
+                break;
+            case "NotAvailable":
+                _ = _notifications.BroadcastAsync("Underwriter", message, "Compliance");
+                _ = _notifications.BroadcastAsync("UWAssistant", message, "Compliance");
+                break;
+        }
+
         return ToDetail(ev);
     }
 
@@ -75,6 +99,13 @@ public class EvidenceRefService : IEvidenceRefService
 
         await _repo.UpdateAsync(ev);
         await _repo.SaveChangesAsync();
+
+        var message = $"Evidence {ev.EvidenceType} for submission '{ev.SubmissionID}' is now {dto.Status}.";
+        if (dto.Status == "Received")
+            _ = _notifications.BroadcastAsync("Underwriter", message, "Compliance");
+        else if (dto.Status == "NotAvailable")
+            _ = _notifications.BroadcastAsync("UWManager", message, "Compliance");
+
         return ToDetail(ev);
     }
 

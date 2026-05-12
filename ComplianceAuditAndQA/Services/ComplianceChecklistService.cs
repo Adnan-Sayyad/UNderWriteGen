@@ -10,15 +10,18 @@ namespace ComplianceAuditAndQA.Services
     {
         private readonly ComplianceDbContext                    _context;
         private readonly ISubmissionClientService               _submissionClient;
+        private readonly INotificationClientService             _notifications;
         private readonly ILogger<ComplianceChecklistService>    _logger;
 
         public ComplianceChecklistService(
             ComplianceDbContext                 context,
             ISubmissionClientService            submissionClient,
+            INotificationClientService          notifications,
             ILogger<ComplianceChecklistService> logger)
         {
             _context          = context;
             _submissionClient = submissionClient;
+            _notifications    = notifications;
             _logger           = logger;
         }
 
@@ -79,6 +82,12 @@ namespace ComplianceAuditAndQA.Services
 
             await _context.ComplianceChecklists.AddAsync(checklist);
             await _context.SaveChangesAsync();
+
+            // Checklist created → UWAssistant works the items, Compliance tracks progress.
+            var message = $"Compliance checklist created for submission '{dto.SubmissionId}'.";
+            _ = _notifications.BroadcastAsync("UWAssistant", message, "Compliance");
+            _ = _notifications.BroadcastAsync("Compliance",  message, "Compliance");
+
             return MapToDto(checklist);
         }
 
@@ -114,6 +123,14 @@ namespace ComplianceAuditAndQA.Services
                 checklist.CompletedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            if (dto.Status is "Completed")
+            {
+                var message = $"Compliance checklist '{checklist.ChecklistId}' for submission '{checklist.SubmissionId}' is now Completed.";
+                _ = _notifications.BroadcastAsync("Compliance", message, "Compliance");
+                _ = _notifications.BroadcastAsync("Underwriter", message, "Compliance");
+            }
+
             return MapToDto(checklist);
         }
 

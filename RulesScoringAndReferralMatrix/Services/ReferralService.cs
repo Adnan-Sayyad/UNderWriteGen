@@ -69,14 +69,23 @@ namespace RulesScoringAndReferralMatrix.Services
 
             var created = await _repository.CreateAsync(referral);
 
-            if (!string.IsNullOrWhiteSpace(dto.AssignedTo))
-            {
-                var message = $"New referral for submission '{dto.SubmissionID}' requires your review. Authority: {dto.RequiredAuthority}. Reason: {dto.Reason}";
-                await _notificationClient.SendAsync(dto.AssignedTo, message, "Referral");
-            }
+            // PDF §2.11/§4.11: referral pending — broadcast to the role matching RequiredAuthority.
+            // UW1/UW2 → Underwriter, UWManager → UWManager, Committee → UWManager (no committee role exists in Phase-1).
+            var targetRole = MapAuthorityToRole(dto.RequiredAuthority);
+            var message = $"New referral for submission '{dto.SubmissionID}' requires {dto.RequiredAuthority} review. Reason: {dto.Reason}";
+            _ = _notificationClient.BroadcastAsync(targetRole, message, "Referral");
 
             return MapToResponseDto(created);
         }
+
+        private static string MapAuthorityToRole(RequiredAuthority authority) => authority switch
+        {
+            RequiredAuthority.UW1        => "Underwriter",
+            RequiredAuthority.UW2        => "Underwriter",
+            RequiredAuthority.UWManager  => "UWManager",
+            RequiredAuthority.Committee  => "UWManager",
+            _ => "Underwriter",
+        };
 
         public async Task<IEnumerable<ReferralResponseDto>> GetReferralsByAuthorityAsync(RequiredAuthority authority)
         {
@@ -106,7 +115,17 @@ namespace RulesScoringAndReferralMatrix.Services
         public async Task<ReferralResponseDto?> UpdateReferralStatusAsync(Guid id, UpdateReferralStatusDto dto)
         {
             var updated = await _repository.UpdateStatusAsync(id, dto.Status);
-            return updated is null ? null : MapToResponseDto(updated);
+            if (updated is null) return null;
+
+            // Notify the broader Underwriter group when a referral is approved or rejected, so the
+            // submission owner and other reviewers can pick up the next step.
+            if (dto.Status is ReferralStatus.Approved or ReferralStatus.Rejected)
+            {
+                var message = $"Referral '{updated.ReferralID}' for submission '{updated.SubmissionID}' was {dto.Status}.";
+                _ = _notificationClient.BroadcastAsync("Underwriter", message, "Referral");
+            }
+
+            return MapToResponseDto(updated);
         }
 
         private static ReferralResponseDto MapToResponseDto(Referral referral) => new()

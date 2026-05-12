@@ -1,4 +1,4 @@
-namespace RulesScoringAndReferralMatrix.Services
+namespace ComplianceAuditAndQA.Services
 {
     public interface INotificationClientService
     {

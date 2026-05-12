@@ -9,10 +9,12 @@ namespace SubmissionAndIntake.Services
     public class CompletenessCheckService : ICompletenessCheckService
     {
         private readonly ICompletenessCheckRepository _repository;
+        private readonly INotificationClientService _notifications;
 
-        public CompletenessCheckService(ICompletenessCheckRepository repository)
+        public CompletenessCheckService(ICompletenessCheckRepository repository, INotificationClientService notifications)
         {
             _repository = repository;
+            _notifications = notifications;
         }
 
         public async Task<IEnumerable<CompletenessCheckResponseDto>> GetAllChecksAsync()
@@ -48,6 +50,20 @@ namespace SubmissionAndIntake.Services
             };
 
             var created = await _repository.CreateAsync(check);
+
+            // PDF §2.11: docs missing alert — flag when a completeness check finds missing items
+            if (!string.IsNullOrWhiteSpace(created.MissingItemsJSON) && created.MissingItemsJSON.Trim() is not "[]" and not "{}")
+            {
+                _ = _notifications.BroadcastAsync(
+                    "Agent",
+                    $"Documents missing for submission '{created.SubmissionID}'. Please review the completeness check.",
+                    "Compliance");
+                _ = _notifications.BroadcastAsync(
+                    "UWAssistant",
+                    $"Completeness check raised for submission '{created.SubmissionID}' — items missing.",
+                    "Compliance");
+            }
+
             return MapToResponseDto(created);
         }
 

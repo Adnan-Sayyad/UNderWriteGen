@@ -61,8 +61,11 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
             _db.Policies.Add(policy);
             _db.SaveChanges();
 
+            // PDF §2.11: policy bound — notify everyone touching downstream work.
             var message = $"Policy '{policy.PolicyNumber}' has been successfully bound for submission '{dto.SubmissionID}'.";
-            _ = _notificationClient.SendAsync("system", message, "Compliance");
+            _ = _notificationClient.BroadcastAsync("Agent",      message, "Compliance");
+            _ = _notificationClient.BroadcastAsync("Operations", message, "Compliance");
+            _ = _notificationClient.BroadcastAsync("Compliance", message, "Compliance");
 
             return policy;
         }

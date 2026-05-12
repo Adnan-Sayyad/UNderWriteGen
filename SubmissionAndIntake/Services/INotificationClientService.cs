@@ -1,4 +1,4 @@
-namespace RulesScoringAndReferralMatrix.Services
+namespace SubmissionAndIntake.Services
 {
     public interface INotificationClientService
     {

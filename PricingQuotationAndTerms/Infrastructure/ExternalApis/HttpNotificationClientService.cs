@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
+using PricingQuotationAndTerms.Application.Interfaces;
 
-namespace UnderwritingWorkflowAndDecisions.Services
+namespace PricingQuotationAndTerms.Infrastructure.ExternalApis
 {
     public class HttpNotificationClientService : INotificationClientService
     {

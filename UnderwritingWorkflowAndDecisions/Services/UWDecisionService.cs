@@ -39,9 +39,26 @@ namespace UnderwritingWorkflowAndDecisions.Services
             _db.UWDecisions.Add(decision);
             _db.SaveChanges();
 
-            var category = dto.Decision is "Approve" or "Decline" ? "Compliance" : "Referral";
+            // PDF §2.11: UW decisions trigger downstream work. Notify by decision type:
+            //  Approve/Decline → Agent (outcome) + Compliance (audit)
+            //  Refer           → UWManager
+            //  MoreInfo        → Agent (need to respond) + UWAssistant (chase docs)
             var message = $"UW Decision '{dto.Decision}' recorded for submission '{dto.SubmissionID}'. Reason: {dto.Reason}";
-            _ = _notificationClient.SendAsync(dto.DecidedBy.ToString(), message, category);
+            switch (dto.Decision)
+            {
+                case "Approve":
+                case "Decline":
+                    _ = _notificationClient.BroadcastAsync("Agent",      message, "Compliance");
+                    _ = _notificationClient.BroadcastAsync("Compliance", message, "Compliance");
+                    break;
+                case "Refer":
+                    _ = _notificationClient.BroadcastAsync("UWManager", message, "Referral");
+                    break;
+                case "MoreInfo":
+                    _ = _notificationClient.BroadcastAsync("Agent",       message, "Subjectivity");
+                    _ = _notificationClient.BroadcastAsync("UWAssistant", message, "Subjectivity");
+                    break;
+            }
 
             return decision;
         }

@@ -10,11 +10,16 @@ namespace SubmissionAndIntake.Services
     {
         private readonly ISubmissionRepository _repository;
         private readonly IDistributionValidationService _distributionValidation;
+        private readonly INotificationClientService _notifications;
 
-        public SubmissionService(ISubmissionRepository repository, IDistributionValidationService distributionValidation)
+        public SubmissionService(
+            ISubmissionRepository repository,
+            IDistributionValidationService distributionValidation,
+            INotificationClientService notifications)
         {
             _repository = repository;
             _distributionValidation = distributionValidation;
+            _notifications = notifications;
         }
 
         public async Task<IEnumerable<SubmissionResponseDto>> GetAllSubmissionsAsync()
@@ -70,6 +75,13 @@ namespace SubmissionAndIntake.Services
             };
 
             var created = await _repository.CreateAsync(submission);
+
+            // PDF §2.11/§4.11: new submission notification — underwriters should pick up incoming work
+            _ = _notifications.BroadcastAsync(
+                "Underwriter",
+                $"New {created.ProductLine} submission '{created.SubmissionID}' has been created and needs underwriting review.",
+                "Referral");
+
             return MapToResponseDto(created);
         }
 
@@ -93,7 +105,27 @@ namespace SubmissionAndIntake.Services
         public async Task<SubmissionResponseDto?> UpdateSubmissionStatusAsync(Guid id, UpdateSubmissionStatusDto dto)
         {
             var updated = await _repository.UpdateStatusAsync(id, dto.Status);
-            return updated is null ? null : MapToResponseDto(updated);
+            if (updated is null) return null;
+
+            // Notify the right people for each status transition.
+            var msg = $"Submission '{updated.SubmissionID}' is now {dto.Status}.";
+            switch (dto.Status)
+            {
+                case SubmissionStatus.UnderReview:
+                    _ = _notifications.BroadcastAsync("Underwriter", msg, "Referral");
+                    break;
+                case SubmissionStatus.IntakeComplete:
+                    _ = _notifications.BroadcastAsync("UWAssistant", msg, "Referral");
+                    break;
+                case SubmissionStatus.Quoted:
+                    _ = _notifications.BroadcastAsync("Agent", $"Quote available for submission '{updated.SubmissionID}'.", "Quote");
+                    break;
+                case SubmissionStatus.Declined:
+                    _ = _notifications.BroadcastAsync("Agent", $"Submission '{updated.SubmissionID}' has been declined.", "Quote");
+                    break;
+            }
+
+            return MapToResponseDto(updated);
         }
 
         public async Task<bool> DeleteSubmissionAsync(Guid id)

@@ -7,8 +7,13 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
     public class EndorsementService : IEndorsementService
     {
         private readonly PolicyDbContext _db;
+        private readonly INotificationClientService _notifications;
 
-        public EndorsementService(PolicyDbContext db) => _db = db;
+        public EndorsementService(PolicyDbContext db, INotificationClientService notifications)
+        {
+            _db = db;
+            _notifications = notifications;
+        }
 
         public IEnumerable<Endorsement> GetByPolicy(Guid policyId) =>
             _db.Endorsements.Where(e => e.PolicyID == policyId).ToList();
@@ -31,6 +36,12 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
             };
             _db.Endorsements.Add(endorsement);
             _db.SaveChanges();
+
+            // Endorsements require both UW + Operations attention.
+            var message = $"Endorsement '{endorsement.EndorsementID}' ({dto.EndorsementType}) proposed for policy '{dto.PolicyID}'. Premium delta: {dto.PremiumDelta:C}.";
+            _ = _notifications.BroadcastAsync("Underwriter", message, "Compliance");
+            _ = _notifications.BroadcastAsync("Operations",  message, "Compliance");
+
             return endorsement;
         }
 
@@ -52,6 +63,14 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
             if (e is null) return null;
             e.Status = dto.Status;
             _db.SaveChanges();
+
+            if (dto.Status is "Approved" or "Posted")
+            {
+                var message = $"Endorsement '{e.EndorsementID}' on policy '{e.PolicyID}' is now {dto.Status}.";
+                _ = _notifications.BroadcastAsync("Agent",      message, "Compliance");
+                _ = _notifications.BroadcastAsync("Operations", message, "Compliance");
+            }
+
             return e;
         }
 

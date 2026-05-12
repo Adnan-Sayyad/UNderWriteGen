@@ -7,8 +7,13 @@ namespace UnderwritingWorkflowAndDecisions.Services
     public class SubjectivityService : ISubjectivityService
     {
         private readonly UWWorkflowDbContext _db;
+        private readonly INotificationClientService _notifications;
 
-        public SubjectivityService(UWWorkflowDbContext db) => _db = db;
+        public SubjectivityService(UWWorkflowDbContext db, INotificationClientService notifications)
+        {
+            _db = db;
+            _notifications = notifications;
+        }
 
         public IEnumerable<Subjectivity> GetBySubmission(Guid submissionId) =>
             _db.Subjectivities.Where(s => s.SubmissionID == submissionId).ToList();
@@ -29,6 +34,12 @@ namespace UnderwritingWorkflowAndDecisions.Services
             };
             _db.Subjectivities.Add(subjectivity);
             _db.SaveChanges();
+
+            // PDF §2.11/§4.11: subjectivity due — let the agent and UW assistant know.
+            var message = $"New subjectivity for submission '{dto.SubmissionID}' due by {dto.DueDate:yyyy-MM-dd}. {dto.Description}";
+            _ = _notifications.BroadcastAsync("Agent",       message, "Subjectivity");
+            _ = _notifications.BroadcastAsync("UWAssistant", message, "Subjectivity");
+
             return subjectivity;
         }
 
@@ -48,6 +59,14 @@ namespace UnderwritingWorkflowAndDecisions.Services
             if (s is null) return null;
             s.Status = dto.Status;
             _db.SaveChanges();
+
+            // Met / Waived → notify underwriters so they can progress the submission.
+            if (dto.Status is "Met" or "Waived")
+            {
+                var message = $"Subjectivity '{s.SubjectivityID}' marked as {dto.Status} for submission '{s.SubmissionID}'.";
+                _ = _notifications.BroadcastAsync("Underwriter", message, "Subjectivity");
+            }
+
             return s;
         }
 

@@ -56,6 +56,14 @@ public static class DependencyInjection
             c.BaseAddress = new Uri(configuration["Services:RulesApi"]!));
         services.AddHttpClient<IAgentApi, HttpAgentApi>(c =>
             c.BaseAddress = new Uri(configuration["Services:AgentApi"]!));
+        var notificationApiUrl = configuration["Services:NotificationApi"];
+        if (string.IsNullOrWhiteSpace(notificationApiUrl))
+        {
+            notificationApiUrl = "http://localhost:8084/";
+            Console.WriteLine($"[WARN] Services:NotificationApi not configured — defaulting to {notificationApiUrl}");
+        }
+        services.AddHttpClient<INotificationClientService, HttpNotificationClientService>(c =>
+            c.BaseAddress = new Uri(notificationApiUrl));
 
         // ── Background Jobs ───────────────────────────────────────────
         services.AddHostedService<QuoteExpiryJob>();

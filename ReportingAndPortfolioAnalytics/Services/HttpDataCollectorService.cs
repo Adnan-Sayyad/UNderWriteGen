@@ -159,6 +159,9 @@ public class HttpDataCollectorService : IHttpDataCollectorService
 	}
 
 	// ── Helper — safe HTTP GET with null on failure ───────────────────────────
+	// Accepts either a flat JSON array or a paged envelope ({ content: [...], ... }).
+	// Some upstream services (RulesService/referrals) now return a paged envelope,
+	// so when T is a List<U> we transparently unwrap the `content` array.
 
 	private async Task<T?> GetAsync<T>(string clientName, string url, CancellationToken ct)
 	{
@@ -175,6 +178,24 @@ public class HttpDataCollectorService : IHttpDataCollectorService
 			}
 
 			var json = await response.Content.ReadAsStringAsync(ct);
+			if (string.IsNullOrWhiteSpace(json)) return default;
+
+			// Detect paged envelope: callers expect List<U>, response is { content: [...] }.
+			var firstNonWhitespace = json.AsSpan().TrimStart()[0];
+			var typeIsList = typeof(T).IsGenericType
+				&& typeof(T).GetGenericTypeDefinition() == typeof(List<>);
+
+			if (firstNonWhitespace == '{' && typeIsList)
+			{
+				using var doc = JsonDocument.Parse(json);
+				if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+				    doc.RootElement.TryGetProperty("content", out var content) &&
+				    content.ValueKind == JsonValueKind.Array)
+				{
+					return JsonSerializer.Deserialize<T>(content.GetRawText(), _json);
+				}
+			}
+
 			return JsonSerializer.Deserialize<T>(json, _json);
 		}
 		catch (Exception ex)
