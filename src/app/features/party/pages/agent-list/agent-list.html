@@ -4,9 +4,11 @@
     subtitle="Manage producer agents and distribution channels"
     icon="bi-person-badge"
     [breadcrumbs]="breadcrumbs">
-    <button class="btn btn-primary btn-sm" (click)="openCreate()">
-      <i class="bi bi-plus-lg me-1"></i>Add Agent
-    </button>
+    @if (isAdmin()) {
+      <button class="btn btn-primary btn-sm" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i>Add Agent
+      </button>
+    }
   </app-page-header>
 
   @if (alertMsg()) {
@@ -68,7 +70,9 @@
                 <th>Region</th>
                 <th>Contact Info</th>
                 <th>Status</th>
-                <th class="text-end table-actions">Actions</th>
+                @if (isAdmin()) {
+                  <th class="text-end table-actions">Actions</th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -82,21 +86,23 @@
                   <td>
                     <span class="badge" [ngClass]="statusClass(a.status)">{{ a.status }}</span>
                   </td>
-                  <td class="text-end table-actions">
-                    <div class="d-flex justify-content-end gap-1">
-                      <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(a)">
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button class="btn btn-sm"
-                              [class.btn-outline-danger]="a.status === 'Active'"
-                              [class.btn-outline-success]="a.status !== 'Active'"
-                              [title]="a.status === 'Active' ? 'Deactivate' : 'Activate'"
-                              (click)="toggleStatus(a)">
-                        <i class="bi" [class.bi-toggle-on]="a.status === 'Active'"
-                                      [class.bi-toggle-off]="a.status !== 'Active'"></i>
-                      </button>
-                    </div>
-                  </td>
+                  @if (isAdmin()) {
+                    <td class="text-end table-actions">
+                      <div class="d-flex justify-content-end gap-1">
+                        <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(a)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm"
+                                [class.btn-outline-danger]="a.status === 'Active'"
+                                [class.btn-outline-success]="a.status !== 'Active'"
+                                [title]="a.status === 'Active' ? 'Deactivate' : 'Activate'"
+                                (click)="toggleStatus(a)">
+                          <i class="bi" [class.bi-toggle-on]="a.status === 'Active'"
+                                        [class.bi-toggle-off]="a.status !== 'Active'"></i>
+                        </button>
+                      </div>
+                    </td>
+                  }
                 </tr>
               }
             </tbody>
@@ -116,8 +122,8 @@
   </div>
 </div>
 
-<!-- Slide-in Modal -->
-@if (modalMode()) {
+<!-- Slide-in Modal (Admin only) -->
+@if (modalMode() && isAdmin()) {
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">
@@ -148,21 +154,15 @@
             }
           </div>
 
-          <!-- Producer Code -->
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Producer Code</label>
-            <input type="text" class="form-control form-control-sm"
-                   [class.is-invalid]="form.controls.producerCode.invalid && form.controls.producerCode.touched"
-                   formControlName="producerCode" placeholder="e.g. MUM-LIF-001" />
-            @if (form.controls.producerCode.touched && form.controls.producerCode.errors) {
-              <div class="invalid-feedback d-block">
-                @if (form.controls.producerCode.errors['required'])       { Producer code is required. }
-                @else if (form.controls.producerCode.errors['minlength']) { Producer code must be at least 3 characters. }
-                @else if (form.controls.producerCode.errors['pattern'])   { Producer code may only contain letters, digits, hyphens, and underscores — no spaces. }
-                @else if (form.controls.producerCode.errors['maxlength']) { Producer code must not exceed 50 characters. }
-              </div>
-            }
-          </div>
+          <!-- Producer Code (auto-generated, shown only in edit mode) -->
+          @if (modalMode() === 'edit' && selected()) {
+            <div class="col-md-6">
+              <label class="form-label small fw-medium">Producer Code</label>
+              <input type="text" class="form-control form-control-sm bg-light"
+                     [value]="selected()!.producerCode" readonly />
+              <div class="form-text text-muted" style="font-size:0.75rem">Auto-generated, cannot be changed.</div>
+            </div>
+          }
 
           <!-- Region -->
           <div class="col-md-6">
@@ -175,14 +175,6 @@
                 @if (form.controls.region.errors['pattern']) { Region may only contain letters, spaces, and hyphens. }
               </div>
             }
-          </div>
-
-          <!-- Status -->
-          <div class="col-md-6">
-            <label class="form-label small fw-medium required-mark">Status</label>
-            <select class="form-select form-select-sm" formControlName="status">
-              @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-            </select>
           </div>
 
           <!-- Contact Info -->

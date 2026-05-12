@@ -7,6 +7,7 @@ import { StatusBadge } from '../../../../shared/components/status-badge/status-b
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PartyApiService } from '../../services/party-api.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { CustomerParty, PartyType, Segment, PartyStatus } from '../../models/party.model';
 import {
   noDigitsValidator,
@@ -16,7 +17,7 @@ import {
 } from '../../../../shared/validators/custom-validators';
 
 type ModalMode = 'create' | 'edit' | null;
-const PARTY_TYPES: PartyType[] = ['Individual', 'Corporation'];  // backend: 'Corporation'
+const PARTY_TYPES: PartyType[] = ['Individual', 'Corporation'];
 const SEGMENTS: Segment[]       = ['Retail', 'SME', 'Corporate'];
 
 @Component({
@@ -40,12 +41,28 @@ export class PartyListPage implements OnInit {
   readonly currentPage = signal(0);
   readonly pageSize    = signal(10);
 
+  readonly auth = inject(AuthService);
+
+  readonly isAdmin   = computed(() => this.auth.hasRole('Admin'));
+  readonly isAgent   = computed(() => this.auth.hasRole('Agent'));
+  readonly canAddParty = computed(() => this.isAgent()); // Admin cannot create customers
+
+  canEditParty(p: CustomerParty): boolean {
+    if (this.isAdmin()) return true;
+    if (this.isAgent()) return p.createdByUserId === this.auth.currentUser()?.userId;
+    return false;
+  }
+
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
     const t = this.filterType();
-    return this.parties().filter(p =>
+    const list = this.parties().filter(p =>
       (!q || p.name.toLowerCase().includes(q)) && (!t || p.partyType === t)
     );
+    return list.sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'Active' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
   });
 
   readonly totalElements = computed(() => this.filtered().length);
@@ -96,6 +113,7 @@ export class PartyListPage implements OnInit {
         this.parties.set(raw.map((p: any) => ({
           ...p,
           dOBIncorporation: p.dOBIncorporation ?? p.dobIncorporation ?? p.DOBIncorporation ?? null,
+          createdByUserId:  p.createdByUserId ?? p.CreatedByUserId ?? null,
         })));
         this.loading.set(false);
       },
