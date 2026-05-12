@@ -22,6 +22,33 @@
          class="btn btn-sm btn-outline-primary me-1">
         <i class="bi bi-briefcase me-1"></i>UW Decision
       </a>
+
+      <!-- Compliance quick-log dropdown -->
+      <div class="dropdown d-inline-block">
+        <button class="btn btn-sm btn-outline-danger dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+          <i class="bi bi-shield-exclamation me-1"></i>Compliance
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+          <li>
+            <button class="dropdown-item small" (click)="logBreach()">
+              <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Log Authority Breach
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item small" (click)="logException()">
+              <i class="bi bi-bug-fill text-warning me-2"></i>Log Exception
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item small" (click)="newChecklist()">
+              <i class="bi bi-list-check text-primary me-2"></i>New Checklist
+            </button>
+          </li>
+        </ul>
+      </div>
     }
   </app-page-header>
 

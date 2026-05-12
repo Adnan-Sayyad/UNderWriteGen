@@ -4,9 +4,8 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
-import { ComplianceApiService } from '../../services/compliance-api.service';
+import { IamApiService, AuditLogDto } from '../../../../core/services/iam-api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { AuditLogDto } from '../../../../core/services/iam-api.service';
 
 @Component({
   selector: 'app-audit-log',
@@ -48,15 +47,15 @@ export class AuditLogPage implements OnInit {
 
   private get adminId() { return this.auth.currentUser()?.userId ?? ''; }
 
-  constructor(private svc: ComplianceApiService, readonly auth: AuthService) {}
+  constructor(private iam: IamApiService, readonly auth: AuthService) {}
 
   ngOnInit(): void { this.load(); }
 
   load(): void {
     this.loading.set(true);
-    this.svc.getAuditLogs(this.adminId).subscribe({
-      next: data => { this.logs.set(data); this.loading.set(false); },
-      error: ()   => this.loading.set(false),
+    this.iam.getAuditLogs(this.adminId).subscribe({
+      next: (data: AuditLogDto[]) => { this.logs.set(data); this.loading.set(false); },
+      error: ()                   => this.loading.set(false),
     });
   }
 

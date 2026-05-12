@@ -58,7 +58,6 @@ export class Sidebar {
         { label: 'Checklists',        icon: 'bi-clipboard2-check',   route: '/compliance/checklists',         roles: ['Compliance','Admin'] },
         { label: 'Authority Breaches',icon: 'bi-shield-exclamation', route: '/compliance/authority-breaches', roles: ['Compliance','Admin'] },
         { label: 'Exception Log',     icon: 'bi-bug',                route: '/compliance/exceptions',         roles: ['Compliance','Admin'] },
-        { label: 'Audit Log',         icon: 'bi-journal-text',       route: '/compliance/audit-log',          roles: ['Compliance','Admin'] },
         { label: 'Reports',           icon: 'bi-bar-chart-line',     route: '/reports',                       roles: ['Compliance','PricingAnalyst','Admin','Underwriter'] },
       ],
     },

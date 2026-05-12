@@ -20,21 +20,27 @@
 /* Status badges */
 .badge-draft {
   background-color: var(--status-draft) !important;
+  color: #fff !important;
 }
 .badge-active {
   background-color: var(--status-active) !important;
+  color: #fff !important;
 }
 .badge-pending {
   background-color: var(--status-pending) !important;
+  color: #fff !important;
 }
 .badge-approved {
   background-color: var(--status-approved) !important;
+  color: #fff !important;
 }
 .badge-declined {
   background-color: var(--status-declined) !important;
+  color: #fff !important;
 }
 .badge-expired {
   background-color: var(--status-expired) !important;
+  color: #fff !important;
 }
 .badge-locked {
   background-color: #f59e0b !important;
@@ -46,6 +52,15 @@
 }
 .badge-disabled {
   background-color: #dc3545 !important;
+  color: #fff !important;
+}
+/* Compliance checklist statuses */
+.badge-inprogress {
+  background-color: #0d6efd !important;
+  color: #fff !important;
+}
+.badge-completed {
+  background-color: #198754 !important;
   color: #fff !important;
 }
 
