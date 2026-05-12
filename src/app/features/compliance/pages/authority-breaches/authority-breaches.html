@@ -2,45 +2,101 @@
   <app-page-header
     title="Authority Breaches"
     subtitle="Log, review and approve or reject authority and rule override exceptions"
-    icon="bi-exclamation-triangle"
+    icon="bi-shield-exclamation"
     [breadcrumbs]="breadcrumbs">
-    <button class="btn btn-primary btn-sm" (click)="openCreate()">
-      <i class="bi bi-plus-lg me-1"></i>Log Breach
-    </button>
+    @if (auth.hasRole('Admin', 'Compliance')) {
+      <button class="btn btn-danger btn-sm" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i>Log Breach
+      </button>
+    }
   </app-page-header>
 
   @if (alertMsg()) {
-    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
-      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
-                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
-      {{ alertMsg()!.text }}
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex align-items-start gap-2 py-2 mb-3">
+      <i class="bi flex-shrink-0 mt-1"
+         [class.bi-check-circle-fill]="alertMsg()!.type === 'success'"
+         [class.bi-exclamation-triangle-fill]="alertMsg()!.type === 'danger'"></i>
+      <span class="flex-grow-1">{{ alertMsg()!.text }}</span>
+      <button type="button" class="btn-close btn-sm ms-2" (click)="alertMsg.set(null)" aria-label="Close"></button>
     </div>
   }
+
+  @if (loadError()) {
+    <div class="alert alert-danger d-flex align-items-start gap-2 py-3 mb-3 border-danger border-2">
+      <i class="bi bi-wifi-off fs-5 flex-shrink-0 mt-1 text-danger"></i>
+      <div class="flex-grow-1">
+        <strong class="d-block mb-1">Could not load authority breaches</strong>
+        <span class="small">{{ loadError() }}</span>
+      </div>
+      <button class="btn btn-sm btn-danger ms-2 text-nowrap" (click)="load()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Retry
+      </button>
+    </div>
+  }
+
+  <!-- Summary pills -->
+  <div class="d-flex gap-3 mb-3 flex-wrap">
+    <div class="stat-pill border-start border-4 border-warning">
+      <span class="stat-value text-warning">{{ pendingCount() }}</span>
+      <span class="stat-label">Pending Review</span>
+    </div>
+    <div class="stat-pill border-start border-4 border-success">
+      <span class="stat-value text-success">{{ approvedCount() }}</span>
+      <span class="stat-label">Approved</span>
+    </div>
+    <div class="stat-pill border-start border-4 border-danger">
+      <span class="stat-value text-danger">{{ rejectedCount() }}</span>
+      <span class="stat-label">Rejected</span>
+    </div>
+  </div>
 
   <!-- Filters -->
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
-      <div class="row g-2 align-items-center">
-        <div class="col-md-3">
-          <select class="form-select form-select-sm"
-                  [value]="filterType()" (change)="filterType.set($any($event.target).value)">
-            <option value="">All Types</option>
-            @for (t of breachTypes; track t) { <option [value]="t">{{ t }}</option> }
-          </select>
-        </div>
-        <div class="col-md-3">
-          <select class="form-select form-select-sm"
-                  [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
-            <option value="">All Statuses</option>
-            @for (s of breachStatuses; track s) { <option [value]="s">{{ s }}</option> }
-          </select>
-        </div>
-        <div class="col text-end">
-          <small class="text-muted">{{ filtered().length }} record(s)</small>
-          <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()">
-            <i class="bi bi-arrow-clockwise"></i>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+
+        <!-- Breach Type filter -->
+        <select class="form-select form-select-sm filter-select"
+                [value]="filterType()" (change)="setFilterType($any($event.target).value)">
+          <option value="">All Types</option>
+          <option value="Authority">🔴 Authority</option>
+          <option value="RuleOverride">🟡 Rule Override</option>
+          <option value="PricingTolerance">🔵 Pricing Tolerance</option>
+        </select>
+
+        <!-- Status filter buttons -->
+        <div class="d-flex gap-1 flex-wrap">
+          <button class="btn btn-sm"
+                  [class.btn-secondary]="!filterStatus()"
+                  [class.btn-outline-secondary]="!!filterStatus()"
+                  (click)="setFilterStatus('')">All Statuses</button>
+
+          <button class="btn btn-sm"
+                  [class.btn-warning]="filterStatus() === 'Pending'"
+                  [class.btn-outline-warning]="filterStatus() !== 'Pending'"
+                  (click)="setFilterStatus('Pending')">
+            <i class="bi bi-clock me-1"></i>Pending
+          </button>
+
+          <button class="btn btn-sm"
+                  [class.btn-success]="filterStatus() === 'Approved'"
+                  [class.btn-outline-success]="filterStatus() !== 'Approved'"
+                  (click)="setFilterStatus('Approved')">
+            <i class="bi bi-check-circle me-1"></i>Approved
+          </button>
+
+          <button class="btn btn-sm"
+                  [class.btn-danger]="filterStatus() === 'Rejected'"
+                  [class.btn-outline-danger]="filterStatus() !== 'Rejected'"
+                  (click)="setFilterStatus('Rejected')">
+            <i class="bi bi-x-circle me-1"></i>Rejected
           </button>
         </div>
+
+        <span class="ms-auto text-muted small">{{ filtered().length }} record(s)</span>
+        <button class="btn btn-sm btn-outline-secondary" (click)="load()" title="Refresh">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -49,44 +105,73 @@
   <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
       @if (loading()) {
-        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="text-muted small mt-2 mb-0">Loading breaches…</p>
+        </div>
+      } @else if (loadError()) {
+        <!-- Handled by the banner above the card — show nothing here -->
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-wifi-off fs-1 d-block mb-2"></i>
+          <p class="mb-0">Unable to load records. Use the <strong>Retry</strong> button above.</p>
+        </div>
       } @else if (!filtered().length) {
-        <app-empty-state icon="bi-shield-check" title="No breaches found"
-                         message="No authority breaches match your current filters."></app-empty-state>
+        <app-empty-state
+          icon="bi-shield-check"
+          title="No authority breaches found"
+          message="No breaches match your current filters.">
+        </app-empty-state>
       } @else {
         <div class="table-responsive">
           <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
               <tr>
-                <th>Submission</th>
+                <th>Submission ID</th>
                 <th>Breach Type</th>
                 <th>Description</th>
-                <th>Approved By</th>
-                <th>Approved Date</th>
+                <th>Reviewed By</th>
+                <th>Review Date</th>
                 <th>Status</th>
                 <th>Logged</th>
                 <th class="table-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
-              @for (b of filtered(); track b.breachId) {
+              @for (b of paged(); track b.breachId) {
                 <tr>
-                  <td class="small text-muted font-monospace">{{ b.submissionId | slice:0:8 }}…</td>
                   <td>
-                    <span class="badge" [ngClass]="breachTypeClass(b.breachType)">{{ b.breachType }}</span>
+                    <span class="small font-monospace text-muted d-block"
+                          [title]="b.submissionId">{{ b.submissionId | slice:0:8 }}…</span>
                   </td>
-                  <td class="small text-truncate-2" style="max-width:220px">{{ b.description }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="breachTypeClass(b.breachType)">
+                      {{ breachTypeLabel(b.breachType) }}
+                    </span>
+                  </td>
+                  <td class="small" style="max-width:220px">
+                    <span class="d-block text-truncate" [title]="b.description">{{ b.description }}</span>
+                  </td>
                   <td class="small">{{ b.approvedBy || '—' }}</td>
-                  <td class="small text-muted">{{ b.approvedDate ? (b.approvedDate | date:'mediumDate') : '—' }}</td>
+                  <td class="small text-muted text-nowrap">
+                    {{ b.approvedDate ? (b.approvedDate | date:'mediumDate') : '—' }}
+                  </td>
                   <td><app-status-badge [status]="b.status"></app-status-badge></td>
-                  <td class="small text-muted">{{ b.createdAt | date:'mediumDate' }}</td>
+                  <td class="small text-muted text-nowrap">{{ b.createdAt | date:'mediumDate' }}</td>
                   <td class="table-actions">
                     <div class="d-flex gap-1">
-                      <button class="btn btn-sm btn-outline-primary" title="View" (click)="openDetail(b)">
+                      <button class="btn btn-sm btn-outline-primary" title="View Details"
+                              (click)="openDetail(b)">
                         <i class="bi bi-eye"></i>
                       </button>
-                      @if (b.status === 'Pending') {
-                        <button class="btn btn-sm btn-outline-success" title="Approve/Reject" (click)="openStatus(b)">
+                      @if (auth.hasRole('Admin', 'Compliance')) {
+                        <button class="btn btn-sm btn-outline-secondary" title="Edit Details"
+                                (click)="openEdit(b)">
+                          <i class="bi bi-pencil-square"></i>
+                        </button>
+                      }
+                      @if (b.status === 'Pending' && auth.hasRole('Admin', 'Compliance')) {
+                        <button class="btn btn-sm btn-outline-success" title="Review Breach"
+                                (click)="openReview(b)">
                           <i class="bi bi-check2-square"></i>
                         </button>
                       }
@@ -97,6 +182,36 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top">
+            <small class="text-muted">
+              Page {{ currentPage() }} of {{ totalPages() }} &nbsp;·&nbsp;
+              Showing {{ (currentPage() - 1) * pageSize + 1 }}–{{ currentPage() * pageSize > filtered().length ? filtered().length : currentPage() * pageSize }}
+              of {{ filtered().length }} records
+            </small>
+            <nav aria-label="Breaches pagination">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="currentPage() === 1">
+                  <button class="page-link" (click)="prevPage()" [disabled]="currentPage() === 1">
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                </li>
+                @for (p of pageNumbers(); track p) {
+                  <li class="page-item" [class.active]="p === currentPage()">
+                    <button class="page-link" (click)="goToPage(p)">{{ p }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+                  <button class="page-link" (click)="nextPage()" [disabled]="currentPage() === totalPages()">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        }
       }
     </div>
   </div>
@@ -107,46 +222,126 @@
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">
-      <h6 class="mb-0 fw-semibold"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Log Authority Breach</h6>
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-shield-exclamation me-2 text-danger"></i>Log Authority Breach
+      </h6>
       <button class="btn-close btn-sm" (click)="closeModal()"></button>
     </div>
     <div class="modal-panel-body">
       <form [formGroup]="createForm" novalidate>
         <div class="row g-3">
+
+          <!-- Submission ID with Lookup -->
           <div class="col-12">
             <label class="form-label small fw-medium required-mark">Submission ID</label>
-            <input type="text" class="form-control form-control-sm"
-                   [class.is-invalid]="createForm.controls.submissionId.invalid && createForm.controls.submissionId.touched"
-                   formControlName="submissionId" placeholder="UUID of the submission" />
-            <div class="invalid-feedback">Submission ID is required.</div>
-          </div>
-          <div class="col-12">
-            <label class="form-label small fw-medium required-mark">Breach Type</label>
-            <select class="form-select form-select-sm" formControlName="breachType">
-              @for (t of breachTypes; track t) { <option [value]="t">{{ t }}</option> }
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label small fw-medium required-mark">Description</label>
-            <textarea class="form-control form-control-sm" rows="4"
-                      [class.is-invalid]="createForm.controls.description.invalid && createForm.controls.description.touched"
-                      formControlName="description"
-                      placeholder="Describe the nature of the breach and the circumstances…"></textarea>
-            @if (createForm.controls.description.invalid && createForm.controls.description.touched) {
-              <div class="invalid-feedback d-block">
-                @if (createForm.controls.description.errors?.['required']) { Description required. }
-                @else { Minimum 10 characters. }
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control"
+                     formControlName="submissionId"
+                     [class.is-invalid]="createForm.controls.submissionId.invalid && createForm.controls.submissionId.touched"
+                     placeholder="Paste the Submission UUID"
+                     (blur)="lookupSubmission()"
+                     (paste)="onSubmissionIdPaste()" />
+              <button type="button" class="btn btn-outline-secondary" title="Verify Submission"
+                      (click)="lookupSubmission()" [disabled]="lookupLoading()">
+                @if (lookupLoading()) {
+                  <span class="spinner-border spinner-border-sm"></span>
+                } @else {
+                  <i class="bi bi-search"></i>
+                }
+              </button>
+            </div>
+            @if (createForm.controls.submissionId.invalid && createForm.controls.submissionId.touched) {
+              <div class="invalid-feedback d-block">Submission ID is required.</div>
+            }
+            @if (lookupError()) {
+              <div class="form-text text-danger mt-1">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ lookupError() }}
+              </div>
+            }
+            @if (lookupSub()) {
+              <div class="sub-info-card mt-2">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <i class="bi bi-check-circle-fill text-success"></i>
+                  <strong class="small">Submission Verified</strong>
+                </div>
+                <div class="row g-1 small">
+                  <div class="col-6">
+                    <span class="text-muted">Product:</span>
+                    <span class="badge ms-1" [ngClass]="productLineClass(lookupSub()!.productLine)">
+                      {{ lookupSub()!.productLine }}
+                    </span>
+                  </div>
+                  <div class="col-6">
+                    <span class="text-muted">Status:</span>
+                    <span class="badge ms-1" [ngClass]="subStatusClass(lookupSub()!.status)">
+                      {{ lookupSub()!.status }}
+                    </span>
+                  </div>
+                  <div class="col-6">
+                    <span class="text-muted">Party ID:</span>
+                    <code class="ms-1 small">{{ lookupSub()!.partyId }}</code>
+                  </div>
+                  <div class="col-6">
+                    <span class="text-muted">Agent ID:</span>
+                    <code class="ms-1 small">{{ lookupSub()!.agentId }}</code>
+                  </div>
+                  <div class="col-12">
+                    <span class="text-muted">Inception:</span>
+                    <strong class="ms-1">{{ lookupSub()!.inceptionDate | date:'mediumDate' }}</strong>
+                  </div>
+                </div>
               </div>
             }
           </div>
+
+          <!-- Breach Type -->
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Breach Type</label>
+            <select class="form-select form-select-sm" formControlName="breachType">
+              @for (t of breachTypes; track t) {
+                <option [value]="t">{{ breachTypeLabel(t) }}</option>
+              }
+            </select>
+            <div class="form-text small text-muted mt-1">
+              <strong>Authority</strong> — Limit exceeded &nbsp;·&nbsp;
+              <strong>Rule Override</strong> — Mandatory rule waived &nbsp;·&nbsp;
+              <strong>Pricing Tolerance</strong> — Premium below technical rate
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Description</label>
+            <textarea class="form-control form-control-sm" rows="5"
+                      formControlName="description"
+                      [class.is-invalid]="createForm.controls.description.invalid && createForm.controls.description.touched"
+                      placeholder="Describe the nature of the breach, the circumstances and the policy / submission affected…"></textarea>
+            @if (createForm.controls.description.invalid && createForm.controls.description.touched) {
+              <div class="invalid-feedback d-block">
+                @if (createForm.controls.description.errors?.['required']) { Description is required. }
+                @else if (createForm.controls.description.errors?.['minlength']) { Minimum 10 characters required. }
+                @else { Maximum 1000 characters allowed. }
+              </div>
+            }
+          </div>
+
         </div>
       </form>
     </div>
+    @if (modalError()) {
+      <div class="alert alert-danger d-flex align-items-start gap-2 py-2 mx-3 mb-0 rounded-2">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+        <span class="small flex-grow-1">{{ modalError() }}</span>
+        <button type="button" class="btn-close btn-sm" (click)="modalError.set(null)"></button>
+      </div>
+    }
     <div class="modal-panel-footer">
       <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
-      <button class="btn btn-sm btn-danger" (click)="saveCreate()" [disabled]="saving()">
-        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-        Log Breach
+      <button class="btn btn-sm btn-danger" (click)="saveCreate()"
+              [disabled]="saving() || lookupLoading()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> Saving… }
+        @else if (lookupLoading()) { <span class="spinner-border spinner-border-sm me-1"></span> Verifying… }
+        @else { <i class="bi bi-shield-exclamation me-1"></i>Log Breach }
       </button>
     </div>
   </div>
@@ -157,83 +352,322 @@
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">
-      <h6 class="mb-0 fw-semibold"><i class="bi bi-eye me-2 text-primary"></i>Breach Detail</h6>
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-eye me-2 text-primary"></i>Breach Details
+      </h6>
       <button class="btn-close btn-sm" (click)="closeModal()"></button>
     </div>
     <div class="modal-panel-body">
-      <dl class="row row-cols-2 g-2 mb-0">
-        <div class="col">
+
+      <!-- Submission info card -->
+      @if (detailSubLoading()) {
+        <div class="sub-info-card mb-3 text-center py-2">
+          <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
+          <small class="text-muted">Loading submission details…</small>
+        </div>
+      } @else if (detailSub()) {
+        <div class="sub-info-card mb-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-file-earmark-text text-primary"></i>
+            <strong class="small">Linked Submission</strong>
+          </div>
+          <div class="row g-1 small">
+            <div class="col-6">
+              <span class="text-muted">Product:</span>
+              <span class="badge ms-1" [ngClass]="productLineClass(detailSub()!.productLine)">
+                {{ detailSub()!.productLine }}
+              </span>
+            </div>
+            <div class="col-6">
+              <span class="text-muted">Status:</span>
+              <span class="badge ms-1" [ngClass]="subStatusClass(detailSub()!.status)">
+                {{ detailSub()!.status }}
+              </span>
+            </div>
+            <div class="col-6">
+              <span class="text-muted">Party ID:</span>
+              <code class="ms-1 small">{{ detailSub()!.partyId }}</code>
+            </div>
+            <div class="col-6">
+              <span class="text-muted">Agent ID:</span>
+              <code class="ms-1 small">{{ detailSub()!.agentId }}</code>
+            </div>
+            <div class="col-12">
+              <span class="text-muted">Inception Date:</span>
+              <strong class="ms-1">{{ detailSub()!.inceptionDate | date:'mediumDate' }}</strong>
+            </div>
+          </div>
+        </div>
+      }
+
+      <dl class="row g-3 mb-0">
+        <div class="col-12">
           <dt class="small text-muted fw-normal">Submission ID</dt>
           <dd class="font-monospace small">{{ selected()!.submissionId }}</dd>
         </div>
-        <div class="col">
+        <div class="col-6">
           <dt class="small text-muted fw-normal">Breach Type</dt>
-          <dd><span class="badge" [ngClass]="breachTypeClass(selected()!.breachType)">{{ selected()!.breachType }}</span></dd>
+          <dd>
+            <span class="badge" [ngClass]="breachTypeClass(selected()!.breachType)">
+              {{ breachTypeLabel(selected()!.breachType) }}
+            </span>
+          </dd>
         </div>
-        <div class="col-12">
-          <dt class="small text-muted fw-normal">Description</dt>
-          <dd class="small">{{ selected()!.description }}</dd>
-        </div>
-        <div class="col">
+        <div class="col-6">
           <dt class="small text-muted fw-normal">Status</dt>
           <dd><app-status-badge [status]="selected()!.status"></app-status-badge></dd>
         </div>
-        <div class="col">
-          <dt class="small text-muted fw-normal">Approved By</dt>
-          <dd class="small">{{ selected()!.approvedBy || '—' }}</dd>
-        </div>
-        <div class="col">
-          <dt class="small text-muted fw-normal">Approved Date</dt>
-          <dd class="small">{{ selected()!.approvedDate ? (selected()!.approvedDate! | date:'medium') : '—' }}</dd>
-        </div>
-        <div class="col">
-          <dt class="small text-muted fw-normal">Logged</dt>
+        <div class="col-6">
+          <dt class="small text-muted fw-normal">Logged On</dt>
           <dd class="small">{{ selected()!.createdAt | date:'medium' }}</dd>
         </div>
+        <div class="col-12">
+          <dt class="small text-muted fw-normal">Description</dt>
+          <dd class="small lh-base">{{ selected()!.description }}</dd>
+        </div>
+        @if (selected()!.status !== 'Pending') {
+          <div class="col-6">
+            <dt class="small text-muted fw-normal">Reviewed By</dt>
+            <dd class="small">{{ selected()!.approvedBy || '—' }}</dd>
+          </div>
+          <div class="col-6">
+            <dt class="small text-muted fw-normal">Review Date</dt>
+            <dd class="small">
+              {{ selected()!.approvedDate ? (selected()!.approvedDate! | date:'medium') : '—' }}
+            </dd>
+          </div>
+        }
       </dl>
     </div>
     <div class="modal-panel-footer">
       <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Close</button>
-      @if (selected()!.status === 'Pending') {
-        <button class="btn btn-sm btn-primary" (click)="openStatus(selected()!)">
-          <i class="bi bi-check2-square me-1"></i>Review
+      @if (auth.hasRole('Admin', 'Compliance')) {
+        <button class="btn btn-sm btn-outline-secondary" (click)="openEdit(selected()!)">
+          <i class="bi bi-pencil-square me-1"></i>Edit Details
+        </button>
+      }
+      @if (selected()!.status === 'Pending' && auth.hasRole('Admin', 'Compliance')) {
+        <button class="btn btn-sm btn-primary" (click)="openReview(selected()!)">
+          <i class="bi bi-check2-square me-1"></i>Review Breach
         </button>
       }
     </div>
   </div>
 }
 
-<!-- ── STATUS MODAL ── -->
-@if (modalMode() === 'status') {
+<!-- ── EDIT DETAILS MODAL ── -->
+@if (modalMode() === 'edit' && selected()) {
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
-  <div class="modal-panel modal-panel-sm shadow-lg">
+  <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">
-      <h6 class="mb-0 fw-semibold"><i class="bi bi-check2-square me-2 text-primary"></i>Review Breach</h6>
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-pencil-square me-2 text-secondary"></i>Edit Breach Details
+      </h6>
       <button class="btn-close btn-sm" (click)="closeModal()"></button>
     </div>
     <div class="modal-panel-body">
-      <form [formGroup]="statusForm">
-        <div class="mb-3">
-          <label class="form-label small fw-medium required-mark">Decision</label>
-          @for (s of breachStatuses; track s) {
-            <div class="form-check mb-1">
-              <input class="form-check-input" type="radio" [id]="'bs-'+s" [value]="s" formControlName="status" />
-              <label class="form-check-label" [for]="'bs-'+s">{{ s }}</label>
+
+      <!-- Current breach summary -->
+      <div class="breach-summary-card mb-3">
+        <span class="badge me-2" [ngClass]="breachTypeClass(selected()!.breachType)">
+          {{ breachTypeLabel(selected()!.breachType) }}
+        </span>
+        <span class="small text-muted font-monospace me-2">
+          {{ selected()!.submissionId | slice:0:8 }}…
+        </span>
+        <span class="small text-muted">
+          {{ selected()!.description | slice:0:80 }}{{ selected()!.description.length > 80 ? '…' : '' }}
+        </span>
+      </div>
+
+      <form [formGroup]="editForm" novalidate>
+        <div class="row g-3">
+
+          <!-- Status -->
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Status</label>
+            <div class="d-flex flex-column gap-2">
+
+              <div class="form-check review-radio-option"
+                   [class.review-radio-pending]="editForm.value.status === 'Pending'">
+                <input class="form-check-input mt-1" type="radio"
+                       id="ed-Pending" value="Pending" formControlName="status" />
+                <label class="form-check-label d-flex align-items-center gap-2 w-100" for="ed-Pending">
+                  <i class="bi bi-clock-fill text-warning fs-5 flex-shrink-0"></i>
+                  <div>
+                    <div class="fw-semibold small">Pending</div>
+                    <div class="text-muted" style="font-size:.76rem">Awaiting review — clears reviewer fields</div>
+                  </div>
+                </label>
+              </div>
+
+              <div class="form-check review-radio-option"
+                   [class.review-radio-approve]="editForm.value.status === 'Approved'">
+                <input class="form-check-input mt-1" type="radio"
+                       id="ed-Approved" value="Approved" formControlName="status" />
+                <label class="form-check-label d-flex align-items-center gap-2 w-100" for="ed-Approved">
+                  <i class="bi bi-check-circle-fill text-success fs-5 flex-shrink-0"></i>
+                  <div>
+                    <div class="fw-semibold small">Approved</div>
+                    <div class="text-muted" style="font-size:.76rem">Breach is justified and accepted</div>
+                  </div>
+                </label>
+              </div>
+
+              <div class="form-check review-radio-option"
+                   [class.review-radio-reject]="editForm.value.status === 'Rejected'">
+                <input class="form-check-input mt-1" type="radio"
+                       id="ed-Rejected" value="Rejected" formControlName="status" />
+                <label class="form-check-label d-flex align-items-center gap-2 w-100" for="ed-Rejected">
+                  <i class="bi bi-x-circle-fill text-danger fs-5 flex-shrink-0"></i>
+                  <div>
+                    <div class="fw-semibold small">Rejected</div>
+                    <div class="text-muted" style="font-size:.76rem">Breach is not acceptable</div>
+                  </div>
+                </label>
+              </div>
+
             </div>
-          }
-        </div>
-        <div class="mb-0">
-          <label class="form-label small fw-medium">Approved / Reviewed By</label>
-          <input type="text" class="form-control form-control-sm"
-                 formControlName="approvedBy" placeholder="Reviewer name" />
+          </div>
+
+          <!-- Approved By -->
+          <div class="col-12">
+            <label class="form-label small fw-medium">Approved / Reviewed By</label>
+            <input type="text" class="form-control form-control-sm"
+                   formControlName="approvedBy"
+                   placeholder="Reviewer email or full name (e.g. vikram.nair@underwritepro.com)" />
+            <div class="form-text text-muted small">
+              Leave blank to clear the reviewer record.
+            </div>
+          </div>
+
+          <!-- Approved Date -->
+          <div class="col-12">
+            <label class="form-label small fw-medium">Approved / Review Date</label>
+            <input type="date" class="form-control form-control-sm"
+                   formControlName="approvedDate" />
+            <div class="form-text text-muted small">
+              Leave blank to use today's date when status is Approved or Rejected.
+            </div>
+          </div>
+
         </div>
       </form>
     </div>
+    @if (modalError()) {
+      <div class="alert alert-danger d-flex align-items-start gap-2 py-2 mx-3 mb-0 rounded-2">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+        <span class="small flex-grow-1">{{ modalError() }}</span>
+        <button type="button" class="btn-close btn-sm" (click)="modalError.set(null)"></button>
+      </div>
+    }
     <div class="modal-panel-footer">
       <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
-      <button class="btn btn-sm btn-primary" (click)="saveStatus()" [disabled]="saving()">
-        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-        Submit Decision
+      <button class="btn btn-sm"
+              [class.btn-warning]="editForm.value.status === 'Pending'"
+              [class.btn-success]="editForm.value.status === 'Approved'"
+              [class.btn-danger]="editForm.value.status  === 'Rejected'"
+              (click)="saveEdit()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> Saving… }
+        @else {
+          @if (editForm.value.status === 'Pending') { <i class="bi bi-clock me-1"></i> }
+          @else if (editForm.value.status === 'Approved') { <i class="bi bi-check-lg me-1"></i> }
+          @else { <i class="bi bi-x-lg me-1"></i> }
+          Save Changes
+        }
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ── REVIEW MODAL ── -->
+@if (modalMode() === 'review') {
+  <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+  <div class="modal-panel modal-panel-sm shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-check2-square me-2 text-primary"></i>Review Breach
+      </h6>
+      <button class="btn-close btn-sm" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-panel-body">
+
+      <!-- Breach summary chip -->
+      <div class="breach-summary-card mb-3">
+        <span class="badge me-2" [ngClass]="breachTypeClass(selected()!.breachType)">
+          {{ breachTypeLabel(selected()!.breachType) }}
+        </span>
+        <span class="small text-muted">
+          {{ selected()!.description | slice:0:90 }}{{ selected()!.description!.length > 90 ? '…' : '' }}
+        </span>
+      </div>
+
+      <form [formGroup]="reviewForm" novalidate>
+
+        <!-- Decision -->
+        <div class="mb-3">
+          <label class="form-label small fw-medium required-mark mb-2">Decision</label>
+
+          <!-- Approve -->
+          <div class="form-check review-radio-option mb-2"
+               [class.review-radio-approve]="reviewForm.value.decision === 'Approved'">
+            <input class="form-check-input mt-1" type="radio"
+                   id="rv-Approved" value="Approved" formControlName="decision" />
+            <label class="form-check-label d-flex align-items-center gap-2 w-100" for="rv-Approved">
+              <i class="bi bi-check-circle-fill text-success fs-5 flex-shrink-0"></i>
+              <div>
+                <div class="fw-semibold small">Approve</div>
+                <div class="text-muted" style="font-size:.76rem">Breach is justified and accepted</div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Reject -->
+          <div class="form-check review-radio-option"
+               [class.review-radio-reject]="reviewForm.value.decision === 'Rejected'">
+            <input class="form-check-input mt-1" type="radio"
+                   id="rv-Rejected" value="Rejected" formControlName="decision" />
+            <label class="form-check-label d-flex align-items-center gap-2 w-100" for="rv-Rejected">
+              <i class="bi bi-x-circle-fill text-danger fs-5 flex-shrink-0"></i>
+              <div>
+                <div class="fw-semibold small">Reject</div>
+                <div class="text-muted" style="font-size:.76rem">Breach is not acceptable — escalate or remediate</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Reviewed By -->
+        <div class="mb-0">
+          <label class="form-label small fw-medium required-mark">Reviewed By</label>
+          <input type="text" class="form-control form-control-sm"
+                 formControlName="reviewedBy"
+                 [class.is-invalid]="reviewForm.controls.reviewedBy.invalid && reviewForm.controls.reviewedBy.touched"
+                 placeholder="Your full name or employee ID" />
+          <div class="invalid-feedback">Reviewer name is required.</div>
+        </div>
+
+      </form>
+    </div>
+    @if (modalError()) {
+      <div class="alert alert-danger d-flex align-items-start gap-2 py-2 mx-3 mb-0 rounded-2">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+        <span class="small flex-grow-1">{{ modalError() }}</span>
+        <button type="button" class="btn-close btn-sm" (click)="modalError.set(null)"></button>
+      </div>
+    }
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
+      <button class="btn btn-sm"
+              [class.btn-success]="reviewForm.value.decision === 'Approved'"
+              [class.btn-danger]="reviewForm.value.decision === 'Rejected'"
+              (click)="saveReview()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> Saving… }
+        @else if (reviewForm.value.decision === 'Approved') {
+          <i class="bi bi-check-lg me-1"></i>Approve Breach
+        } @else {
+          <i class="bi bi-x-lg me-1"></i>Reject Breach
+        }
       </button>
     </div>
   </div>

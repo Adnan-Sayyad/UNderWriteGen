@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
@@ -50,7 +50,19 @@ export class SubmissionListPage implements OnInit {
     { label: 'Submissions' },
   ];
 
-  constructor(private svc: SubmissionApiService) {}
+  constructor(private svc: SubmissionApiService, private router: Router) {}
+
+  logBreach(submissionId: string): void {
+    this.router.navigate(['/compliance/authority-breaches'], { queryParams: { submissionId } });
+  }
+
+  logException(submissionId: string): void {
+    this.router.navigate(['/compliance/exceptions'], { queryParams: { submissionId } });
+  }
+
+  newChecklist(submissionId: string): void {
+    this.router.navigate(['/compliance/checklists'], { queryParams: { submissionId } });
+  }
 
   ngOnInit(): void { this.load(); }
 
