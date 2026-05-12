@@ -291,7 +291,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (q of filteredRecent(); track q.quoteId) {
+              @for (q of pagedRecent(); track q.quoteId) {
                 <tr>
                   <td class="small" [title]="q.quoteId">
                     <span class="fw-semibold font-monospace">{{ q.quoteRef || (q.quoteId | slice:0:8) + '…' }}</span>
@@ -341,6 +341,15 @@
             </tbody>
           </table>
         </div>
+
+        <app-pagination
+          [page]="currentPage()"
+          [size]="pageSize()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pagination>
       }
     </div>
   </div>

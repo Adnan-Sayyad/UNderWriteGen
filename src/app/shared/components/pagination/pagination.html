@@ -1,18 +1,20 @@
 @if (_totalPages() > 0) {
-  <div class="pager d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2 border-top">
+  <div class="pagination-bar d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2 border-top">
     <small class="text-muted">
       Showing <strong>{{ fromIndex() }}</strong> – <strong>{{ toIndex() }}</strong>
       of <strong>{{ _total() }}</strong>
     </small>
 
     <div class="d-flex align-items-center gap-2">
-      <label class="small text-muted mb-0">Rows:</label>
-      <select class="form-select form-select-sm pager-size"
-              [disabled]="disabled"
-              [value]="_size()"
-              (change)="changeSize($any($event.target).value)">
-        @for (s of pageSizes; track s) { <option [value]="s">{{ s }}</option> }
-      </select>
+      @if (showSizeSelector) {
+        <label class="small text-muted mb-0">Rows:</label>
+        <select class="form-select form-select-sm pagination-size"
+                [disabled]="disabled"
+                [value]="_size()"
+                (change)="changeSize($any($event.target).value)">
+          @for (s of pageSizes; track s) { <option [value]="s">{{ s }}</option> }
+        </select>
+      }
 
       <nav aria-label="Pagination">
         <ul class="pagination pagination-sm mb-0">

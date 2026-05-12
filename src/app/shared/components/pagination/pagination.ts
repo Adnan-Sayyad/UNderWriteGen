@@ -3,25 +3,26 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-pager',
+  selector: 'app-pagination',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './pager.html',
-  styleUrl: './pager.css',
+  templateUrl: './pagination.html',
+  styleUrl: './pagination.css',
 })
-export class Pager {
-  @Input() set page(v: number)          { this._page.set(v); }
-  @Input() set size(v: number)          { this._size.set(v); }
-  @Input() set totalElements(v: number) { this._total.set(v); }
-  @Input() set totalPages(v: number)    { this._totalPages.set(v); }
+export class Pagination {
+  @Input() set page(v: number)          { this._page.set(v ?? 0); }
+  @Input() set size(v: number)          { this._size.set(v ?? 10); }
+  @Input() set totalElements(v: number) { this._total.set(v ?? 0); }
+  @Input() set totalPages(v: number)    { this._totalPages.set(v ?? 0); }
   @Input() pageSizes: number[] = [10, 20, 50, 100];
+  @Input() showSizeSelector = true;
   @Input() disabled = false;
 
   @Output() pageChange = new EventEmitter<number>();
   @Output() sizeChange = new EventEmitter<number>();
 
   readonly _page       = signal(0);
-  readonly _size       = signal(20);
+  readonly _size       = signal(10);
   readonly _total      = signal(0);
   readonly _totalPages = signal(0);
 
@@ -35,7 +36,6 @@ export class Pager {
     Math.min(this._total(), (this._page() + 1) * this._size())
   );
 
-  /** Render a windowed page list e.g. 1 … 4 5 [6] 7 8 … 12 */
   readonly visiblePages = computed<(number | '…')[]>(() => {
     const total = this._totalPages();
     const cur   = this._page();
@@ -57,8 +57,8 @@ export class Pager {
     this.pageChange.emit(p);
   }
 
-  prev(): void { if (this.hasPrev()) this.pageChange.emit(this._page() - 1); }
-  next(): void { if (this.hasNext()) this.pageChange.emit(this._page() + 1); }
+  prev(): void  { if (this.hasPrev()) this.pageChange.emit(this._page() - 1); }
+  next(): void  { if (this.hasNext()) this.pageChange.emit(this._page() + 1); }
   first(): void { if (this.hasPrev()) this.pageChange.emit(0); }
   last(): void  { if (this.hasNext()) this.pageChange.emit(this._totalPages() - 1); }
 

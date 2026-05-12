@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PartyApiService } from '../../services/party-api.service';
 import { Agent, AgentStatus } from '../../models/party.model';
 import {
@@ -14,12 +15,11 @@ import {
 
 type ModalMode = 'create' | 'edit' | null;
 const STATUSES: AgentStatus[] = ['Active', 'Inactive'];
-const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-agent-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './agent-list.html',
   styleUrl: './agent-list.css',
 })
@@ -34,6 +34,7 @@ export class AgentListPage implements OnInit {
   readonly alertMsg     = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly statuses     = STATUSES;
   readonly currentPage  = signal(0);
+  readonly pageSize     = signal(10);
 
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
@@ -44,10 +45,12 @@ export class AgentListPage implements OnInit {
     );
   });
 
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
-  readonly paginated  = computed(() => {
+  readonly totalElements = computed(() => this.filtered().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly paginated     = computed(() => {
+    const size = this.pageSize();
     const page = Math.min(this.currentPage(), this.totalPages() - 1);
-    return this.filtered().slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+    return this.filtered().slice(page * size, page * size + size);
   });
 
   readonly breadcrumbs = [
@@ -86,8 +89,8 @@ export class AgentListPage implements OnInit {
 
   ngOnInit(): void { this.load(); }
 
-  goToPage(n: number): void { this.currentPage.set(Math.max(0, Math.min(n, this.totalPages() - 1))); }
-  readonly pageSize = PAGE_SIZE;
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
 
   load(): void {
     this.loading.set(true);

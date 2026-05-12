@@ -154,35 +154,15 @@
           </table>
         </div>
 
-        <!-- Pagination -->
-        @if (totalPages() > 1) {
-          <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top">
-            <small class="text-muted">
-              Page {{ currentPage() }} of {{ totalPages() }} &nbsp;·&nbsp;
-              Showing {{ (currentPage() - 1) * pageSize + 1 }}–{{ currentPage() * pageSize > filtered().length ? filtered().length : currentPage() * pageSize }}
-              of {{ filtered().length }} records
-            </small>
-            <nav aria-label="Exception log pagination">
-              <ul class="pagination pagination-sm mb-0">
-                <li class="page-item" [class.disabled]="currentPage() === 1">
-                  <button class="page-link" (click)="prevPage()" [disabled]="currentPage() === 1">
-                    <i class="bi bi-chevron-left"></i>
-                  </button>
-                </li>
-                @for (p of pageNumbers(); track p) {
-                  <li class="page-item" [class.active]="p === currentPage()">
-                    <button class="page-link" (click)="goToPage(p)">{{ p }}</button>
-                  </li>
-                }
-                <li class="page-item" [class.disabled]="currentPage() === totalPages()">
-                  <button class="page-link" (click)="nextPage()" [disabled]="currentPage() === totalPages()">
-                    <i class="bi bi-chevron-right"></i>
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          </div>
-        }
+        <app-pagination
+          [page]="currentPage()"
+          [size]="pageSize()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pagination>
       }
     </div>
   </div>

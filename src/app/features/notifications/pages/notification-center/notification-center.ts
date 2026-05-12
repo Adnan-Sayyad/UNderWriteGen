@@ -4,12 +4,12 @@ import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { NotificationApiService } from '../../services/notification-api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { Notification, NotificationCategory, NotificationStatus } from '../../models/notification.model';
 
 const CATEGORIES: NotificationCategory[] = ['Referral', 'SLA', 'Subjectivity', 'Quote', 'Compliance'];
-const PAGE_SIZE = 10;
 
 // Roles that may create/send notifications.
 const CREATOR_ROLES = ['Admin', 'Underwriter', 'UWManager', 'UWAssistant', 'Compliance', 'Operations'];
@@ -19,7 +19,7 @@ type ViewFilter = NotificationStatus | '' | 'sent' | 'received';
 @Component({
   selector: 'app-notification-center',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './notification-center.html',
   styleUrl: './notification-center.css',
 })
@@ -33,7 +33,7 @@ export class NotificationCenterPage implements OnInit {
   readonly searchQuery   = signal('');
   readonly sendMode      = signal<'individual' | 'group'>('individual');
   readonly currentPage   = signal(0);
-  readonly pageSize      = PAGE_SIZE;
+  readonly pageSize      = signal(10);
 
   readonly categories = CATEGORIES;
   readonly roleGroups = [
@@ -90,10 +90,12 @@ export class NotificationCenterPage implements OnInit {
     this.notifications().filter(n => n.senderEmail === this.currentUserEmail()).length
   );
 
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
-  readonly paginated  = computed(() => {
+  readonly totalElements = computed(() => this.filtered().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly paginated     = computed(() => {
+    const size = this.pageSize();
     const page = Math.min(this.currentPage(), this.totalPages() - 1);
-    return this.filtered().slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+    return this.filtered().slice(page * size, page * size + size);
   });
 
   readonly filterOptions: Array<{ label: string; value: ViewFilter }> = [
@@ -219,9 +221,8 @@ export class NotificationCenterPage implements OnInit {
     }
   }
 
-  goToPage(n: number): void {
-    this.currentPage.set(Math.max(0, Math.min(n, this.totalPages() - 1)));
-  }
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
 
   setFilter(v: string): void { this.filterStatus.set(v as ViewFilter); this.currentPage.set(0); }
 

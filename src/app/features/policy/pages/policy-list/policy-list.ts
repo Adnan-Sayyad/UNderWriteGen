@@ -4,17 +4,17 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PolicyApiService } from '../../services/policy-api.service';
 import { Policy, PolicyStatus } from '../../models/policy.model';
 
 const STATUSES: PolicyStatus[] = ['Active', 'Cancelled', 'Expired'];
 const PRODUCT_LINES = ['Life', 'Health', 'PnC', 'Commercial'];
-const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-policy-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './policy-list.html',
   styleUrl: './policy-list.css',
 })
@@ -26,6 +26,7 @@ export class PolicyListPage implements OnInit {
   readonly statuses      = STATUSES;
   readonly productLines  = PRODUCT_LINES;
   readonly currentPage   = signal(0);
+  readonly pageSize      = signal(10);
   readonly totalPages    = signal(0);
   readonly totalElements = signal(0);
   readonly alertMsg      = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
@@ -60,9 +61,9 @@ export class PolicyListPage implements OnInit {
 
   ngOnInit(): void { this.load(); }
 
-  load(page = 0): void {
+  load(page = this.currentPage()): void {
     this.loading.set(true);
-    const req: any = { page, size: PAGE_SIZE, sort: 'createdDate', direction: 'desc' };
+    const req: any = { page, size: this.pageSize(), sort: 'createdDate', direction: 'desc' };
     this.svc.getAll(req).subscribe({
       next: (res: any) => {
         this.policies.set(res?.content ?? res?.data ?? []);
@@ -75,10 +76,8 @@ export class PolicyListPage implements OnInit {
     });
   }
 
-  goToPage(page: number): void {
-    if (page < 0 || page >= this.totalPages()) return;
-    this.load(page);
-  }
+  onPageChange(p: number): void { this.currentPage.set(p); this.load(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); this.load(0); }
 
   openBindModal(): void {
     this.showBindModal.set(true);

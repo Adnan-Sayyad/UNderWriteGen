@@ -4,15 +4,14 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { SubmissionApiService } from '../../../submission/services/submission-api.service';
 import { Submission } from '../../../submission/models/submission.model';
-
-const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-uw-workbench',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './uw-workbench.html',
   styleUrl: './uw-workbench.css',
 })
@@ -21,6 +20,7 @@ export class UwWorkbenchPage implements OnInit {
   readonly loading       = signal(false);
   readonly searchQuery   = signal('');
   readonly currentPage   = signal(0);
+  readonly pageSize      = signal(10);
   readonly totalPages    = signal(0);
   readonly totalElements = signal(0);
 
@@ -30,10 +30,6 @@ export class UwWorkbenchPage implements OnInit {
       !q || s.submissionId.toLowerCase().includes(q) || s.productLine.toLowerCase().includes(q)
     );
   });
-
-  readonly pageNumbers = computed(() =>
-    Array.from({ length: this.totalPages() }, (_, i) => i)
-  );
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -45,9 +41,9 @@ export class UwWorkbenchPage implements OnInit {
 
   ngOnInit(): void { this.load(); }
 
-  load(page = 0): void {
+  load(page = this.currentPage()): void {
     this.loading.set(true);
-    const req: any = { page, size: PAGE_SIZE, sort: 'createdDate', direction: 'desc' };
+    const req: any = { page, size: this.pageSize(), sort: 'createdDate', direction: 'desc' };
     this.svc.getAll(req).subscribe({
       next: res => {
         // Show only submissions that are UnderReview or Quoted (active UW work)
@@ -65,10 +61,8 @@ export class UwWorkbenchPage implements OnInit {
     });
   }
 
-  goToPage(page: number): void {
-    if (page < 0 || page >= this.totalPages()) return;
-    this.load(page);
-  }
+  onPageChange(p: number): void { this.currentPage.set(p); this.load(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); this.load(0); }
 
   productClass(p: string): string {
     const map: Record<string, string> = {

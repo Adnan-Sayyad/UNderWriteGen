@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PricingApiService } from '../../services/pricing-api.service';
 import { Quote, QuoteStatus } from '../../models/pricing.model';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -25,8 +26,7 @@ export interface RecentQuote {
 @Component({
   selector: 'app-quote-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, PageHeader, EmptyState],
-  // imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, PageHeader, EmptyState, Pagination],
   templateUrl: './quote-list.html',
   styleUrl: './quote-list.css',
 })
@@ -52,6 +52,22 @@ export class QuoteListPage implements OnInit {
     const s = this.filterStatus();
     return s ? this.recentQuotes().filter(q => q.status === s) : this.recentQuotes();
   });
+
+  /* ── pagination ─────────────────────────────────────────────────────── */
+  readonly currentPage   = signal(0);
+  readonly pageSize      = signal(10);
+  readonly totalElements = computed(() => this.filteredRecent().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly pagedRecent   = computed(() => {
+    const size  = this.pageSize();
+    const page  = Math.min(this.currentPage(), this.totalPages() - 1);
+    const start = page * size;
+    return this.filteredRecent().slice(start, start + size);
+  });
+
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
+  setFilter(s: QuoteStatus | ''): void { this.filterStatus.set(s); this.currentPage.set(0); }
 
   /** Mini stats drawn from session history */
   readonly stats = computed(() => {

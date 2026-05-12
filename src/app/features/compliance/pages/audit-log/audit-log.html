@@ -63,7 +63,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (log of filtered(); track log.id) {
+              @for (log of paged(); track log.id) {
                 <tr class="cursor-pointer" (click)="toggleExpand(log.id)">
                   <td class="text-center text-muted">
                     <i class="bi bi-chevron-right chevron-icon"
@@ -128,6 +128,16 @@
             </tbody>
           </table>
         </div>
+
+        <app-pagination
+          [page]="currentPage()"
+          [size]="pageSize()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pagination>
       }
     </div>
   </div>

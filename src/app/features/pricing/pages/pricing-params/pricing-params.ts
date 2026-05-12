@@ -5,6 +5,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PricingApiService } from '../../services/pricing-api.service';
 import { PricingParam, CreatePricingParamRequest, UpdatePricingParamRequest } from '../../models/pricing.model';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -49,8 +50,7 @@ const PRODUCT_LINE_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-pricing-params',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, PageHeader, EmptyState],
-  // imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './pricing-params.html',
   styleUrl: './pricing-params.css',
 })
@@ -102,6 +102,21 @@ export class PricingParamsPage implements OnInit {
     if (active !== '') list = list.filter(p => p.isActive === (active as boolean));
     return list;
   });
+
+  // Pagination
+  readonly currentPage   = signal(0);
+  readonly pageSize      = signal(10);
+  readonly totalElements = computed(() => this.filtered().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly paged         = computed(() => {
+    const size  = this.pageSize();
+    const page  = Math.min(this.currentPage(), this.totalPages() - 1);
+    const start = page * size;
+    return this.filtered().slice(start, start + size);
+  });
+
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
 
   constructor(private svc: PricingApiService) {}
 

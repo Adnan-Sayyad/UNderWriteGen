@@ -5,7 +5,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
-import { Pager } from '../../components/pager/pager';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { RulesApiService } from '../../services/rules-api.service';
 import {
   UWRule, RuleSeverity, UWStatus, EvaluateRulesResponse,
@@ -16,7 +16,7 @@ import {
 @Component({
   selector: 'app-rule-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState, Pager],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState, Pagination],
   templateUrl: './rule-list.html',
   styleUrl: './rule-list.css',
 })

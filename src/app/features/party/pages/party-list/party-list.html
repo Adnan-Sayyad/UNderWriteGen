@@ -102,33 +102,15 @@
             </tbody>
           </table>
         </div>
-        <!-- Pagination -->
-        @if (totalPages() > 1) {
-          <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top">
-            <small class="text-muted">
-              Showing {{ currentPage() * pageSize + 1 }}–{{ currentPage() * pageSize + paginated().length }} of {{ filtered().length }}
-            </small>
-            <nav>
-              <ul class="pagination pagination-sm mb-0">
-                <li class="page-item" [class.disabled]="currentPage() === 0">
-                  <button class="page-link" (click)="goToPage(currentPage() - 1)">
-                    <i class="bi bi-chevron-left"></i>
-                  </button>
-                </li>
-                @for (p of [].constructor(totalPages()); track $index) {
-                  <li class="page-item" [class.active]="$index === currentPage()">
-                    <button class="page-link" (click)="goToPage($index)">{{ $index + 1 }}</button>
-                  </li>
-                }
-                <li class="page-item" [class.disabled]="currentPage() === totalPages() - 1">
-                  <button class="page-link" (click)="goToPage(currentPage() + 1)">
-                    <i class="bi bi-chevron-right"></i>
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          </div>
-        }
+        <app-pagination
+          [page]="currentPage()"
+          [size]="pageSize()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pagination>
       }
     </div>
   </div>

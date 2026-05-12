@@ -109,7 +109,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (p of filtered(); track p.id) {
+              @for (p of paged(); track p.id) {
                 <tr>
                   <td>
                     <span class="badge" [ngClass]="productLineClass(p.productLine)"
@@ -159,6 +159,16 @@
             </tbody>
           </table>
         </div>
+
+        <app-pagination
+          [page]="currentPage()"
+          [size]="pageSize()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pagination>
       }
     </div>
   </div>

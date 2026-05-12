@@ -54,7 +54,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (e of evidence(); track e.evidenceId) {
+              @for (e of paged(); track e.evidenceId) {
                 <tr>
                   <td><span class="badge bg-secondary">{{ e.evidenceType }}</span></td>
                   <td class="fw-medium small">{{ e.provider }}</td>
@@ -109,6 +109,16 @@
             </tbody>
           </table>
         </div>
+
+        <app-pagination
+          [page]="currentPage()"
+          [size]="pageSize()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pagination>
       }
     </div>
   </div>
