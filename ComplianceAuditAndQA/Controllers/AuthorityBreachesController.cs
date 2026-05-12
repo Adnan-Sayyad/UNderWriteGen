@@ -7,7 +7,6 @@ namespace ComplianceAuditAndQA.Controllers
 {
     [ApiController]
     [Route("api/authority-breaches")]
-    [Authorize]
     public class AuthorityBreachesController : ControllerBase
     {
         private readonly IAuthorityBreachService _service;
@@ -17,6 +16,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/authority-breaches ───────────────────────────
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var data = await _service.GetAllAsync();
@@ -26,6 +26,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/authority-breaches/{breachId} ────────────────
         [HttpGet("{breachId:guid}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(Guid breachId)
         {
             var data = await _service.GetByIdAsync(breachId);
@@ -35,6 +36,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/authority-breaches/submission/{submissionId} ─
         [HttpGet("submission/{submissionId:guid}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetBySubmissionId(Guid submissionId)
         {
             var data = await _service.GetBySubmissionIdAsync(submissionId);
@@ -44,6 +46,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/authority-breaches/type/{breachType} ────────
         [HttpGet("type/{breachType}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetByBreachType(string breachType)
         {
             var data = await _service.GetByBreachTypeAsync(breachType);
@@ -53,6 +56,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── POST /api/authority-breaches ──────────────────────────
         [HttpPost]
+        [Authorize(Roles = "Compliance,Admin")]
         public async Task<IActionResult> Create([FromBody] CreateAuthorityBreachDto dto)
         {
             var data = await _service.CreateAsync(dto);
@@ -63,6 +67,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── PUT /api/authority-breaches/{breachId} ────────────────
         [HttpPut("{breachId:guid}")]
+        [Authorize(Roles = "Compliance,Admin")]
         public async Task<IActionResult> Update(
             Guid breachId, [FromBody] UpdateAuthorityBreachDto dto)
         {
@@ -73,6 +78,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── PATCH /api/authority-breaches/{breachId}/status ───────
         [HttpPatch("{breachId:guid}/status")]
+        [Authorize(Roles = "Compliance,Admin")]
         public async Task<IActionResult> UpdateStatus(
             Guid breachId, [FromBody] UpdateBreachStatusDto dto)
         {

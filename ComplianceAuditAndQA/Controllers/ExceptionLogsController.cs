@@ -7,7 +7,6 @@ namespace ComplianceAuditAndQA.Controllers
 {
     [ApiController]
     [Route("api/exception-logs")]
-    [Authorize]
     public class ExceptionLogsController : ControllerBase
     {
         private readonly IExceptionLogService _service;
@@ -17,6 +16,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/exception-logs ───────────────────────────────
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var data = await _service.GetAllAsync();
@@ -26,6 +26,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/exception-logs/{exceptionId} ─────────────────
         [HttpGet("{exceptionId:guid}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(Guid exceptionId)
         {
             var data = await _service.GetByIdAsync(exceptionId);
@@ -35,6 +36,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/exception-logs/submission/{submissionId} ─────
         [HttpGet("submission/{submissionId:guid}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetBySubmissionId(Guid submissionId)
         {
             var data = await _service.GetBySubmissionIdAsync(submissionId);
@@ -44,6 +46,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── GET /api/exception-logs/category/{category} ───────────
         [HttpGet("category/{category}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetByCategory(string category)
         {
             var data = await _service.GetByCategoryAsync(category);
@@ -53,6 +56,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── POST /api/exception-logs ──────────────────────────────
         [HttpPost]
+        [Authorize(Roles = "Compliance,Admin")]
         public async Task<IActionResult> Create([FromBody] CreateExceptionLogDto dto)
         {
             var data = await _service.CreateAsync(dto);
@@ -63,6 +67,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── PUT /api/exception-logs/{exceptionId} ─────────────────
         [HttpPut("{exceptionId:guid}")]
+        [Authorize(Roles = "Compliance,Admin")]
         public async Task<IActionResult> Update(
             Guid exceptionId, [FromBody] UpdateExceptionLogDto dto)
         {
@@ -73,6 +78,7 @@ namespace ComplianceAuditAndQA.Controllers
 
         // ── PATCH /api/exception-logs/{exceptionId}/status ────────
         [HttpPatch("{exceptionId:guid}/status")]
+        [Authorize(Roles = "Compliance,Admin")]
         public async Task<IActionResult> UpdateStatus(
             Guid exceptionId, [FromBody] UpdateExceptionStatusDto dto)
         {
