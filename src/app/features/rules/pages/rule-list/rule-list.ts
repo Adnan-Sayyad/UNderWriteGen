@@ -1,21 +1,22 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pager } from '../../components/pager/pager';
 import { RulesApiService } from '../../services/rules-api.service';
 import {
   UWRule, RuleSeverity, UWStatus, EvaluateRulesResponse,
-  SEVERITIES, UW_STATUSES, PRODUCT_LINES,
+  SEVERITIES, UW_STATUSES, PRODUCT_LINES, DEFAULT_PAGE_SIZE,
   parseExpression, describeExpression,
 } from '../../models/rules.model';
 
 @Component({
   selector: 'app-rule-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState, Pager],
   templateUrl: './rule-list.html',
   styleUrl: './rule-list.css',
 })
@@ -26,9 +27,18 @@ export class RuleListPage implements OnInit {
   readonly loading      = signal(false);
   readonly toggling     = signal<string | null>(null);
   readonly deleting     = signal<string | null>(null);
+
+  // Filters (sent to backend)
   readonly filterSev    = signal<RuleSeverity | ''>('');
   readonly filterStatus = signal<UWStatus | ''>('');
   readonly filterProd   = signal('');
+
+  // Pagination state
+  readonly page          = signal(0);
+  readonly size          = signal(DEFAULT_PAGE_SIZE);
+  readonly totalElements = signal(0);
+  readonly totalPages    = signal(0);
+
   readonly alertMsg     = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
 
   readonly evaluateOpen   = signal(false);
@@ -45,16 +55,6 @@ export class RuleListPage implements OnInit {
     { label: 'UW Rules' },
   ];
 
-  readonly filtered = computed(() => {
-    const sev = this.filterSev();
-    const st  = this.filterStatus();
-    const pl  = this.filterProd();
-    return this.rules().filter(r =>
-      (!sev || r.severity === sev) &&
-      (!st  || r.status   === st)  &&
-      (!pl  || r.productLine === pl));
-  });
-
   readonly evalForm = this.fb.group({
     submissionId: ['', [Validators.required, Validators.minLength(8)]],
   });
@@ -65,11 +65,36 @@ export class RuleListPage implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.svc.getRules().subscribe({
-      next: r => { this.rules.set(r); this.loading.set(false); },
+    this.svc.getRules(this.page(), this.size(), {
+      productLine: this.filterProd(),
+      severity:    this.filterSev(),
+      status:      this.filterStatus(),
+    }).subscribe({
+      next: r => {
+        this.rules.set(r.content);
+        this.totalElements.set(r.totalElements);
+        this.totalPages.set(r.totalPages);
+        // Backend may have clamped page if out of range; reflect it
+        this.page.set(r.page);
+        this.loading.set(false);
+      },
       error: () => { this.loading.set(false); this.flash('danger', 'Failed to load rules.'); },
     });
   }
+
+  /** Filters change → reset to first page and reload. */
+  applyFilter<T extends string>(setter: (v: T) => void, value: T): void {
+    setter(value);
+    this.page.set(0);
+    this.load();
+  }
+
+  setSev(v: string)    { this.applyFilter(x => this.filterSev.set(x as RuleSeverity | ''), v as RuleSeverity | ''); }
+  setStatus(v: string) { this.applyFilter(x => this.filterStatus.set(x as UWStatus | ''), v as UWStatus | ''); }
+  setProd(v: string)   { this.applyFilter(x => this.filterProd.set(x), v); }
+
+  onPageChange(p: number) { this.page.set(p); this.load(); }
+  onSizeChange(s: number) { this.size.set(s); this.page.set(0); this.load(); }
 
   toggleStatus(r: UWRule): void {
     const next: UWStatus = r.status === 'Active' ? 'Inactive' : 'Active';
@@ -90,8 +115,10 @@ export class RuleListPage implements OnInit {
     this.svc.deleteRule(r.uwRuleID).subscribe({
       next: () => {
         this.deleting.set(null);
-        this.rules.update(list => list.filter(x => x.uwRuleID !== r.uwRuleID));
         this.flash('success', 'Rule deleted.');
+        // Reload — may need to step back a page if we deleted the last item on this page.
+        if (this.rules().length === 1 && this.page() > 0) this.page.update(p => p - 1);
+        this.load();
       },
       error: () => { this.deleting.set(null); this.flash('danger', 'Delete failed.'); },
     });
@@ -108,7 +135,7 @@ export class RuleListPage implements OnInit {
   runEvaluate(): void {
     if (this.evalForm.invalid) { this.evalForm.markAllAsTouched(); return; }
     this.evaluating.set(true);
-    this.svc.evaluateRules(this.evalForm.value.submissionId!).subscribe({
+    this.svc.evaluateRules((this.evalForm.value.submissionId ?? '').trim()).subscribe({
       next: res => { this.evaluation.set(res); this.evaluating.set(false); },
       error: () => { this.evaluating.set(false); this.flash('danger', 'Evaluation failed.'); },
     });

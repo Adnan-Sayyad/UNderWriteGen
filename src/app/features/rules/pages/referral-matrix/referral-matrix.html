@@ -27,20 +27,20 @@
       <div class="row g-2 align-items-center">
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="filterProd()" (change)="filterProd.set($any($event.target).value)">
+                  [value]="filterProd()" (change)="setProd($any($event.target).value)">
             <option value="">All Product Lines</option>
             @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
           </select>
         </div>
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="filterAuth()" (change)="filterAuth.set($any($event.target).value)">
+                  [value]="filterAuth()" (change)="setAuth($any($event.target).value)">
             <option value="">All Authorities</option>
             @for (a of authorities; track a) { <option [value]="a">{{ a }}</option> }
           </select>
         </div>
         <div class="col text-end">
-          <small class="text-muted">{{ filtered().length }} of {{ matrices().length }} entries</small>
+          <small class="text-muted">{{ totalElements() }} entries</small>
           <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()" title="Refresh">
             <i class="bi bi-arrow-clockwise"></i>
           </button>
@@ -53,7 +53,7 @@
     <div class="card-body p-0">
       @if (loading()) {
         <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
-      } @else if (!filtered().length) {
+      } @else if (!matrices().length) {
         <app-empty-state icon="bi-grid-3x3" title="No matrix entries found"
                          message="Add referral matrix entries to route submissions to the right authority."></app-empty-state>
       } @else {
@@ -70,7 +70,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (m of filtered(); track m.referralMatrixID) {
+              @for (m of matrices(); track m.referralMatrixID) {
                 <tr>
                   <td><span class="badge bg-primary">{{ m.productLine }}</span></td>
                   <td>
@@ -98,6 +98,16 @@
             </tbody>
           </table>
         </div>
+
+        <app-pager
+          [page]="page()"
+          [size]="size()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pager>
       }
     </div>
   </div>

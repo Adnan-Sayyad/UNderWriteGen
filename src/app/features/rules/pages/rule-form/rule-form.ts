@@ -34,7 +34,7 @@ export class RuleFormPage implements OnInit {
   readonly form = this.fb.group({
     productLine: ['Life' as ProductLine, Validators.required],
     ruleName:    ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
-    description: [''],
+    description: ['', Validators.maxLength(500)],
     severity:    ['Refer' as RuleSeverity, Validators.required],
     status:      ['Active' as UWStatus, Validators.required],
     logic:       ['AND' as 'AND' | 'OR', Validators.required],
@@ -120,6 +120,9 @@ export class RuleFormPage implements OnInit {
     const type     = (initial?.type ?? fieldDef?.type ?? 'number') as FieldType;
     const opts     = OPERATORS_BY_TYPE[type];
     const op       = (initial?.operator ?? opts[0]?.value ?? 'eq') as ConditionOperator;
+    const value    = initial?.value !== undefined
+      ? this.coerceInitialValue(initial.value, type)
+      : this.defaultValueFor(type, op, fieldDef?.options);
 
     return this.fb.group({
       field:      [fieldKey, Validators.required],
@@ -127,7 +130,7 @@ export class RuleFormPage implements OnInit {
       type:       [type, Validators.required],
       unit:       [initial?.unit ?? fieldDef?.unit ?? ''],
       operator:   [op, Validators.required],
-      value:      [this.coerceInitialValue(initial?.value, type), Validators.required],
+      value:      [value],
       value2:     [initial?.value2 ?? null],
       options:    [fieldDef?.options ?? []],
     });
@@ -147,16 +150,40 @@ export class RuleFormPage implements OnInit {
     if (!def) return;
     const row = this.conditions.at(i);
     const ops = OPERATORS_BY_TYPE[def.type];
+    const newOp = (ops[0]?.value ?? 'eq') as ConditionOperator;
     row.patchValue({
       field:      def.key,
       fieldLabel: def.label,
       type:       def.type,
       unit:       def.unit ?? '',
-      operator:   ops[0]?.value ?? 'eq',
-      value:      this.defaultValueFor(def.type),
+      operator:   newOp,
+      value:      this.defaultValueFor(def.type, newOp, def.options),
       value2:     null,
       options:    def.options ?? [],
     });
+  }
+
+  onOperatorChange(i: number, newOp: ConditionOperator): void {
+    const row = this.conditions.at(i);
+    const type = row.controls['type'].value as FieldType;
+    const opts = (row.controls['options'].value as string[]) ?? [];
+    const currentVal = row.controls['value'].value;
+
+    // Reset value to a type+operator appropriate default when needed.
+    if (newOp === 'in') {
+      // Coalesce single value into an array if possible.
+      const initialArr = Array.isArray(currentVal)
+        ? currentVal
+        : (currentVal !== '' && currentVal !== null && currentVal !== undefined ? [currentVal] : []);
+      row.patchValue({ operator: newOp, value: initialArr, value2: null });
+    } else if (newOp === 'between') {
+      const v1 = typeof currentVal === 'number' ? currentVal : 0;
+      row.patchValue({ operator: newOp, value: v1, value2: v1 });
+    } else {
+      // Leaving array → primitive: pick first item or sensible default.
+      const v = Array.isArray(currentVal) ? (currentVal[0] ?? this.defaultValueFor(type, newOp, opts)) : currentVal;
+      row.patchValue({ operator: newOp, value: v, value2: null });
+    }
   }
 
   operatorsFor(type: FieldType) {
@@ -196,6 +223,16 @@ export class RuleFormPage implements OnInit {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.flash('danger', 'Please fill the rule details and at least one condition.');
+      return;
+    }
+    if (!this.conditions.length) {
+      this.flash('danger', 'Add at least one condition.');
+      return;
+    }
+    // Reject conditions with empty / invalid values up front.
+    const blank = this.conditions.controls.findIndex(c => this.isBlankValue(c.value));
+    if (blank >= 0) {
+      this.flash('danger', `Condition ${blank + 1} needs a value.`);
       return;
     }
 
@@ -247,11 +284,14 @@ export class RuleFormPage implements OnInit {
     return this.availableFields().find(f => f.key === key);
   }
 
-  private defaultValueFor(type: FieldType): any {
+  private defaultValueFor(type: FieldType, op: ConditionOperator = 'eq', options?: string[]): any {
+    if (op === 'in')      return [];
+    if (op === 'between') return 0;
     switch (type) {
       case 'boolean': return true;
       case 'number':  return 0;
-      default:        return '';
+      case 'enum':    return options?.[0] ?? '';
+      default:        return options?.[0] ?? '';
     }
   }
 
@@ -274,6 +314,12 @@ export class RuleFormPage implements OnInit {
   private toNumber(v: any): number {
     const n = typeof v === 'number' ? v : Number(v);
     return isNaN(n) ? 0 : n;
+  }
+
+  private isBlankValue(v: any): boolean {
+    if (v?.operator === 'in')      return !Array.isArray(v?.value) || v.value.length === 0;
+    if (v?.operator === 'between') return v?.value === null || v?.value === '' || v?.value2 === null || v?.value2 === '';
+    return v?.value === null || v?.value === undefined || v?.value === '';
   }
 
   private flash(type: 'success' | 'danger', text: string): void {

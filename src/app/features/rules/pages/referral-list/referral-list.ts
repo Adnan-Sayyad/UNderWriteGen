@@ -1,20 +1,21 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pager } from '../../components/pager/pager';
 import { RulesApiService } from '../../services/rules-api.service';
 import {
   Referral, ReferralStatus, Authority,
-  AUTHORITIES, REFERRAL_STATUSES,
+  AUTHORITIES, REFERRAL_STATUSES, DEFAULT_PAGE_SIZE,
 } from '../../models/rules.model';
 
 @Component({
   selector: 'app-referral-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState, Pager],
   templateUrl: './referral-list.html',
   styleUrl: './referral-list.css',
 })
@@ -29,6 +30,12 @@ export class ReferralListPage implements OnInit {
   readonly filterSub    = signal('');
   readonly alertMsg     = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
 
+  // Pagination
+  readonly page          = signal(0);
+  readonly size          = signal(DEFAULT_PAGE_SIZE);
+  readonly totalElements = signal(0);
+  readonly totalPages    = signal(0);
+
   readonly createOpen   = signal(false);
   readonly saving       = signal(false);
 
@@ -41,16 +48,6 @@ export class ReferralListPage implements OnInit {
     { label: 'Referrals' },
   ];
 
-  readonly filtered = computed(() => {
-    const st = this.filterStatus();
-    const au = this.filterAuth();
-    const sub = this.filterSub().toLowerCase();
-    return this.referrals().filter(r =>
-      (!st || r.status === st) &&
-      (!au || r.requiredAuthority === au) &&
-      (!sub || r.submissionID.toLowerCase().includes(sub)));
-  });
-
   readonly createForm = this.fb.group({
     submissionID:      ['', Validators.required],
     raisedBy:          ['', Validators.required],
@@ -59,17 +56,44 @@ export class ReferralListPage implements OnInit {
     assignedTo:        ['', Validators.required],
   });
 
+  private searchTimer: any;
+
   constructor(private svc: RulesApiService) {}
 
   ngOnInit(): void { this.load(); }
 
   load(): void {
     this.loading.set(true);
-    this.svc.getReferrals().subscribe({
-      next: r => { this.referrals.set(r); this.loading.set(false); },
+    const sub = this.filterSub().trim();
+    this.svc.getReferrals(this.page(), this.size(), {
+      status:       this.filterStatus(),
+      authority:    this.filterAuth(),
+      // Only send if it looks like a Guid — backend expects [FromQuery] Guid?
+      submissionId: this.isGuid(sub) ? sub : undefined,
+    }).subscribe({
+      next: r => {
+        this.referrals.set(r.content);
+        this.totalElements.set(r.totalElements);
+        this.totalPages.set(r.totalPages);
+        this.page.set(r.page);
+        this.loading.set(false);
+      },
       error: () => { this.loading.set(false); this.flash('danger', 'Failed to load referrals.'); },
     });
   }
+
+  setStatus(v: string) { this.filterStatus.set(v as ReferralStatus | ''); this.page.set(0); this.load(); }
+  setAuth(v: string)   { this.filterAuth.set(v as Authority | ''); this.page.set(0); this.load(); }
+
+  /** Debounced submission-id search box. */
+  onSubInput(v: string): void {
+    this.filterSub.set(v);
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => { this.page.set(0); this.load(); }, 300);
+  }
+
+  onPageChange(p: number) { this.page.set(p); this.load(); }
+  onSizeChange(s: number) { this.size.set(s); this.page.set(0); this.load(); }
 
   updateStatus(r: Referral, status: ReferralStatus): void {
     this.updating.set(r.referralID);
@@ -95,13 +119,13 @@ export class ReferralListPage implements OnInit {
     const v = this.createForm.value;
     this.saving.set(true);
     this.svc.createReferral({
-      submissionID:      v.submissionID!,
-      raisedBy:          v.raisedBy!,
-      reason:            v.reason!,
+      submissionID:      (v.submissionID ?? '').trim(),
+      raisedBy:          (v.raisedBy ?? '').trim(),
+      reason:            (v.reason ?? '').trim(),
       requiredAuthority: v.requiredAuthority as Authority,
-      assignedTo:        v.assignedTo!,
+      assignedTo:        (v.assignedTo ?? '').trim(),
     }).subscribe({
-      next: () => { this.saving.set(false); this.closeCreate(); this.load(); this.flash('success', 'Referral raised.'); },
+      next: () => { this.saving.set(false); this.closeCreate(); this.page.set(0); this.load(); this.flash('success', 'Referral raised.'); },
       error: err => { this.saving.set(false); this.flash('danger', err?.error?.message ?? 'Failed to raise referral.'); },
     });
   }
@@ -119,6 +143,10 @@ export class ReferralListPage implements OnInit {
       UWManager: 'bg-warning text-dark', Committee: 'bg-danger',
     };
     return map[a] ?? 'bg-secondary';
+  }
+
+  private isGuid(s: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
   }
 
   private flash(type: 'success' | 'danger', text: string): void {

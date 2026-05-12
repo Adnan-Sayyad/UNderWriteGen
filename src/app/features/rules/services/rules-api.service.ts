@@ -1,14 +1,41 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
   UWRule, RiskScore, ReferralMatrix, Referral,
   RuleSeverity, UWStatus, RiskBand, Authority, ReferralStatus, CriteriaType,
-  EvaluateRulesResponse, RuleEvaluationResult,
+  EvaluateRulesResponse, RuleEvaluationResult, PagedResult,
   SEVERITIES, RISK_BANDS, AUTHORITIES, REFERRAL_STATUSES, CRITERIA_TYPES, UW_STATUSES,
   ConditionOperator,
 } from '../models/rules.model';
+
+function normalizePage<T>(res: any, normalizer: (x: any) => T): PagedResult<T> {
+  // Backend returns { content, page, size, totalElements, totalPages }.
+  // If callers ever return a raw array, wrap it as a single page so list pages still work.
+  if (Array.isArray(res)) {
+    const items = res.map(normalizer);
+    return { content: items, page: 0, size: items.length || 1, totalElements: items.length, totalPages: 1 };
+  }
+  const items = Array.isArray(res?.content) ? res.content.map(normalizer) : [];
+  return {
+    content:       items,
+    page:          Number(res?.page          ?? 0),
+    size:          Number(res?.size          ?? items.length),
+    totalElements: Number(res?.totalElements ?? items.length),
+    totalPages:    Number(res?.totalPages    ?? (items.length ? 1 : 0)),
+  };
+}
+
+function pageParams(page: number, size: number, extra?: Record<string, string | number | undefined | null>): HttpParams {
+  let p = new HttpParams().set('page', String(page)).set('size', String(size));
+  if (extra) {
+    for (const [k, v] of Object.entries(extra)) {
+      if (v !== undefined && v !== null && v !== '') p = p.set(k, String(v));
+    }
+  }
+  return p;
+}
 
 // ── enum normalisation: backend may send numeric or string enums ────────────
 function toEnumString<T extends string>(value: unknown, table: readonly T[], fallback: T): T {
@@ -88,9 +115,16 @@ export class RulesApiService {
   constructor(private http: HttpClient) {}
 
   // ── UW Rules ──────────────────────────────────────────────────────────────
-  getRules(): Observable<UWRule[]> {
-    return this.http.get<any>(`${this.base}/uw-rules`)
-      .pipe(map(r => asArray(r).map(normalizeUWRule)));
+  getRules(page = 0, size = 20, filters?: {
+    productLine?: string; severity?: RuleSeverity | ''; status?: UWStatus | '';
+  }): Observable<PagedResult<UWRule>> {
+    const params = pageParams(page, size, {
+      productLine: filters?.productLine || undefined,
+      severity:    filters?.severity    || undefined,
+      status:      filters?.status      || undefined,
+    });
+    return this.http.get<any>(`${this.base}/uw-rules`, { params })
+      .pipe(map(r => normalizePage(r, normalizeUWRule)));
   }
 
   getRuleById(id: string): Observable<UWRule | null> {
@@ -162,9 +196,16 @@ export class RulesApiService {
   }
 
   // ── Referral Matrix ───────────────────────────────────────────────────────
-  getMatrices(): Observable<ReferralMatrix[]> {
-    return this.http.get<any>(`${this.base}/referral-matrix`)
-      .pipe(map(r => asArray(r).map(normalizeMatrix)));
+  getMatrices(page = 0, size = 20, filters?: {
+    productLine?: string; authority?: Authority | ''; status?: UWStatus | '';
+  }): Observable<PagedResult<ReferralMatrix>> {
+    const params = pageParams(page, size, {
+      productLine: filters?.productLine || undefined,
+      authority:   filters?.authority   || undefined,
+      status:      filters?.status      || undefined,
+    });
+    return this.http.get<any>(`${this.base}/referral-matrix`, { params })
+      .pipe(map(r => normalizePage(r, normalizeMatrix)));
   }
 
   getMatrixById(id: string): Observable<ReferralMatrix | null> {
@@ -206,9 +247,16 @@ export class RulesApiService {
   }
 
   // ── Referrals ─────────────────────────────────────────────────────────────
-  getReferrals(): Observable<Referral[]> {
-    return this.http.get<any>(`${this.base}/referrals`)
-      .pipe(map(r => asArray(r).map(normalizeReferral)));
+  getReferrals(page = 0, size = 20, filters?: {
+    status?: ReferralStatus | ''; authority?: Authority | ''; submissionId?: string;
+  }): Observable<PagedResult<Referral>> {
+    const params = pageParams(page, size, {
+      status:       filters?.status       || undefined,
+      authority:    filters?.authority    || undefined,
+      submissionId: filters?.submissionId || undefined,
+    });
+    return this.http.get<any>(`${this.base}/referrals`, { params })
+      .pipe(map(r => normalizePage(r, normalizeReferral)));
   }
 
   getReferralById(id: string): Observable<Referral | null> {
@@ -252,14 +300,16 @@ export class RulesApiService {
       .pipe(map(r => r ? normalizeRiskScore(r?.data ?? r) : null));
   }
 
-  getRiskScoreHistory(submissionId: string): Observable<RiskScore[]> {
-    return this.http.get<any>(`${this.base}/risk-scores/${submissionId}/history`)
-      .pipe(map(r => asArray(r).map(normalizeRiskScore)));
+  getRiskScoreHistory(submissionId: string, page = 0, size = 20): Observable<PagedResult<RiskScore>> {
+    const params = pageParams(page, size);
+    return this.http.get<any>(`${this.base}/risk-scores/${submissionId}/history`, { params })
+      .pipe(map(r => normalizePage(r, normalizeRiskScore)));
   }
 
-  getScoresByBand(band: RiskBand): Observable<RiskScore[]> {
-    return this.http.get<any>(`${this.base}/risk-scores/band/${band}`)
-      .pipe(map(r => asArray(r).map(normalizeRiskScore)));
+  getScoresByBand(band: RiskBand, page = 0, size = 20): Observable<PagedResult<RiskScore>> {
+    const params = pageParams(page, size);
+    return this.http.get<any>(`${this.base}/risk-scores/band/${band}`, { params })
+      .pipe(map(r => normalizePage(r, normalizeRiskScore)));
   }
 
   calculateRiskScore(submissionId: string): Observable<RiskScore> {

@@ -30,27 +30,27 @@
       <div class="row g-2 align-items-center">
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="filterProd()" (change)="filterProd.set($any($event.target).value)">
+                  [value]="filterProd()" (change)="setProd($any($event.target).value)">
             <option value="">All Product Lines</option>
             @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
           </select>
         </div>
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="filterSev()" (change)="filterSev.set($any($event.target).value)">
+                  [value]="filterSev()" (change)="setSev($any($event.target).value)">
             <option value="">All Severities</option>
             @for (s of severities; track s) { <option [value]="s">{{ s }}</option> }
           </select>
         </div>
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
+                  [value]="filterStatus()" (change)="setStatus($any($event.target).value)">
             <option value="">All Statuses</option>
             @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
           </select>
         </div>
         <div class="col text-end">
-          <small class="text-muted">{{ filtered().length }} of {{ rules().length }} rule(s)</small>
+          <small class="text-muted">{{ totalElements() }} rule(s)</small>
           <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()" title="Refresh">
             <i class="bi bi-arrow-clockwise"></i>
           </button>
@@ -63,7 +63,7 @@
     <div class="card-body p-0">
       @if (loading()) {
         <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
-      } @else if (!filtered().length) {
+      } @else if (!rules().length) {
         <app-empty-state icon="bi-diagram-3" title="No rules found"
                          message="Configure underwriting rules to automate risk decisions."></app-empty-state>
       } @else {
@@ -80,7 +80,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (r of filtered(); track r.uwRuleID) {
+              @for (r of rules(); track r.uwRuleID) {
                 <tr>
                   <td>
                     <div class="fw-medium">{{ ruleTitle(r) }}</div>
@@ -113,6 +113,16 @@
             </tbody>
           </table>
         </div>
+
+        <app-pager
+          [page]="page()"
+          [size]="size()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pager>
       }
     </div>
   </div>
@@ -166,7 +176,10 @@
               <li class="list-group-item d-flex align-items-center gap-2 py-2 px-0 border-0 border-bottom">
                 <span class="badge" [ngClass]="severityClass(r.severity)" style="min-width:60px">{{ r.severity }}</span>
                 <span class="badge bg-primary">{{ r.productLine }}</span>
-                <small class="text-muted flex-grow-1">{{ r.message }}</small>
+                <div class="flex-grow-1 small">
+                  @if (r.ruleName) { <div class="fw-medium">{{ r.ruleName }}</div> }
+                  <small class="text-muted">{{ r.message }}</small>
+                </div>
                 <i class="bi" [class.bi-check-circle-fill]="r.triggered" [class.text-success]="r.triggered"
                               [class.bi-dash-circle]="!r.triggered" [class.text-muted]="!r.triggered"></i>
               </li>

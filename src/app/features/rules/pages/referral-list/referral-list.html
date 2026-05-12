@@ -27,25 +27,25 @@
       <div class="row g-2 align-items-center">
         <div class="col-md-3">
           <input type="text" class="form-control form-control-sm"
-                 placeholder="Search submission ID…"
-                 [value]="filterSub()" (input)="filterSub.set($any($event.target).value)" />
+                 placeholder="Search by full submission GUID…"
+                 [value]="filterSub()" (input)="onSubInput($any($event.target).value)" />
         </div>
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
+                  [value]="filterStatus()" (change)="setStatus($any($event.target).value)">
             <option value="">All Statuses</option>
             @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
           </select>
         </div>
         <div class="col-md-3">
           <select class="form-select form-select-sm"
-                  [value]="filterAuth()" (change)="filterAuth.set($any($event.target).value)">
+                  [value]="filterAuth()" (change)="setAuth($any($event.target).value)">
             <option value="">All Authorities</option>
             @for (a of authorities; track a) { <option [value]="a">{{ a }}</option> }
           </select>
         </div>
         <div class="col text-end">
-          <small class="text-muted">{{ filtered().length }} of {{ referrals().length }} referral(s)</small>
+          <small class="text-muted">{{ totalElements() }} referral(s)</small>
           <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()" title="Refresh">
             <i class="bi bi-arrow-clockwise"></i>
           </button>
@@ -58,7 +58,7 @@
     <div class="card-body p-0">
       @if (loading()) {
         <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
-      } @else if (!filtered().length) {
+      } @else if (!referrals().length) {
         <app-empty-state icon="bi-arrow-left-right" title="No referrals found"
                          message="Raise a referral when a submission needs authority approval."></app-empty-state>
       } @else {
@@ -78,7 +78,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (r of filtered(); track r.referralID) {
+              @for (r of referrals(); track r.referralID) {
                 <tr>
                   <td class="font-monospace small">{{ r.referralID | slice:0:8 }}…</td>
                   <td class="font-monospace small">{{ r.submissionID | slice:0:8 }}…</td>
@@ -108,6 +108,16 @@
             </tbody>
           </table>
         </div>
+
+        <app-pager
+          [page]="page()"
+          [size]="size()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pager>
       }
     </div>
   </div>

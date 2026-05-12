@@ -54,8 +54,8 @@
           <div class="card-body">
             @if (latest(); as s) {
               <div class="text-center mb-3">
-                <div class="score-circle" [style.--score-color]="scoreGaugeColor(s.scoreValue)"
-                     [style.--score-percent.%]="scorePercent(s.scoreValue)">
+                <div class="score-circle"
+                     [attr.style]="'--score-color: ' + scoreGaugeColor(s.scoreValue) + '; --score-percent: ' + scorePercent(s.scoreValue) + '%'">
                   <div class="score-inner">
                     <div class="score-value">{{ s.scoreValue | number:'1.0-1' }}</div>
                     <small class="text-muted">/ 100</small>
@@ -92,7 +92,7 @@
         <div class="card border-0 shadow-sm h-100">
           <div class="card-header bg-transparent border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
             <h6 class="mb-0 fw-semibold"><i class="bi bi-clock-history me-2 text-primary"></i>Scoring History</h6>
-            <span class="small text-muted">{{ history().length }} entry(ies)</span>
+            <span class="small text-muted">{{ historyTotal() }} entry(ies)</span>
           </div>
           <div class="card-body p-0">
             @if (!history().length) {
@@ -121,6 +121,17 @@
                   </tbody>
                 </table>
               </div>
+
+              <app-pager
+                [page]="historyPage()"
+                [size]="historySize()"
+                [totalElements]="historyTotal()"
+                [totalPages]="historyTotalPages()"
+                [pageSizes]="[5, 10, 25, 50]"
+                [disabled]="loading()"
+                (pageChange)="onHistoryPageChange($event)"
+                (sizeChange)="onHistorySizeChange($event)">
+              </app-pager>
             }
           </div>
         </div>
@@ -138,6 +149,9 @@
           <option value="">— Choose Band —</option>
           @for (b of bands; track b) { <option [value]="b">{{ b }}</option> }
         </select>
+        @if (bandFilter()) {
+          <small class="text-muted">{{ bandTotal() }} in band</small>
+        }
       </div>
     </div>
     <div class="card-body p-0">
@@ -174,6 +188,16 @@
             </tbody>
           </table>
         </div>
+
+        <app-pager
+          [page]="bandPage()"
+          [size]="bandSize()"
+          [totalElements]="bandTotal()"
+          [totalPages]="bandTotalPages()"
+          [disabled]="bandLoading()"
+          (pageChange)="onBandPageChange($event)"
+          (sizeChange)="onBandSizeChange($event)">
+        </app-pager>
       }
     </div>
   </div>

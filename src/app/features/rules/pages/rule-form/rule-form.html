@@ -115,7 +115,9 @@
                 <!-- Operator -->
                 <div class="cond-op">
                   <label class="form-label small fw-medium mb-1">Is</label>
-                  <select class="form-select form-select-sm" formControlName="operator">
+                  <select class="form-select form-select-sm"
+                          [value]="row.controls['operator'].value"
+                          (change)="onOperatorChange(i, $any($event.target).value)">
                     @for (op of operatorsFor(row.controls['type'].value); track op.value) {
                       <option [value]="op.value">{{ op.label }}</option>
                     }

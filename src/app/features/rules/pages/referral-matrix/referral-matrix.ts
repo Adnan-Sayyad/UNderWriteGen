@@ -5,10 +5,11 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pager } from '../../components/pager/pager';
 import { RulesApiService } from '../../services/rules-api.service';
 import {
   ReferralMatrix, CriteriaType, Authority, UWStatus, ConditionOperator,
-  AUTHORITIES, CRITERIA_TYPES, UW_STATUSES, PRODUCT_LINES, RISK_BANDS,
+  AUTHORITIES, CRITERIA_TYPES, UW_STATUSES, PRODUCT_LINES, RISK_BANDS, DEFAULT_PAGE_SIZE,
   OPERATORS_BY_TYPE, operatorSymbol,
 } from '../../models/rules.model';
 
@@ -17,7 +18,7 @@ type ModalMode = 'create' | 'edit' | null;
 @Component({
   selector: 'app-referral-matrix',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState, Pager],
   templateUrl: './referral-matrix.html',
   styleUrl: './referral-matrix.css',
 })
@@ -34,13 +35,18 @@ export class ReferralMatrixPage implements OnInit {
   readonly filterAuth  = signal<Authority | ''>('');
   readonly alertMsg    = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
 
+  // Pagination
+  readonly page          = signal(0);
+  readonly size          = signal(DEFAULT_PAGE_SIZE);
+  readonly totalElements = signal(0);
+  readonly totalPages    = signal(0);
+
   readonly productLines  = PRODUCT_LINES;
   readonly authorities   = AUTHORITIES;
   readonly criteriaTypes = CRITERIA_TYPES;
   readonly statuses      = UW_STATUSES;
   readonly riskBands     = RISK_BANDS;
 
-  // class options used when CriteriaJSON === 'Class'
   readonly classOptions  = ['A', 'B', 'C', 'D', 'E'];
 
   readonly breadcrumbs = [
@@ -48,13 +54,6 @@ export class ReferralMatrixPage implements OnInit {
     { label: 'UW Rules', route: '/rules/list' },
     { label: 'Referral Matrix' },
   ];
-
-  readonly filtered = computed(() => {
-    const p = this.filterProd();
-    const a = this.filterAuth();
-    return this.matrices().filter(m =>
-      (!p || m.productLine === p) && (!a || m.requiredAuthority === a));
-  });
 
   readonly form = this.fb.group({
     productLine:       ['Life', Validators.required],
@@ -65,10 +64,9 @@ export class ReferralMatrixPage implements OnInit {
     status:            ['Active' as UWStatus, Validators.required],
   });
 
-  // Watch criteria changes so the value/operator stay sensible
   readonly criteriaSig = signal<CriteriaType>('SumInsured');
+  private suppressCriteriaWatcher = false;
 
-  // Operator options shown in the form (depend on criteria type)
   readonly operatorOptions = computed(() => {
     const c = this.criteriaSig();
     if (c === 'SumInsured') return OPERATORS_BY_TYPE.number;
@@ -80,7 +78,7 @@ export class ReferralMatrixPage implements OnInit {
     this.form.controls.criteriaJSON.valueChanges.subscribe(c => {
       if (!c) return;
       this.criteriaSig.set(c);
-      // Re-default operator and threshold to sensible values for the new criteria
+      if (this.suppressCriteriaWatcher) return;
       const opts = this.operatorOptions();
       this.form.patchValue({
         operator:  opts.some(o => o.value === this.form.controls.operator.value)
@@ -95,11 +93,25 @@ export class ReferralMatrixPage implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.svc.getMatrices().subscribe({
-      next: m => { this.matrices.set(m); this.loading.set(false); },
+    this.svc.getMatrices(this.page(), this.size(), {
+      productLine: this.filterProd(),
+      authority:   this.filterAuth(),
+    }).subscribe({
+      next: r => {
+        this.matrices.set(r.content);
+        this.totalElements.set(r.totalElements);
+        this.totalPages.set(r.totalPages);
+        this.page.set(r.page);
+        this.loading.set(false);
+      },
       error: () => { this.loading.set(false); this.flash('danger', 'Failed to load referral matrix.'); },
     });
   }
+
+  setProd(v: string) { this.filterProd.set(v); this.page.set(0); this.load(); }
+  setAuth(v: string) { this.filterAuth.set(v as Authority | ''); this.page.set(0); this.load(); }
+  onPageChange(p: number) { this.page.set(p); this.load(); }
+  onSizeChange(s: number) { this.size.set(s); this.page.set(0); this.load(); }
 
   openCreate(): void {
     this.selected.set(null);
@@ -115,6 +127,7 @@ export class ReferralMatrixPage implements OnInit {
   openEdit(m: ReferralMatrix): void {
     this.selected.set(m);
     this.criteriaSig.set(m.criteriaJSON);
+    this.suppressCriteriaWatcher = true;
     this.form.patchValue({
       productLine:       m.productLine,
       criteriaJSON:      m.criteriaJSON,
@@ -123,6 +136,7 @@ export class ReferralMatrixPage implements OnInit {
       requiredAuthority: m.requiredAuthority,
       status:            m.status,
     });
+    queueMicrotask(() => { this.suppressCriteriaWatcher = false; });
     this.modalMode.set('edit');
   }
 
@@ -156,8 +170,9 @@ export class ReferralMatrixPage implements OnInit {
     this.svc.deleteMatrix(m.referralMatrixID).subscribe({
       next: () => {
         this.deleting.set(null);
-        this.matrices.update(list => list.filter(x => x.referralMatrixID !== m.referralMatrixID));
         this.flash('success', 'Matrix entry deleted.');
+        if (this.matrices().length === 1 && this.page() > 0) this.page.update(p => p - 1);
+        this.load();
       },
       error: () => { this.deleting.set(null); this.flash('danger', 'Delete failed.'); },
     });
@@ -173,8 +188,6 @@ export class ReferralMatrixPage implements OnInit {
       error: () => this.flash('danger', 'Status change failed.'),
     });
   }
-
-  // ─── Display helpers ───────────────────────────────────────────────────────
 
   formatThreshold(m: ReferralMatrix): string {
     if (!m.threshold) return '—';
