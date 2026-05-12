@@ -20,4 +20,5 @@ export interface CustomerParty {
   contactInfo:      string;
   segment:          Segment;
   status:           PartyStatus;
+  createdByUserId?: string | null;
 }

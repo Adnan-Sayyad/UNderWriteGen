@@ -4,9 +4,11 @@
     subtitle="Manage insured parties, individuals and corporations"
     icon="bi-people"
     [breadcrumbs]="breadcrumbs">
-    <button class="btn btn-primary btn-sm" (click)="openCreate()">
-      <i class="bi bi-plus-lg me-1"></i>Add Party
-    </button>
+    @if (canAddParty()) {
+      <button class="btn btn-primary btn-sm" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i>Add Party
+      </button>
+    }
   </app-page-header>
 
   @if (alertMsg()) {
@@ -69,7 +71,9 @@
                 <th>DOB / Incorporation</th>
                 <th>Contact Info</th>
                 <th>Status</th>
-                <th class="text-end table-actions">Actions</th>
+                @if (isAdmin() || canAddParty()) {
+                  <th class="text-end table-actions">Actions</th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -82,21 +86,27 @@
                   <td class="small text-muted">{{ p.dOBIncorporation ? (p.dOBIncorporation | date:'dd MMM yyyy':'UTC') : '—' }}</td>
                   <td class="small text-muted">{{ p.contactInfo || '—' }}</td>
                   <td><app-status-badge [status]="p.status"></app-status-badge></td>
-                  <td class="text-end table-actions">
-                    <div class="d-flex justify-content-end gap-1">
-                      <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(p)">
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button class="btn btn-sm"
-                              [class.btn-outline-danger]="p.status === 'Active'"
-                              [class.btn-outline-success]="p.status !== 'Active'"
-                              [title]="p.status === 'Active' ? 'Deactivate' : 'Activate'"
-                              (click)="toggleStatus(p)">
-                        <i class="bi" [class.bi-toggle-on]="p.status === 'Active'"
-                                      [class.bi-toggle-off]="p.status !== 'Active'"></i>
-                      </button>
-                    </div>
-                  </td>
+                  @if (isAdmin() || canAddParty()) {
+                    <td class="text-end table-actions">
+                      <div class="d-flex justify-content-end gap-1">
+                        @if (canEditParty(p)) {
+                          <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(p)">
+                            <i class="bi bi-pencil"></i>
+                          </button>
+                        }
+                        @if (isAdmin()) {
+                          <button class="btn btn-sm"
+                                  [class.btn-outline-danger]="p.status === 'Active'"
+                                  [class.btn-outline-success]="p.status !== 'Active'"
+                                  [title]="p.status === 'Active' ? 'Deactivate' : 'Activate'"
+                                  (click)="toggleStatus(p)">
+                            <i class="bi" [class.bi-toggle-on]="p.status === 'Active'"
+                                          [class.bi-toggle-off]="p.status !== 'Active'"></i>
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  }
                 </tr>
               }
             </tbody>
@@ -117,7 +127,7 @@
 </div>
 
 <!-- Slide-in Modal -->
-@if (modalMode()) {
+@if (modalMode() && (isAdmin() || canAddParty())) {
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">
