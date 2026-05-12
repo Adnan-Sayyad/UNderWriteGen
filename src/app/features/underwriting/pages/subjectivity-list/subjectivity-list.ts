@@ -4,17 +4,15 @@ import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { UnderwritingApiService } from '../../services/underwriting-api.service';
 import { Subjectivity, SubjectivityStatus } from '../../models/underwriting.model';
-
-const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-subjectivity-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './subjectivity-list.html',
   styleUrl: './subjectivity-list.css',
 })
@@ -27,6 +25,7 @@ export class SubjectivityListPage implements OnInit {
   readonly searchQuery    = signal('');
   readonly alertMsg       = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly currentPage    = signal(0);
+  readonly pageSize       = signal(10);
   readonly totalPages     = signal(0);
   readonly totalElements  = signal(0);
   readonly showCreateModal = signal(false);
@@ -63,9 +62,9 @@ export class SubjectivityListPage implements OnInit {
 
   ngOnInit(): void { this.load(); }
 
-  load(page = 0): void {
+  load(page = this.currentPage()): void {
     this.loading.set(true);
-    const req: any = { page, size: PAGE_SIZE, sort: 'dueDate', direction: 'asc' };
+    const req: any = { page, size: this.pageSize(), sort: 'dueDate', direction: 'asc' };
     this.svc.getSubjectivities(req).subscribe({
       next: (res: any) => {
         this.subjectivities.set(res?.content ?? res?.data ?? []);
@@ -78,10 +77,8 @@ export class SubjectivityListPage implements OnInit {
     });
   }
 
-  goToPage(page: number): void {
-    if (page < 0 || page >= this.totalPages()) return;
-    this.load(page);
-  }
+  onPageChange(p: number): void { this.currentPage.set(p); this.load(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); this.load(0); }
 
   askConfirm(s: Subjectivity, action: SubjectivityStatus): void {
     this.confirmId.set(s.subjectivityId);

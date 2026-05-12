@@ -1,9 +1,10 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PartyApiService } from '../../services/party-api.service';
 import { Agent, AgentStatus } from '../../models/party.model';
 import {
@@ -18,7 +19,7 @@ const STATUSES: AgentStatus[] = ['Active', 'Inactive'];
 @Component({
   selector: 'app-agent-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './agent-list.html',
   styleUrl: './agent-list.css',
 })
@@ -32,6 +33,8 @@ export class AgentListPage implements OnInit {
   readonly filterStatus = signal('');
   readonly alertMsg     = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly statuses     = STATUSES;
+  readonly currentPage  = signal(0);
+  readonly pageSize     = signal(10);
 
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
@@ -40,6 +43,14 @@ export class AgentListPage implements OnInit {
       (!q || a.name.toLowerCase().includes(q) || a.producerCode.toLowerCase().includes(q)) &&
       (!s || a.status === s)
     );
+  });
+
+  readonly totalElements = computed(() => this.filtered().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly paginated     = computed(() => {
+    const size = this.pageSize();
+    const page = Math.min(this.currentPage(), this.totalPages() - 1);
+    return this.filtered().slice(page * size, page * size + size);
   });
 
   readonly breadcrumbs = [
@@ -72,9 +83,14 @@ export class AgentListPage implements OnInit {
     status: ['Active' as AgentStatus, Validators.required],
   });
 
-  constructor(private svc: PartyApiService) {}
+  constructor(private svc: PartyApiService) {
+    effect(() => { this.filtered(); this.currentPage.set(0); });
+  }
 
   ngOnInit(): void { this.load(); }
+
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
 
   load(): void {
     this.loading.set(true);
@@ -116,7 +132,7 @@ export class AgentListPage implements OnInit {
       name:         v.name!,
       producerCode: v.producerCode!,
       region:       v.region ?? '',
-      contactInfo:  v.contactInfo || null,
+      contactInfo:  v.contactInfo ?? undefined,
       status:       v.status as AgentStatus,
     };
     const req = this.modalMode() === 'edit'

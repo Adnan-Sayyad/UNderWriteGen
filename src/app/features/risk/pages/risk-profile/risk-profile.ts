@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+
 import { RiskApiService } from '../../services/risk-api.service';
 import { RiskProfile, RiskType } from '../../models/risk.model';
 
@@ -12,7 +12,7 @@ const RISK_TYPES: RiskType[] = ['Life', 'Health', 'Property', 'Auto', 'Marine', 
 @Component({
   selector: 'app-risk-profile',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader],
   templateUrl: './risk-profile.html',
   styleUrl: './risk-profile.css',
 })

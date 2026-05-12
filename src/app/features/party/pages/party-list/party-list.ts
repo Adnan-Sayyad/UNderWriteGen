@@ -1,10 +1,11 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PartyApiService } from '../../services/party-api.service';
 import { CustomerParty, PartyType, Segment, PartyStatus } from '../../models/party.model';
 import {
@@ -21,7 +22,7 @@ const SEGMENTS: Segment[]       = ['Retail', 'SME', 'Corporate'];
 @Component({
   selector: 'app-party-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, StatusBadge, EmptyState, Pagination],
   templateUrl: './party-list.html',
   styleUrl: './party-list.css',
 })
@@ -36,6 +37,8 @@ export class PartyListPage implements OnInit {
   readonly alertMsg    = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly partyTypes  = PARTY_TYPES;
   readonly segments    = SEGMENTS;
+  readonly currentPage = signal(0);
+  readonly pageSize    = signal(10);
 
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
@@ -43,6 +46,14 @@ export class PartyListPage implements OnInit {
     return this.parties().filter(p =>
       (!q || p.name.toLowerCase().includes(q)) && (!t || p.partyType === t)
     );
+  });
+
+  readonly totalElements = computed(() => this.filtered().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly paginated     = computed(() => {
+    const size = this.pageSize();
+    const page = Math.min(this.currentPage(), this.totalPages() - 1);
+    return this.filtered().slice(page * size, page * size + size);
   });
 
   readonly breadcrumbs = [
@@ -67,9 +78,14 @@ export class PartyListPage implements OnInit {
     contactInfo:      ['', [smartContactInfoValidator(), Validators.maxLength(500)]],
   });
 
-  constructor(private svc: PartyApiService) {}
+  constructor(private svc: PartyApiService) {
+    effect(() => { this.filtered(); this.currentPage.set(0); });
+  }
 
   ngOnInit(): void { this.load(); }
+
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
 
   load(): void {
     this.loading.set(true);
@@ -118,7 +134,7 @@ export class PartyListPage implements OnInit {
       partyType:        v.partyType as PartyType,
       segment:          v.segment as Segment,
       dOBIncorporation: v.dOBIncorporation || null,
-      contactInfo:      v.contactInfo || null,
+      contactInfo:      v.contactInfo ?? undefined,
     };
     const req = this.modalMode() === 'edit'
       ? this.svc.updateParty(this.selected()!.partyID, payload)

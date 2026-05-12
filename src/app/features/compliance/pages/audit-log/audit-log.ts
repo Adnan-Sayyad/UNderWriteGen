@@ -4,14 +4,14 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
-import { ComplianceApiService } from '../../services/compliance-api.service';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
+import { IamApiService, AuditLogDto } from '../../../../core/services/iam-api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { AuditLogDto } from '../../../../core/services/iam-api.service';
 
 @Component({
   selector: 'app-audit-log',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './audit-log.html',
   styleUrl: './audit-log.css',
 })
@@ -40,6 +40,21 @@ export class AuditLogPage implements OnInit {
     );
   });
 
+  // Pagination
+  readonly currentPage   = signal(0);
+  readonly pageSize      = signal(10);
+  readonly totalElements = computed(() => this.filtered().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly paged         = computed(() => {
+    const size  = this.pageSize();
+    const page  = Math.min(this.currentPage(), this.totalPages() - 1);
+    const start = page * size;
+    return this.filtered().slice(start, start + size);
+  });
+
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
+
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
     { label: 'Compliance', route: '/compliance' },
@@ -48,15 +63,15 @@ export class AuditLogPage implements OnInit {
 
   private get adminId() { return this.auth.currentUser()?.userId ?? ''; }
 
-  constructor(private svc: ComplianceApiService, readonly auth: AuthService) {}
+  constructor(private iam: IamApiService, readonly auth: AuthService) {}
 
   ngOnInit(): void { this.load(); }
 
   load(): void {
     this.loading.set(true);
-    this.svc.getAuditLogs(this.adminId).subscribe({
-      next: data => { this.logs.set(data); this.loading.set(false); },
-      error: ()   => this.loading.set(false),
+    this.iam.getAuditLogs(this.adminId).subscribe({
+      next: (data: AuditLogDto[]) => { this.logs.set(data); this.loading.set(false); },
+      error: ()                   => this.loading.set(false),
     });
   }
 

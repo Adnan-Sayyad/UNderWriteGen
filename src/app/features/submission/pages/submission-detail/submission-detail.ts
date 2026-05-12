@@ -1,9 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { SubmissionApiService } from '../../services/submission-api.service';
 import { Submission, Attachment, CompletenessCheck, Questionnaire, SubmissionStatus, DocType } from '../../models/submission.model';
@@ -16,7 +15,7 @@ const DOC_TYPES: DocType[] = ['KYC', 'Financial', 'Medical', 'Inspection', 'Phot
 @Component({
   selector: 'app-submission-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeader, StatusBadge, EmptyState],
+  imports: [CommonModule, RouterModule, FormsModule, PageHeader, EmptyState],
   templateUrl: './submission-detail.html',
   styleUrl: './submission-detail.css',
 })
@@ -58,7 +57,26 @@ export class SubmissionDetailPage implements OnInit {
 
   private submissionId = '';
 
-  constructor(private svc: SubmissionApiService, private route: ActivatedRoute) {}
+  constructor(
+    private svc: SubmissionApiService,
+    private route: ActivatedRoute,
+    private router: Router,
+  ) {}
+
+  logBreach(): void {
+    this.router.navigate(['/compliance/authority-breaches'],
+      { queryParams: { submissionId: this.submissionId } });
+  }
+
+  logException(): void {
+    this.router.navigate(['/compliance/exceptions'],
+      { queryParams: { submissionId: this.submissionId } });
+  }
+
+  newChecklist(): void {
+    this.router.navigate(['/compliance/checklists'],
+      { queryParams: { submissionId: this.submissionId } });
+  }
 
   ngOnInit(): void {
     this.submissionId = this.route.snapshot.paramMap.get('id')!;

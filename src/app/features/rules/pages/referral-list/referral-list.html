@@ -1,9 +1,17 @@
 <div class="page-container">
   <app-page-header
     title="Referrals"
-    subtitle="Manage underwriting referrals requiring authority approval"
+    subtitle="Underwriting referrals awaiting authority decisions"
     icon="bi-arrow-left-right"
     [breadcrumbs]="breadcrumbs">
+    <div class="d-flex gap-2">
+      <a routerLink="/rules/list" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Rules
+      </a>
+      <button class="btn btn-sm btn-primary" (click)="openCreate()">
+        <i class="bi bi-send me-1"></i>Raise Referral
+      </button>
+    </div>
   </app-page-header>
 
   @if (alertMsg()) {
@@ -14,31 +22,55 @@
     </div>
   }
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-body border-bottom py-2 d-flex flex-wrap align-items-center gap-2">
-      <label class="small text-muted mb-0">Status:</label>
-      <select class="form-select form-select-sm w-auto" [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
-        <option value="">All</option>
-        <option value="Pending">Pending</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-      </select>
-      <span class="text-muted small ms-auto">{{ filtered().length }} referral(s)</span>
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-3">
+          <input type="text" class="form-control form-control-sm"
+                 placeholder="Search by full submission GUID…"
+                 [value]="filterSub()" (input)="onSubInput($any($event.target).value)" />
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="filterStatus()" (change)="setStatus($any($event.target).value)">
+            <option value="">All Statuses</option>
+            @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm"
+                  [value]="filterAuth()" (change)="setAuth($any($event.target).value)">
+            <option value="">All Authorities</option>
+            @for (a of authorities; track a) { <option [value]="a">{{ a }}</option> }
+          </select>
+        </div>
+        <div class="col text-end">
+          <small class="text-muted">{{ totalElements() }} referral(s)</small>
+          <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()" title="Refresh">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
       @if (loading()) {
-        <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading referrals…</div>
-      } @else if (!filtered().length) {
-        <app-empty-state icon="bi-arrow-left-right" title="No referrals found"></app-empty-state>
+        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+      } @else if (!referrals().length) {
+        <app-empty-state icon="bi-arrow-left-right" title="No referrals found"
+                         message="Raise a referral when a submission needs authority approval."></app-empty-state>
       } @else {
         <div class="table-responsive">
           <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
               <tr>
+                <th>Referral</th>
                 <th>Submission</th>
                 <th>Reason</th>
                 <th>Raised By</th>
-                <th>Required Authority</th>
+                <th>Authority</th>
                 <th>Assigned To</th>
                 <th>Created</th>
                 <th>Status</th>
@@ -46,27 +78,29 @@
               </tr>
             </thead>
             <tbody>
-              @for (r of filtered(); track r.referralId) {
+              @for (r of referrals(); track r.referralID) {
                 <tr>
-                  <td>
-                    <a [routerLink]="['/submissions', r.submissionId]" class="text-decoration-none small">
-                      {{ r.submissionId }}
-                    </a>
-                  </td>
-                  <td class="small">{{ r.reason }}</td>
+                  <td class="font-monospace small">{{ r.referralID | slice:0:8 }}…</td>
+                  <td class="font-monospace small">{{ r.submissionID | slice:0:8 }}…</td>
+                  <td class="small text-truncate-2" style="max-width:240px">{{ r.reason }}</td>
                   <td class="small text-muted">{{ r.raisedBy }}</td>
                   <td><span class="badge" [ngClass]="authorityClass(r.requiredAuthority)">{{ r.requiredAuthority }}</span></td>
-                  <td class="small text-muted">{{ r.assignedTo }}</td>
+                  <td class="small text-muted">{{ r.assignedTo || '—' }}</td>
                   <td class="small text-muted">{{ r.createdDate | date:'mediumDate' }}</td>
-                  <td><span class="badge" [ngClass]="statusClass(r.status)">{{ r.status }}</span></td>
+                  <td><app-status-badge [status]="r.status"></app-status-badge></td>
                   <td class="table-actions">
                     @if (r.status === 'Pending') {
-                      <button class="btn btn-sm btn-success me-1" title="Approve" (click)="updateStatus(r, 'Approved')">
-                        <i class="bi bi-check-lg"></i>
+                      <button class="btn btn-sm btn-success me-1" title="Approve"
+                              (click)="updateStatus(r, 'Approved')" [disabled]="updating() === r.referralID">
+                        @if (updating() === r.referralID) { <span class="spinner-border spinner-border-sm"></span> }
+                        @else { <i class="bi bi-check-lg"></i> }
                       </button>
-                      <button class="btn btn-sm btn-outline-danger" title="Reject" (click)="updateStatus(r, 'Rejected')">
+                      <button class="btn btn-sm btn-outline-danger" title="Reject"
+                              (click)="updateStatus(r, 'Rejected')" [disabled]="updating() === r.referralID">
                         <i class="bi bi-x-lg"></i>
                       </button>
+                    } @else {
+                      <span class="text-muted small">—</span>
                     }
                   </td>
                 </tr>
@@ -74,7 +108,75 @@
             </tbody>
           </table>
         </div>
+
+        <app-pagination
+          [page]="page()"
+          [size]="size()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pagination>
       }
     </div>
   </div>
 </div>
+
+@if (createOpen()) {
+  <div class="modal-backdrop-custom" (click)="closeCreate()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header">
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-send me-2 text-primary"></i>Raise New Referral
+      </h6>
+      <button class="btn-close btn-sm" (click)="closeCreate()"></button>
+    </div>
+    <div class="modal-panel-body">
+      <form [formGroup]="createForm" novalidate>
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label class="form-label small fw-medium required-mark">Submission ID</label>
+            <input type="text" class="form-control form-control-sm font-monospace"
+                   [class.is-invalid]="createForm.controls.submissionID.invalid && createForm.controls.submissionID.touched"
+                   formControlName="submissionID" placeholder="3f1c2a90-…" />
+            <div class="invalid-feedback">Submission id is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Raised By</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="createForm.controls.raisedBy.invalid && createForm.controls.raisedBy.touched"
+                   formControlName="raisedBy" placeholder="UW user" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Assigned To</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="createForm.controls.assignedTo.invalid && createForm.controls.assignedTo.touched"
+                   formControlName="assignedTo" placeholder="Authority user" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Required Authority</label>
+            <select class="form-select form-select-sm" formControlName="requiredAuthority">
+              @for (a of authorities; track a) { <option [value]="a">{{ a }}</option> }
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-medium required-mark">Reason</label>
+            <textarea class="form-control form-control-sm" rows="3"
+                      [class.is-invalid]="createForm.controls.reason.invalid && createForm.controls.reason.touched"
+                      formControlName="reason"
+                      placeholder="Describe why this submission needs higher authority…"></textarea>
+            <div class="invalid-feedback">Reason must be at least 5 characters.</div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-panel-footer">
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeCreate()">Cancel</button>
+      <button class="btn btn-sm btn-primary" (click)="saveCreate()" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        Raise Referral
+      </button>
+    </div>
+  </div>
+}

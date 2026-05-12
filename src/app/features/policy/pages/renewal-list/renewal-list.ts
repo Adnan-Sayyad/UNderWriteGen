@@ -3,15 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PolicyApiService } from '../../services/policy-api.service';
 import { Renewal, RenewalStatus } from '../../models/policy.model';
-
-const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-renewal-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, PageHeader, EmptyState, Pagination],
   templateUrl: './renewal-list.html',
   styleUrl: './renewal-list.css',
 })
@@ -21,6 +20,7 @@ export class RenewalListPage implements OnInit {
   readonly filterStatus  = signal<RenewalStatus | ''>('');
   readonly alertMsg      = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly currentPage   = signal(0);
+  readonly pageSize      = signal(10);
   readonly totalPages    = signal(0);
   readonly totalElements = signal(0);
 
@@ -43,9 +43,9 @@ export class RenewalListPage implements OnInit {
 
   ngOnInit() { this.load(); }
 
-  load(page = 0) {
+  load(page = this.currentPage()) {
     this.loading.set(true);
-    const req: any = { page, size: PAGE_SIZE, sort: 'offeredDate', direction: 'desc' };
+    const req: any = { page, size: this.pageSize(), sort: 'offeredDate', direction: 'desc' };
     this.svc.getRenewals(req).subscribe({
       next: (res: any) => {
         this.renewals.set(res?.content ?? res?.data ?? []);
@@ -58,10 +58,8 @@ export class RenewalListPage implements OnInit {
     });
   }
 
-  goToPage(page: number) {
-    if (page < 0 || page >= this.totalPages()) return;
-    this.load(page);
-  }
+  onPageChange(p: number) { this.currentPage.set(p); this.load(p); }
+  onSizeChange(s: number) { this.pageSize.set(s); this.currentPage.set(0); this.load(0); }
 
   updateStatus(r: Renewal, status: RenewalStatus) {
     this.svc.updateRenewal(r.renewalId, { status }).subscribe({

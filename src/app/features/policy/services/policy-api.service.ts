@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { Policy, Endorsement, Cancellation, Renewal, PolicyStatus, EndorsementStatus, CancellationStatus, RenewalStatus, EndorsementType } from '../models/policy.model';
 import { PagedResponse, ApiResponse } from '../../../shared/models/api-response.model';
 import { PageRequest } from '../../../shared/models/pagination.model';
+import { toPagedResponse } from '../../../shared/models/paging.util';
 
 function parseJSON(val: any): Record<string, unknown> {
   if (!val) return {};
@@ -58,16 +59,7 @@ function normalizeRenewal(r: any): Renewal {
   };
 }
 
-function pagedMap<T>(res: any, normalizer: (r: any) => T): PagedResponse<T> {
-  const raw: any[] = Array.isArray(res) ? res : (res?.content ?? res?.data ?? []);
-  const items = raw.map(normalizer);
-  return {
-    content: items, data: items,
-    totalPages:    Array.isArray(res) ? 1 : (res?.totalPages    ?? 1),
-    totalElements: Array.isArray(res) ? items.length : (res?.totalElements ?? items.length),
-    size: 10, number: 0,
-  } as unknown as PagedResponse<T>;
-}
+const DEFAULT_REQ: PageRequest = { page: 0, size: 10 };
 
 @Injectable({ providedIn: 'root' })
 export class PolicyApiService {
@@ -80,7 +72,7 @@ export class PolicyApiService {
   getAll(req: PageRequest, filters?: Record<string, string>) {
     return this.http.get<any>(`${this.base}/policies`, {
       params: new HttpParams({ fromObject: { ...req, ...filters } as any }),
-    }).pipe(map(res => pagedMap<Policy>(res, normalizePolicy)));
+    }).pipe(map(res => toPagedResponse<Policy>(res, req, normalizePolicy)));
   }
 
   getById(id: string) {
@@ -104,7 +96,7 @@ export class PolicyApiService {
 
   getEndorsements(policyId: string) {
     return this.http.get<any>(`${this.base}/endorsements/${policyId}`).pipe(
-      map(res => pagedMap<Endorsement>(res, normalizeEndorsement))
+      map(res => toPagedResponse<Endorsement>(res, DEFAULT_REQ, normalizeEndorsement))
     );
   }
 
@@ -131,7 +123,7 @@ export class PolicyApiService {
       map(res => {
         const item = res?.data ?? res;
         const raw = Array.isArray(item) ? item : (item ? [item] : []);
-        return pagedMap<Cancellation>(raw, normalizeCancellation);
+        return toPagedResponse<Cancellation>(raw, DEFAULT_REQ, normalizeCancellation);
       })
     );
   }
@@ -156,7 +148,7 @@ export class PolicyApiService {
   getRenewals(req: PageRequest) {
     return this.http.get<any>(`${this.base}/renewals`, {
       params: new HttpParams({ fromObject: { ...req } as any }),
-    }).pipe(map(res => pagedMap<Renewal>(res, normalizeRenewal)));
+    }).pipe(map(res => toPagedResponse<Renewal>(res, req, normalizeRenewal)));
   }
 
   updateRenewal(id: string, payload: Partial<Renewal>) {

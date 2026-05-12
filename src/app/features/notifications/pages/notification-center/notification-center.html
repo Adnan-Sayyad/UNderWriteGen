@@ -96,7 +96,7 @@
 
   } @else {
     <div class="notif-list">
-      @for (n of filtered(); track n.notificationID) {
+      @for (n of paginated(); track n.notificationID) {
 
         <div class="notif-card"
              [class.notif-card--unread]="n.status === 'Unread' && isReceived(n)"
@@ -184,6 +184,16 @@
 
       }
     </div>
+
+    <app-pagination
+      [page]="currentPage()"
+      [size]="pageSize()"
+      [totalElements]="totalElements()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (sizeChange)="onSizeChange($event)">
+    </app-pagination>
   }
 
 </div>

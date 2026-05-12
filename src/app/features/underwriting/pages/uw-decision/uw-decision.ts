@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+
 import { UnderwritingApiService } from '../../services/underwriting-api.service';
 import { UWDecision, UWNote, DecisionType } from '../../models/underwriting.model';
 
@@ -17,7 +17,7 @@ const DECISIONS: { value: DecisionType; label: string; css: string; outlineCss: 
 @Component({
   selector: 'app-uw-decision',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader],
   templateUrl: './uw-decision.html',
   styleUrl: './uw-decision.css',
 })

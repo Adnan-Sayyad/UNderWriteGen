@@ -1,6 +1,110 @@
-﻿.modal-backdrop-custom { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1040; }
-.modal-panel { position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(540px,94vw);background:#fff;border-radius:.5rem;z-index:1050;display:flex;flex-direction:column;max-height:90vh; }
-.modal-panel-sm { width:min(380px,94vw); }
-.modal-panel-header { display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid #dee2e6; }
-.modal-panel-body { padding:1.25rem;overflow-y:auto;flex:1; }
-.modal-panel-footer { display:flex;justify-content:flex-end;gap:.5rem;padding:.75rem 1.25rem;border-top:1px solid #dee2e6; }
+/* ── Summary pills ──────────────────────────────────────────────────── */
+.stat-pill {
+  background: #fff;
+  border-radius: .375rem;
+  padding: .5rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  min-width: 120px;
+}
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.stat-label {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #6c757d;
+  margin-top: .15rem;
+}
+
+/* ── Table action column ─────────────────────────────────────────────── */
+.table-actions { width: 110px; white-space: nowrap; }
+
+/* ── Modals ──────────────────────────────────────────────────────────── */
+.modal-backdrop-custom {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 1040;
+}
+.modal-panel {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, 94vw);
+  background: #fff;
+  border-radius: .5rem;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+.modal-panel-sm { width: min(400px, 94vw); }
+.modal-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #dee2e6;
+}
+.modal-panel-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  padding: .75rem 1.25rem;
+  border-top: 1px solid #dee2e6;
+}
+
+/* ── Required field marker ───────────────────────────────────────────── */
+.required-mark::after {
+  content: ' *';
+  color: #dc3545;
+}
+
+/* ── Submission info card (lookup result / detail modal) ─────────────── */
+.sub-info-card {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: .375rem;
+  padding: .75rem 1rem;
+}
+
+/* ── Breach summary card inside Review modal ─────────────────────────── */
+.breach-summary-card {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-left: 4px solid #6c757d;
+  border-radius: .375rem;
+  padding: .65rem .9rem;
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Review / Edit decision radio options ────────────────────────────── */
+.review-radio-option {
+  border: 1.5px solid #dee2e6;
+  border-radius: .375rem;
+  padding: .65rem .9rem;
+  cursor: pointer;
+  transition: border-color .15s, background-color .15s;
+}
+.review-radio-option:hover   { background-color: #f8f9fa; }
+.review-radio-approve        { border-color: #198754; background-color: #f0faf4; }
+.review-radio-reject         { border-color: #dc3545; background-color: #fff5f5; }
+.review-radio-pending        { border-color: #ffc107; background-color: #fffbf0; }
+
+/* ── Type filter select ──────────────────────────────────────────────── */
+.filter-select {
+  width: auto;
+  min-width: 160px;
+  max-width: 200px;
+}

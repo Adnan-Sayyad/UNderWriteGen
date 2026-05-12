@@ -5,9 +5,8 @@ import { environment } from '../../../../environments/environment';
 import { Submission, Attachment, CompletenessCheck, Questionnaire, ProductLine, SubmissionStatus } from '../models/submission.model';
 import { PagedResponse, ApiResponse } from '../../../shared/models/api-response.model';
 import { PageRequest } from '../../../shared/models/pagination.model';
+import { toPagedResponse } from '../../../shared/models/paging.util';
 import { AuthService } from '../../../core/auth/auth.service';
-
-const PAGE_SIZE = 10;
 const PRODUCTS: ProductLine[]      = ['Life', 'Health', 'PnC', 'Commercial'];
 const STATUSES: SubmissionStatus[] = ['Draft', 'IntakeComplete', 'UnderReview', 'Quoted', 'Declined', 'Expired'];
 
@@ -77,16 +76,7 @@ export class SubmissionApiService {
   getAll(req: PageRequest, filters?: Record<string, string>) {
     const params = new HttpParams({ fromObject: { ...req, ...filters } as any });
     return this.http.get<any>(`${this.base}/submissions`, { params }).pipe(
-      map(res => {
-        const items: any[] = Array.isArray(res) ? res : (res?.content ?? res?.data ?? []);
-        const normalized = items.map(normalizeSubmission);
-        return {
-          content: normalized, data: normalized,
-          totalPages:    Array.isArray(res) ? 1 : (res?.totalPages    ?? 1),
-          totalElements: Array.isArray(res) ? items.length : (res?.totalElements ?? items.length),
-          size: PAGE_SIZE, number: 0,
-        } as unknown as PagedResponse<Submission>;
-      })
+      map(res => toPagedResponse<Submission>(res, req, normalizeSubmission))
     );
   }
 

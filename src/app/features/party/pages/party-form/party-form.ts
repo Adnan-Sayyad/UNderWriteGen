@@ -92,7 +92,7 @@ export class PartyFormPage implements OnInit {
       segment:          v.segment as any,
       status:           v.status as any,
       dOBIncorporation: v.dOBIncorporation || null,
-      contactInfo:      v.contactInfo || null,
+      contactInfo:      v.contactInfo ?? undefined,
     };
     this.saving.set(true);
     const req = this.partyId()

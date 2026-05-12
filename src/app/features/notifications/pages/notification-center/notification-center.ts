@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { NotificationApiService } from '../../services/notification-api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { Notification, NotificationCategory, NotificationStatus } from '../../models/notification.model';
@@ -18,7 +19,7 @@ type ViewFilter = NotificationStatus | '' | 'sent' | 'received';
 @Component({
   selector: 'app-notification-center',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PageHeader, EmptyState, Pagination],
   templateUrl: './notification-center.html',
   styleUrl: './notification-center.css',
 })
@@ -31,6 +32,8 @@ export class NotificationCenterPage implements OnInit {
   readonly alertMsg      = signal<{ type: 'success' | 'danger'; text: string } | null>(null);
   readonly searchQuery   = signal('');
   readonly sendMode      = signal<'individual' | 'group'>('individual');
+  readonly currentPage   = signal(0);
+  readonly pageSize      = signal(10);
 
   readonly categories = CATEGORIES;
   readonly roleGroups = [
@@ -86,6 +89,14 @@ export class NotificationCenterPage implements OnInit {
   readonly sentCount = computed(() =>
     this.notifications().filter(n => n.senderEmail === this.currentUserEmail()).length
   );
+
+  readonly totalElements = computed(() => this.filtered().length);
+  readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
+  readonly paginated     = computed(() => {
+    const size = this.pageSize();
+    const page = Math.min(this.currentPage(), this.totalPages() - 1);
+    return this.filtered().slice(page * size, page * size + size);
+  });
 
   readonly filterOptions: Array<{ label: string; value: ViewFilter }> = [
     { label: 'All',       value: '' },
@@ -210,13 +221,17 @@ export class NotificationCenterPage implements OnInit {
     }
   }
 
-  setFilter(v: string): void { this.filterStatus.set(v as ViewFilter); }
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
+
+  setFilter(v: string): void { this.filterStatus.set(v as ViewFilter); this.currentPage.set(0); }
 
   onSearch(event: Event): void {
     this.searchQuery.set((event.target as HTMLInputElement).value);
+    this.currentPage.set(0);
   }
 
-  clearSearch(): void { this.searchQuery.set(''); }
+  clearSearch(): void { this.searchQuery.set(''); this.currentPage.set(0); }
 
   categoryIcon(cat: string): string {
     const map: Record<string, string> = {

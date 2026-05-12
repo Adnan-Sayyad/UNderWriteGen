@@ -1,1 +1,117 @@
-.font-monospace { font-family:SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.82rem; }
+/* ─── Severity chip picker ─────────────────────────────────────────────── */
+.severity-picker {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin-top: .25rem;
+}
+.sev-chip {
+  cursor: pointer;
+  padding: .4rem .85rem;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 500;
+  border: 1px solid #dee2e6;
+  background: #fff;
+  user-select: none;
+  transition: all .15s ease;
+}
+.sev-chip:hover { border-color: #adb5bd; }
+.sev-chip.active { color: #fff; border-color: transparent; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.sev-chip.active[data-sev="Block"] { background: #d93025; }
+.sev-chip.active[data-sev="Refer"] { background: #e6a817; color: #1a1a1a; }
+.sev-chip.active[data-sev="Load"]  { background: #0d6efd; }
+.sev-chip.active[data-sev="Info"]  { background: #6c757d; }
+
+/* ─── Logic AND/OR toggle ──────────────────────────────────────────────── */
+.logic-toggle {
+  display: inline-flex;
+  border: 1px solid #dee2e6;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+.logic-opt {
+  cursor: pointer;
+  padding: .3rem .9rem;
+  font-size: .78rem;
+  font-weight: 500;
+  color: #495057;
+  user-select: none;
+  transition: all .15s ease;
+}
+.logic-opt.active {
+  background: var(--uwpro-primary, #1a3c6e);
+  color: #fff;
+}
+
+/* ─── Condition rows ───────────────────────────────────────────────────── */
+.condition-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.3fr) 1fr 1.5fr auto;
+  gap: .75rem;
+  align-items: end;
+  padding: .85rem;
+  border: 1px solid #e9ecef;
+  border-radius: .5rem;
+  background: #fafbfc;
+  margin-bottom: .75rem;
+  position: relative;
+}
+.condition-row:hover { border-color: #cfd8e3; }
+
+.cond-action { padding-bottom: 1px; }
+
+.cond-joiner {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  margin: -.25rem 0 -.5rem;
+}
+.joiner-chip {
+  background: var(--uwpro-primary, #1a3c6e);
+  color: #fff;
+  padding: .15rem .7rem;
+  border-radius: 999px;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+/* ─── Multi-select chips for "is one of" ───────────────────────────────── */
+.multi-chips {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+  padding: .25rem 0;
+}
+.chip-check {
+  cursor: pointer;
+  padding: .25rem .65rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  border: 1px solid #dee2e6;
+  background: #fff;
+  user-select: none;
+  transition: all .15s ease;
+}
+.chip-check:hover { border-color: #adb5bd; }
+.chip-check.active {
+  background: var(--uwpro-primary, #1a3c6e);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* ─── Preview panel ────────────────────────────────────────────────────── */
+.preview-text {
+  font-size: .9rem;
+  color: #212529;
+  line-height: 1.6;
+}
+.preview-text strong { color: var(--uwpro-primary, #1a3c6e); }
+
+@media (max-width: 768px) {
+  .condition-row {
+    grid-template-columns: 1fr;
+  }
+}

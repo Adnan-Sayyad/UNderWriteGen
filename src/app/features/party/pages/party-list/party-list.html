@@ -69,11 +69,11 @@
                 <th>DOB / Incorporation</th>
                 <th>Contact Info</th>
                 <th>Status</th>
-                <th class="text-end">Actions</th>
+                <th class="text-end table-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
-              @for (p of filtered(); track p.partyID) {
+              @for (p of paginated(); track p.partyID) {
                 <tr>
                   <td class="font-monospace small text-muted">{{ p.partyID }}</td>
                   <td class="fw-medium">{{ p.name }}</td>
@@ -82,24 +82,35 @@
                   <td class="small text-muted">{{ p.dOBIncorporation ? (p.dOBIncorporation | date:'dd MMM yyyy':'UTC') : '—' }}</td>
                   <td class="small text-muted">{{ p.contactInfo || '—' }}</td>
                   <td><app-status-badge [status]="p.status"></app-status-badge></td>
-                  <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" (click)="openEdit(p)">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm"
-                            [class.btn-outline-danger]="p.status === 'Active'"
-                            [class.btn-outline-success]="p.status !== 'Active'"
-                            [title]="p.status === 'Active' ? 'Deactivate' : 'Activate'"
-                            (click)="toggleStatus(p)">
-                      <i class="bi" [class.bi-toggle-on]="p.status === 'Active'"
-                                    [class.bi-toggle-off]="p.status !== 'Active'"></i>
-                    </button>
+                  <td class="text-end table-actions">
+                    <div class="d-flex justify-content-end gap-1">
+                      <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(p)">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm"
+                              [class.btn-outline-danger]="p.status === 'Active'"
+                              [class.btn-outline-success]="p.status !== 'Active'"
+                              [title]="p.status === 'Active' ? 'Deactivate' : 'Activate'"
+                              (click)="toggleStatus(p)">
+                        <i class="bi" [class.bi-toggle-on]="p.status === 'Active'"
+                                      [class.bi-toggle-off]="p.status !== 'Active'"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
+        <app-pagination
+          [page]="currentPage()"
+          [size]="pageSize()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pagination>
       }
     </div>
   </div>

@@ -1,5 +1,10 @@
 .modal-backdrop-custom { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1040; }
-.modal-panel { position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(520px,94vw);background:#fff;border-radius:.5rem;z-index:1050;display:flex;flex-direction:column;max-height:90vh; }
+.modal-panel { position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,94vw);background:#fff;border-radius:.5rem;z-index:1050;display:flex;flex-direction:column;max-height:90vh; }
 .modal-panel-header { display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid #dee2e6; }
 .modal-panel-body { padding:1.25rem;overflow-y:auto;flex:1; }
 .modal-panel-footer { display:flex;justify-content:flex-end;gap:.5rem;padding:.75rem 1.25rem;border-top:1px solid #dee2e6; }
+
+/* Context rows in edit modal */
+.context-row  { display:flex;gap:1.5rem;flex-wrap:wrap;background:#f8f9fa;border-radius:.375rem;padding:.75rem 1rem; }
+.context-item { display:flex;flex-direction:column;gap:.2rem; }
+.context-label{ font-size:.7rem;font-weight:600;color:#6c757d;text-transform:uppercase;letter-spacing:.05em; }

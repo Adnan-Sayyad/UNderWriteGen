@@ -4,34 +4,72 @@
     subtitle="Track submission-level compliance checks and their completion status"
     icon="bi-clipboard2-check"
     [breadcrumbs]="breadcrumbs">
-    <button class="btn btn-primary btn-sm" (click)="openCreate()">
-      <i class="bi bi-plus-lg me-1"></i>New Checklist
-    </button>
+    @if (auth.hasRole('Admin', 'Compliance')) {
+      <button class="btn btn-primary btn-sm" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i>New Checklist
+      </button>
+    }
   </app-page-header>
 
   @if (alertMsg()) {
-    <div class="alert alert-{{ alertMsg()!.type }} d-flex gap-2 py-2 mb-3">
-      <i class="bi" [class.bi-check-circle-fill]="alertMsg()!.type==='success'"
-                    [class.bi-exclamation-triangle-fill]="alertMsg()!.type==='danger'"></i>
-      {{ alertMsg()!.text }}
+    <div class="alert alert-{{ alertMsg()!.type }} d-flex align-items-start gap-2 py-2 mb-3">
+      <i class="bi flex-shrink-0 mt-1"
+         [class.bi-check-circle-fill]="alertMsg()!.type === 'success'"
+         [class.bi-exclamation-triangle-fill]="alertMsg()!.type === 'danger'"></i>
+      <span>{{ alertMsg()!.text }}</span>
     </div>
   }
+
+  <!-- Summary pills -->
+  <div class="d-flex gap-3 mb-3 flex-wrap">
+    <div class="stat-pill border-start border-4 border-warning">
+      <span class="stat-value text-warning">{{ pendingCount() }}</span>
+      <span class="stat-label">Pending</span>
+    </div>
+    <div class="stat-pill border-start border-4 border-primary">
+      <span class="stat-value text-primary">{{ inProgressCount() }}</span>
+      <span class="stat-label">In Progress</span>
+    </div>
+    <div class="stat-pill border-start border-4 border-success">
+      <span class="stat-value text-success">{{ completedCount() }}</span>
+      <span class="stat-label">Completed</span>
+    </div>
+  </div>
 
   <!-- Filter bar -->
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
       <div class="d-flex gap-2 align-items-center flex-wrap">
         <span class="text-muted small">Filter:</span>
-        <button class="btn btn-sm" [class.btn-primary]="!filterStatus()"
-                [class.btn-outline-secondary]="filterStatus()" (click)="filterStatus.set('')">All</button>
-        @for (s of statuses; track s) {
-          <button class="btn btn-sm"
-                  [class.btn-primary]="filterStatus()===s"
-                  [class.btn-outline-secondary]="filterStatus()!==s"
-                  (click)="filterStatus.set(s)">{{ s }}</button>
-        }
+
+        <!-- All -->
+        <button class="btn btn-sm"
+                [class.btn-primary]="!filterStatus()"
+                [class.btn-outline-secondary]="!!filterStatus()"
+                (click)="setFilterStatus('')">All</button>
+
+        <!-- Pending → orange -->
+        <button class="btn btn-sm"
+                [class.btn-warning]="filterStatus() === 'Pending'"
+                [class.btn-outline-warning]="filterStatus() !== 'Pending'"
+                (click)="setFilterStatus('Pending')">Pending</button>
+
+        <!-- InProgress → blue -->
+        <button class="btn btn-sm"
+                [class.btn-primary]="filterStatus() === 'InProgress'"
+                [class.btn-outline-primary]="filterStatus() !== 'InProgress'"
+                (click)="setFilterStatus('InProgress')">In Progress</button>
+
+        <!-- Completed → green -->
+        <button class="btn btn-sm"
+                [class.btn-success]="filterStatus() === 'Completed'"
+                [class.btn-outline-success]="filterStatus() !== 'Completed'"
+                (click)="setFilterStatus('Completed')">Completed</button>
+
         <span class="ms-auto text-muted small">{{ filtered().length }} record(s)</span>
-        <button class="btn btn-sm btn-outline-secondary" (click)="load()"><i class="bi bi-arrow-clockwise"></i></button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="load()" title="Refresh">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -40,10 +78,15 @@
   <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
       @if (loading()) {
-        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+        </div>
       } @else if (!filtered().length) {
-        <app-empty-state icon="bi-clipboard2-x" title="No checklists found"
-                         message="Create a checklist for a submission to get started."></app-empty-state>
+        <app-empty-state
+          icon="bi-clipboard2-x"
+          title="No checklists found"
+          message="Create a checklist for a submission to get started.">
+        </app-empty-state>
       } @else {
         <div class="table-responsive">
           <table class="table table-hover mb-0 align-middle">
@@ -59,31 +102,52 @@
               </tr>
             </thead>
             <tbody>
-              @for (c of filtered(); track c.checklistId) {
+              @for (c of paged(); track c.checklistId) {
                 <tr>
-                  <td class="small text-muted font-monospace">{{ c.submissionId | slice:0:8 }}…</td>
-                  <td style="min-width:140px">
+                  <td>
+                    <span class="small font-monospace text-muted d-block"
+                          [title]="c.submissionId">{{ c.submissionId | slice:0:8 }}…</span>
+                  </td>
+                  <td style="min-width:150px">
                     @let p = progressOf(c);
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="progress flex-grow-1" style="height:6px">
-                        <div class="progress-bar" [style.width.%]="p.pct"
-                             [class.bg-success]="p.pct===100" [class.bg-primary]="p.pct<100"></div>
+                    @if (p.total === 0) {
+                      <span class="text-muted small fst-italic">No items</span>
+                    } @else {
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height:7px; border-radius:4px;">
+                          <div class="progress-bar"
+                               [style.width.%]="p.pct"
+                               [class.bg-success]="c.status === 'Completed'"
+                               [class.bg-primary]="c.status === 'InProgress'"
+                               [class.bg-warning]="c.status === 'Pending'"></div>
+                        </div>
+                        <small class="text-nowrap fw-medium"
+                               [class.text-success]="c.status === 'Completed'"
+                               [class.text-primary]="c.status === 'InProgress'"
+                               [class.text-warning]="c.status === 'Pending'">
+                          {{ p.done }}/{{ p.total }}
+                        </small>
                       </div>
-                      <small class="text-muted text-nowrap">{{ p.done }}/{{ p.total }}</small>
-                    </div>
+                    }
                   </td>
                   <td class="small">{{ c.completedBy || '—' }}</td>
-                  <td class="small text-muted">{{ c.completedDate ? (c.completedDate | date:'mediumDate') : '—' }}</td>
+                  <td class="small text-muted text-nowrap">
+                    {{ c.status === 'Completed' && c.completedDate ? (c.completedDate | date:'mediumDate') : '—' }}
+                  </td>
                   <td><app-status-badge [status]="c.status"></app-status-badge></td>
-                  <td class="small text-muted">{{ c.createdAt | date:'mediumDate' }}</td>
+                  <td class="small text-muted text-nowrap">{{ c.createdAt | date:'mediumDate' }}</td>
                   <td class="table-actions">
                     <div class="d-flex gap-1">
-                      <button class="btn btn-sm btn-outline-primary" title="View Items" (click)="openView(c)">
+                      <button class="btn btn-sm btn-outline-primary" title="View Details"
+                              (click)="openView(c)">
                         <i class="bi bi-eye"></i>
                       </button>
-                      <button class="btn btn-sm btn-outline-secondary" title="Change Status" (click)="openStatus(c)">
-                        <i class="bi bi-pencil-square"></i>
-                      </button>
+                      @if (auth.hasRole('Admin', 'Compliance')) {
+                        <button class="btn btn-sm btn-outline-secondary" title="Update Status"
+                                (click)="openStatus(c)">
+                          <i class="bi bi-pencil-square"></i>
+                        </button>
+                      }
                     </div>
                   </td>
                 </tr>
@@ -91,6 +155,16 @@
             </tbody>
           </table>
         </div>
+
+        <app-pagination
+          [page]="currentPage()"
+          [size]="pageSize()"
+          [totalElements]="totalElements()"
+          [totalPages]="totalPages()"
+          [disabled]="loading()"
+          (pageChange)="onPageChange($event)"
+          (sizeChange)="onSizeChange($event)">
+        </app-pagination>
       }
     </div>
   </div>
@@ -101,37 +175,104 @@
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">
-      <h6 class="mb-0 fw-semibold"><i class="bi bi-plus-lg me-2 text-primary"></i>New Compliance Checklist</h6>
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-plus-lg me-2 text-primary"></i>New Compliance Checklist
+      </h6>
       <button class="btn-close btn-sm" (click)="closeModal()"></button>
     </div>
     <div class="modal-panel-body">
       <form [formGroup]="createForm" novalidate>
         <div class="row g-3">
+
+          <!-- Submission ID with Lookup -->
           <div class="col-12">
             <label class="form-label small fw-medium required-mark">Submission ID</label>
-            <input type="text" class="form-control form-control-sm"
-                   [class.is-invalid]="createForm.controls.submissionId.invalid && createForm.controls.submissionId.touched"
-                   formControlName="submissionId" placeholder="UUID of the submission" />
-            <div class="invalid-feedback">Submission ID is required.</div>
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control"
+                     formControlName="submissionId"
+                     [class.is-invalid]="createForm.controls.submissionId.invalid && createForm.controls.submissionId.touched"
+                     placeholder="Paste the Submission UUID"
+                     (blur)="lookupSubmission()"
+                     (paste)="onSubmissionIdPaste()" />
+              <button type="button" class="btn btn-outline-secondary" title="Verify Submission"
+                      (click)="lookupSubmission()" [disabled]="lookupLoading()">
+                @if (lookupLoading()) {
+                  <span class="spinner-border spinner-border-sm"></span>
+                } @else {
+                  <i class="bi bi-search"></i>
+                }
+              </button>
+            </div>
+            @if (createForm.controls.submissionId.invalid && createForm.controls.submissionId.touched) {
+              <div class="invalid-feedback d-block">Submission ID is required.</div>
+            }
+            @if (lookupError()) {
+              <div class="form-text text-danger mt-1">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ lookupError() }}
+              </div>
+            }
+            @if (lookupSub()) {
+              <div class="sub-info-card mt-2">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <i class="bi bi-check-circle-fill text-success"></i>
+                  <strong class="small">Submission Verified</strong>
+                </div>
+                <div class="row g-1 small">
+                  <div class="col-6">
+                    <span class="text-muted">Product:</span>
+                    <span class="badge ms-1" [ngClass]="productLineClass(lookupSub()!.productLine)">
+                      {{ lookupSub()!.productLine }}
+                    </span>
+                  </div>
+                  <div class="col-6">
+                    <span class="text-muted">Status:</span>
+                    <span class="badge ms-1" [ngClass]="subStatusClass(lookupSub()!.status)">
+                      {{ lookupSub()!.status }}
+                    </span>
+                  </div>
+                  <div class="col-6">
+                    <span class="text-muted">Party ID:</span>
+                    <code class="ms-1 small">{{ lookupSub()!.partyId }}</code>
+                  </div>
+                  <div class="col-6">
+                    <span class="text-muted">Agent ID:</span>
+                    <code class="ms-1 small">{{ lookupSub()!.agentId }}</code>
+                  </div>
+                  <div class="col-12">
+                    <span class="text-muted">Inception:</span>
+                    <strong class="ms-1">{{ lookupSub()!.inceptionDate | date:'mediumDate' }}</strong>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
+
+          <!-- Completed By -->
           <div class="col-md-6">
             <label class="form-label small fw-medium">Completed By</label>
             <input type="text" class="form-control form-control-sm"
-                   formControlName="completedBy" placeholder="Reviewer name" />
+                   formControlName="completedBy" placeholder="Reviewer name (optional)" />
           </div>
+
+          <!-- Initial Status -->
           <div class="col-md-6">
             <label class="form-label small fw-medium required-mark">Initial Status</label>
             <select class="form-select form-select-sm" formControlName="status">
-              @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+              <option value="Pending">Pending</option>
+              <option value="InProgress">In Progress</option>
+              <option value="Completed">Completed</option>
             </select>
           </div>
+
         </div>
+
         <!-- Checklist items -->
         <div class="mt-3">
           <label class="form-label small fw-medium">Checklist Items</label>
           <div class="input-group input-group-sm mb-2">
-            <input type="text" class="form-control" placeholder="Add item and press Enter…"
-                   [(ngModel)]="newItemText" [ngModelOptions]="{standalone:true}"
+            <input type="text" class="form-control"
+                   placeholder="Type an item and press Enter or click +"
+                   [(ngModel)]="newItemText" [ngModelOptions]="{standalone: true}"
                    (keydown.enter)="$event.preventDefault(); addItem()" />
             <button type="button" class="btn btn-outline-primary" (click)="addItem()">
               <i class="bi bi-plus-lg"></i>
@@ -141,51 +282,154 @@
             <ul class="list-group list-group-flush">
               @for (it of items(); track $index) {
                 <li class="list-group-item d-flex align-items-center gap-2 px-0 py-1">
-                  <input type="checkbox" class="form-check-input mt-0 cursor-pointer"
+                  <input type="checkbox" class="form-check-input mt-0"
                          [checked]="it.checked" (change)="toggleItem($index)" />
-                  <span class="flex-grow-1 small" [class.text-decoration-line-through]="it.checked"
+                  <span class="flex-grow-1 small"
+                        [class.text-decoration-line-through]="it.checked"
                         [class.text-muted]="it.checked">{{ it.item }}</span>
                   <button type="button" class="btn btn-sm btn-link text-danger p-0"
-                          (click)="removeItem($index)"><i class="bi bi-x-lg"></i></button>
+                          (click)="removeItem($index)">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
                 </li>
               }
             </ul>
           } @else {
-            <p class="text-muted small mb-0">No items added yet.</p>
+            <p class="text-muted small mb-0 fst-italic">
+              No items added yet — add at least one item using the field above.
+            </p>
+          }
+          @if (itemsError()) {
+            <div class="text-danger small mt-1">
+              <i class="bi bi-exclamation-circle me-1"></i>{{ itemsError() }}
+            </div>
           }
         </div>
       </form>
     </div>
     <div class="modal-panel-footer">
       <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
-      <button class="btn btn-sm btn-primary" (click)="saveCreate()" [disabled]="saving()">
+      <button class="btn btn-sm btn-primary" (click)="saveCreate()"
+              [disabled]="saving() || lookupLoading()">
         @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-        Create
+        @if (lookupLoading()) { <span class="spinner-border spinner-border-sm me-1"></span> Verifying… }
+        @else { <i class="bi bi-clipboard2-check me-1"></i>Create Checklist }
       </button>
     </div>
   </div>
 }
 
 <!-- ── VIEW ITEMS MODAL ── -->
-@if (modalMode() === 'view') {
+@if (modalMode() === 'view' && selected()) {
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">
-      <h6 class="mb-0 fw-semibold"><i class="bi bi-eye me-2 text-primary"></i>Checklist Items</h6>
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-eye me-2 text-primary"></i>Checklist Details
+      </h6>
       <button class="btn-close btn-sm" (click)="closeModal()"></button>
     </div>
     <div class="modal-panel-body">
-      <p class="small text-muted mb-2">Submission: <code>{{ selected()?.submissionId }}</code></p>
+
+      <!-- Submission info card -->
+      @if (detailSubLoading()) {
+        <div class="sub-info-card mb-3 text-center py-2">
+          <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
+          <small class="text-muted">Loading submission details…</small>
+        </div>
+      } @else if (detailSub()) {
+        <div class="sub-info-card mb-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-file-earmark-text text-primary"></i>
+            <strong class="small">Linked Submission</strong>
+          </div>
+          <div class="row g-1 small">
+            <div class="col-6">
+              <span class="text-muted">Product:</span>
+              <span class="badge ms-1" [ngClass]="productLineClass(detailSub()!.productLine)">
+                {{ detailSub()!.productLine }}
+              </span>
+            </div>
+            <div class="col-6">
+              <span class="text-muted">Status:</span>
+              <span class="badge ms-1" [ngClass]="subStatusClass(detailSub()!.status)">
+                {{ detailSub()!.status }}
+              </span>
+            </div>
+            <div class="col-6">
+              <span class="text-muted">Party ID:</span>
+              <code class="ms-1 small">{{ detailSub()!.partyId }}</code>
+            </div>
+            <div class="col-6">
+              <span class="text-muted">Agent ID:</span>
+              <code class="ms-1 small">{{ detailSub()!.agentId }}</code>
+            </div>
+            <div class="col-12">
+              <span class="text-muted">Inception Date:</span>
+              <strong class="ms-1">{{ detailSub()!.inceptionDate | date:'mediumDate' }}</strong>
+            </div>
+          </div>
+        </div>
+      }
+
+      <dl class="row g-2 mb-3">
+        <div class="col-12">
+          <dt class="small text-muted fw-normal">Submission ID</dt>
+          <dd class="font-monospace small">{{ selected()!.submissionId }}</dd>
+        </div>
+        <div class="col-6">
+          <dt class="small text-muted fw-normal">Status</dt>
+          <dd><app-status-badge [status]="selected()!.status"></app-status-badge></dd>
+        </div>
+        <div class="col-6">
+          <dt class="small text-muted fw-normal">Completed By</dt>
+          <dd class="small">{{ selected()!.completedBy || '—' }}</dd>
+        </div>
+        <div class="col-6">
+          <dt class="small text-muted fw-normal">Created</dt>
+          <dd class="small">{{ selected()!.createdAt | date:'medium' }}</dd>
+        </div>
+        <div class="col-6">
+          <dt class="small text-muted fw-normal">Completed Date</dt>
+          <dd class="small">
+            {{ selected()!.status === 'Completed' && selected()!.completedDate
+               ? (selected()!.completedDate | date:'medium') : '—' }}
+          </dd>
+        </div>
+      </dl>
+
+      <!-- Progress summary bar in view modal -->
+      @let vp = progressOf(selected()!);
+      @if (vp.total > 0) {
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="progress flex-grow-1" style="height:8px; border-radius:4px;">
+            <div class="progress-bar"
+                 [style.width.%]="vp.pct"
+                 [class.bg-success]="selected()!.status === 'Completed'"
+                 [class.bg-primary]="selected()!.status === 'InProgress'"
+                 [class.bg-warning]="selected()!.status === 'Pending'"></div>
+          </div>
+          <small class="fw-semibold text-nowrap"
+                 [class.text-success]="selected()!.status === 'Completed'"
+                 [class.text-primary]="selected()!.status === 'InProgress'"
+                 [class.text-warning]="selected()!.status === 'Pending'">
+            {{ vp.done }}/{{ vp.total }} ({{ vp.pct }}%)
+          </small>
+        </div>
+      }
+
+      <label class="form-label small fw-medium text-muted text-uppercase" style="letter-spacing:.05em">
+        Checklist Items
+      </label>
       @if (items().length) {
         <ul class="list-group">
           @for (it of items(); track $index) {
-            <li class="list-group-item d-flex align-items-center gap-2">
+            <li class="list-group-item d-flex align-items-center gap-2 py-2">
               <i class="bi fs-5"
                  [class.bi-check-circle-fill]="it.checked" [class.text-success]="it.checked"
                  [class.bi-circle]="!it.checked" [class.text-muted]="!it.checked"></i>
-              <span [class.text-decoration-line-through]="it.checked" [class.text-muted]="it.checked">
-                {{ it.item }}
-              </span>
+              <span [class.text-decoration-line-through]="it.checked"
+                    [class.text-muted]="it.checked">{{ it.item }}</span>
             </li>
           }
         </ul>
@@ -195,36 +439,78 @@
     </div>
     <div class="modal-panel-footer">
       <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Close</button>
-      <button class="btn btn-sm btn-outline-primary" (click)="openStatus(selected()!)">
-        <i class="bi bi-pencil-square me-1"></i>Update Status
-      </button>
+      @if (auth.hasRole('Admin', 'Compliance')) {
+        <button class="btn btn-sm btn-outline-primary" (click)="openStatus(selected()!)">
+          <i class="bi bi-pencil-square me-1"></i>Update Status
+        </button>
+      }
     </div>
   </div>
 }
 
 <!-- ── STATUS MODAL ── -->
-@if (modalMode() === 'status') {
+@if (modalMode() === 'status' && selected()) {
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel modal-panel-sm shadow-lg">
     <div class="modal-panel-header">
-      <h6 class="mb-0 fw-semibold"><i class="bi bi-pencil-square me-2 text-primary"></i>Update Status</h6>
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-pencil-square me-2 text-primary"></i>Update Status
+      </h6>
       <button class="btn-close btn-sm" (click)="closeModal()"></button>
     </div>
     <div class="modal-panel-body">
+      <p class="small text-muted mb-3">
+        Submission: <code>{{ selected()!.submissionId | slice:0:8 }}…</code>
+      </p>
       <form [formGroup]="statusForm">
-        @for (s of statuses; track s) {
-          <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" [id]="'cs-'+s" [value]="s" formControlName="status" />
-            <label class="form-check-label fw-medium" [for]="'cs-'+s">{{ s }}</label>
-          </div>
-        }
+
+        <!-- Pending -->
+        <div class="form-check status-radio-option mb-2"
+             [class.status-radio-pending]="statusForm.value.status === 'Pending'">
+          <input class="form-check-input" type="radio"
+                 id="cs-Pending" value="Pending" formControlName="status" />
+          <label class="form-check-label fw-medium d-flex align-items-center gap-2" for="cs-Pending">
+            <span class="badge badge-pending">Pending</span>
+            <span class="text-muted small fw-normal">Not yet started</span>
+          </label>
+        </div>
+
+        <!-- InProgress -->
+        <div class="form-check status-radio-option mb-2"
+             [class.status-radio-inprogress]="statusForm.value.status === 'InProgress'">
+          <input class="form-check-input" type="radio"
+                 id="cs-InProgress" value="InProgress" formControlName="status" />
+          <label class="form-check-label fw-medium d-flex align-items-center gap-2" for="cs-InProgress">
+            <span class="badge badge-inprogress">In Progress</span>
+            <span class="text-muted small fw-normal">Currently being reviewed</span>
+          </label>
+        </div>
+
+        <!-- Completed -->
+        <div class="form-check status-radio-option mb-2"
+             [class.status-radio-completed]="statusForm.value.status === 'Completed'">
+          <input class="form-check-input" type="radio"
+                 id="cs-Completed" value="Completed" formControlName="status" />
+          <label class="form-check-label fw-medium d-flex align-items-center gap-2" for="cs-Completed">
+            <span class="badge badge-completed">Completed</span>
+            <span class="text-muted small fw-normal">All checks passed</span>
+          </label>
+        </div>
+
       </form>
     </div>
     <div class="modal-panel-footer">
       <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Cancel</button>
-      <button class="btn btn-sm btn-primary" (click)="saveStatus()" [disabled]="saving()">
+      <button class="btn btn-sm"
+              [class.btn-warning]="statusForm.value.status === 'Pending'"
+              [class.btn-primary]="statusForm.value.status === 'InProgress'"
+              [class.btn-success]="statusForm.value.status === 'Completed'"
+              (click)="saveStatus()" [disabled]="saving()">
         @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-        Save
+        @if (statusForm.value.status === 'Pending') { <i class="bi bi-clock me-1"></i> }
+        @else if (statusForm.value.status === 'InProgress') { <i class="bi bi-arrow-repeat me-1"></i> }
+        @else { <i class="bi bi-check-circle me-1"></i> }
+        Save Status
       </button>
     </div>
   </div>

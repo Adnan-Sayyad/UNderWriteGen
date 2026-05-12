@@ -3,8 +3,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { UWNote, UWDecision, Subjectivity } from '../models/underwriting.model';
-import { PagedResponse, ApiResponse } from '../../../shared/models/api-response.model';
+import { ApiResponse } from '../../../shared/models/api-response.model';
 import { PageRequest } from '../../../shared/models/pagination.model';
+import { toPagedResponse } from '../../../shared/models/paging.util';
 import { AuthService } from '../../../core/auth/auth.service';
 
 const NULL_GUID = '00000000-0000-0000-0000-000000000000';
@@ -91,18 +92,7 @@ export class UnderwritingApiService {
   getSubjectivities(req: PageRequest, filters?: Record<string, string>) {
     return this.http.get<any>(`${this.base}/subjectivities`, {
       params: new HttpParams({ fromObject: { ...req, ...filters } as any }),
-    }).pipe(
-      map(res => {
-        const raw: any[] = Array.isArray(res) ? res : (res?.content ?? res?.data ?? []);
-        const items = raw.map(normalizeSubjectivity);
-        return {
-          content: items, data: items,
-          totalPages: Array.isArray(res) ? 1 : (res?.totalPages ?? 1),
-          totalElements: Array.isArray(res) ? items.length : (res?.totalElements ?? items.length),
-          size: 10, number: 0,
-        } as unknown as PagedResponse<Subjectivity>;
-      })
-    );
+    }).pipe(map(res => toPagedResponse<Subjectivity>(res, req, normalizeSubjectivity)));
   }
 
   createSubjectivity(payload: Omit<Subjectivity, 'subjectivityId'>) {
