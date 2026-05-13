@@ -1,10 +1,13 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { SubmissionApiService } from '../../services/submission-api.service';
 import { ProductLine, DocType, Attachment, CompletenessCheck } from '../../models/submission.model';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { PartyApiService } from '../../../party/services/party-api.service';
+import { CustomerParty, Agent } from '../../../party/models/party.model';
 
 const PRODUCT_LINES: ProductLine[] = ['Life', 'Health', 'PnC', 'Commercial'];
 const DOC_TYPES: DocType[] = ['KYC', 'Financial', 'Medical', 'Inspection', 'Photos'];
@@ -23,8 +26,9 @@ const ALLOWED_EXT = ['.jpg', '.jpeg', '.pdf', '.doc', '.docx'];
   templateUrl: './submission-create.html',
   styleUrl: './submission-create.css',
 })
-export class SubmissionCreatePage {
-  private readonly fb = inject(FormBuilder);
+export class SubmissionCreatePage implements OnInit {
+  private readonly fb   = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
 
   readonly step         = signal<1 | 2 | 3 | 4>(1);
   readonly saving       = signal(false);
@@ -68,17 +72,150 @@ export class SubmissionCreatePage {
     inceptionDate: ['', Validators.required],
   });
 
+  readonly isAgent = signal(false);
+
+  // ── Party Search ───────────────────────────────────────────────────────────
+  readonly partySearchText  = signal('');
+  readonly partyResults     = signal<CustomerParty[]>([]);
+  readonly searchingParties = signal(false);
+  readonly selectedParty    = signal<CustomerParty | null>(null);
+  readonly showPartyDrop    = signal(false);
+  private partyTimer: any;
+
+  // ── Agent Search ───────────────────────────────────────────────────────────
+  readonly agentSearchText  = signal('');
+  readonly agentResults     = signal<Agent[]>([]);
+  readonly searchingAgents  = signal(false);
+  readonly selectedAgent    = signal<Agent | null>(null);
+  readonly showAgentDrop    = signal(false);
+  private agentTimer: any;
+
   constructor(
     private svc: SubmissionApiService,
     private router: Router,
+    private partySvc: PartyApiService,
   ) {}
+
+  ngOnInit(): void {
+    const user = this.auth.currentUser();
+    if (user?.role === 'Agent') {
+      this.isAgent.set(true);
+      // Auto-select the agent card using cached agentID (set during login)
+      const cacheKey = `uwpro_agent_id_${user.userId}`;
+      const agentId  = localStorage.getItem(cacheKey)
+                    ?? localStorage.getItem('uwpro_my_agent_id');
+      if (agentId) {
+        // Fetch the agent record and pre-select it
+        this.partySvc.getAgent(agentId).subscribe({
+          next: (res: any) => {
+            const agent = res?.data ?? res;
+            if (agent?.agentID || agent?.agentId) {
+              this.selectAgent({
+                agentID:      agent.agentID ?? agent.agentId,
+                name:         agent.name    ?? agent.Name    ?? '',
+                producerCode: agent.producerCode ?? agent.ProducerCode ?? '',
+                region:       agent.region       ?? agent.Region       ?? '',
+                status:       agent.status       ?? agent.Status       ?? 'Active',
+                contactInfo:  agent.contactInfo  ?? '',
+              });
+            }
+          },
+          error: () => {
+            // fallback: show hint text only
+            this.agentSearchText.set(user.name ?? user.email?.split('@')[0] ?? '');
+          },
+        });
+      } else {
+        // No cache yet — show hint text so agent can search manually
+        this.agentSearchText.set(user.name ?? user.email?.split('@')[0] ?? '');
+      }
+    }
+  }
+
+  onPartySearch(text: string): void {
+    this.partySearchText.set(text);
+    this.selectedParty.set(null);
+    this.form.patchValue({ partyId: '' });
+    clearTimeout(this.partyTimer);
+    if (!text.trim()) { this.partyResults.set([]); this.showPartyDrop.set(false); return; }
+    this.partyTimer = setTimeout(() => {
+      this.searchingParties.set(true);
+      this.showPartyDrop.set(true);
+      this.partySvc.getParties(text).subscribe({
+        next: (res: any) => {
+          const items: CustomerParty[] = Array.isArray(res) ? res : (res?.data ?? []);
+          this.partyResults.set(items);
+          this.searchingParties.set(false);
+        },
+        error: () => { this.searchingParties.set(false); this.partyResults.set([]); },
+      });
+    }, 350);
+  }
+
+  selectParty(p: CustomerParty): void {
+    this.selectedParty.set(p);
+    this.partySearchText.set(p.name);
+    this.form.patchValue({ partyId: p.partyID });
+    this.showPartyDrop.set(false);
+    this.partyResults.set([]);
+  }
+
+  clearParty(): void {
+    this.selectedParty.set(null);
+    this.partySearchText.set('');
+    this.form.patchValue({ partyId: '' });
+    this.partyResults.set([]);
+    this.showPartyDrop.set(false);
+  }
+
+  onAgentSearch(text: string): void {
+    this.agentSearchText.set(text);
+    this.selectedAgent.set(null);
+    this.form.patchValue({ agentId: '' });
+    clearTimeout(this.agentTimer);
+    if (!text.trim()) { this.agentResults.set([]); this.showAgentDrop.set(false); return; }
+    this.agentTimer = setTimeout(() => {
+      this.searchingAgents.set(true);
+      this.showAgentDrop.set(true);
+      this.partySvc.getAgents(text).subscribe({
+        next: (res: any) => {
+          const items: Agent[] = Array.isArray(res) ? res : (res?.data ?? []);
+          this.agentResults.set(items);
+          this.searchingAgents.set(false);
+        },
+        error: () => { this.searchingAgents.set(false); this.agentResults.set([]); },
+      });
+    }, 350);
+  }
+
+  selectAgent(a: Agent): void {
+    this.selectedAgent.set(a);
+    this.agentSearchText.set(a.name);
+    this.form.patchValue({ agentId: a.agentID });
+    this.showAgentDrop.set(false);
+    this.agentResults.set([]);
+    // Save agentID to localStorage so submission-list can filter correctly
+    if (this.isAgent()) {
+      const userId = this.auth.currentUser()?.userId ?? '';
+      localStorage.setItem(`uwpro_agent_id_${userId}`, a.agentID);
+      localStorage.setItem('uwpro_my_agent_id', a.agentID); // backward compat
+    }
+  }
+
+  clearAgent(): void {
+    this.selectedAgent.set(null);
+    this.agentSearchText.set('');
+    this.form.patchValue({ agentId: '' });
+    this.agentResults.set([]);
+    this.showAgentDrop.set(false);
+  }
 
   // ── Step 1: Create Submission ──────────────────────────────────────────────
 
   createSubmission(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving.set(true);
-    const v = this.form.value;
+    const v = this.form.getRawValue(); // getRawValue includes disabled fields
     this.svc.create({
       partyId:       v.partyId!,
       agentId:       v.agentId!,
@@ -92,7 +229,14 @@ export class SubmissionCreatePage {
         this.saving.set(false);
         this.step.set(2);
       },
-      error: err => { this.saving.set(false); this.flash('danger', err?.error?.message ?? 'Create failed.'); },
+      error: err => {
+        this.saving.set(false);
+        console.error('❌ Submission create failed — full error:', err);
+        console.error('❌ Status:', err?.status);
+        console.error('❌ Error body:', err?.error);
+        console.error('❌ Message:', err?.error?.message ?? err?.message);
+        this.flash('danger', err?.error?.message ?? err?.error?.Message ?? `Create failed (${err?.status})`);
+      },
     });
   }
 

@@ -43,18 +43,214 @@
         <form [formGroup]="form" novalidate>
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label small fw-medium required-mark">Party ID</label>
-              <input type="text" class="form-control form-control-sm"
-                     [class.is-invalid]="form.controls.partyId.invalid && form.controls.partyId.touched"
-                     formControlName="partyId" placeholder="Enter party UUID" />
-              <div class="invalid-feedback">Party ID is required.</div>
+              <label class="form-label small fw-medium required-mark">Customer Party</label>
+              <div class="party-search-wrap position-relative">
+
+                @if (selectedParty()) {
+                  <!-- Selected state -->
+                  <div class="form-control form-control-sm d-flex align-items-center justify-content-between party-selected">
+                    <div class="d-flex align-items-center gap-2 overflow-hidden">
+                      <i class="bi bi-person-check-fill text-success flex-shrink-0"></i>
+                      <div class="overflow-hidden">
+                        <div class="fw-semibold text-truncate" style="font-size:.82rem">{{ selectedParty()!.name }}</div>
+                        <div class="text-muted" style="font-size:.7rem">{{ selectedParty()!.partyType }} · {{ selectedParty()!.segment }}</div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-sm ms-2 flex-shrink-0" (click)="clearParty()"></button>
+                  </div>
+                } @else {
+                  <!-- Search input -->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-transparent">
+                      @if (searchingParties()) {
+                        <span class="spinner-border spinner-border-sm text-primary"></span>
+                      } @else {
+                        <i class="bi bi-search text-muted"></i>
+                      }
+                    </span>
+                    <input type="text" class="form-control form-control-sm"
+                           [class.is-invalid]="form.controls.partyId.invalid && form.controls.partyId.touched"
+                           [value]="partySearchText()"
+                           (input)="onPartySearch($any($event.target).value)"
+                           (focus)="partyResults().length ? showPartyDrop.set(true) : null"
+                           placeholder="Search customer by name…" />
+                  </div>
+                  @if (form.controls.partyId.invalid && form.controls.partyId.touched) {
+                    <div class="text-danger" style="font-size:.75rem;margin-top:2px">Please select a customer party.</div>
+                  }
+                }
+
+                <!-- Dropdown results -->
+                @if (showPartyDrop() && partySearchText()) {
+                  <div class="party-dropdown shadow border rounded-2 bg-white position-absolute w-100 z-3" style="top:calc(100% + 4px)">
+                    @if (searchingParties()) {
+                      <div class="py-3 text-center text-muted small">
+                        <span class="spinner-border spinner-border-sm me-1"></span>Searching…
+                      </div>
+                    } @else if (!partyResults().length) {
+                      <div class="py-3 text-center text-muted small">
+                        <i class="bi bi-inbox me-1"></i>No parties found for "{{ partySearchText() }}"
+                      </div>
+                    } @else {
+                      @for (p of partyResults(); track p.partyID) {
+                        <div class="party-drop-item d-flex align-items-center gap-2 px-3 py-2"
+                             (click)="selectParty(p)">
+                          <div class="party-drop-icon">
+                            <i class="bi" [class.bi-person-fill]="p.partyType==='Individual'"
+                                          [class.bi-building]="p.partyType!=='Individual'"></i>
+                          </div>
+                          <div class="flex-grow-1 overflow-hidden">
+                            <div class="fw-semibold text-truncate" style="font-size:.82rem">{{ p.name }}</div>
+                            <div class="text-muted" style="font-size:.7rem">
+                              {{ p.partyType }} · {{ p.segment }}
+                              <span class="ms-1 badge"
+                                [class.bg-success]="p.status==='Active'"
+                                [class.bg-secondary]="p.status!=='Active'"
+                                style="font-size:.6rem">{{ p.status }}</span>
+                            </div>
+                          </div>
+                          <i class="bi bi-chevron-right text-muted flex-shrink-0" style="font-size:.7rem"></i>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+
+              </div>
             </div>
             <div class="col-md-6">
-              <label class="form-label small fw-medium required-mark">Agent ID</label>
-              <input type="text" class="form-control form-control-sm"
-                     [class.is-invalid]="form.controls.agentId.invalid && form.controls.agentId.touched"
-                     formControlName="agentId" placeholder="Enter agent UUID" />
-              <div class="invalid-feedback">Agent ID is required.</div>
+              <label class="form-label small fw-medium required-mark">Agent</label>
+              <div class="party-search-wrap position-relative">
+
+                @if (isAgent()) {
+                  <!-- Agent role: search and select only their own record -->
+                  @if (selectedAgent()) {
+                    <div class="form-control form-control-sm d-flex align-items-center gap-2 party-selected" style="cursor:not-allowed">
+                      <i class="bi bi-person-badge-fill text-primary flex-shrink-0"></i>
+                      <div class="overflow-hidden">
+                        <div class="fw-semibold text-truncate" style="font-size:.82rem">
+                          {{ selectedAgent()!.name }}
+                          <span class="badge bg-primary ms-1" style="font-size:.6rem">You</span>
+                        </div>
+                        <div class="text-muted" style="font-size:.7rem">{{ selectedAgent()!.producerCode }} · {{ selectedAgent()!.region }}</div>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-transparent">
+                        @if (searchingAgents()) {
+                          <span class="spinner-border spinner-border-sm text-primary"></span>
+                        } @else {
+                          <i class="bi bi-search text-muted"></i>
+                        }
+                      </span>
+                      <input type="text" class="form-control form-control-sm"
+                             [class.is-invalid]="form.controls.agentId.invalid && form.controls.agentId.touched"
+                             [value]="agentSearchText()"
+                             (input)="onAgentSearch($any($event.target).value)"
+                             (focus)="agentResults().length ? showAgentDrop.set(true) : null"
+                             placeholder="Search your agent name…" />
+                    </div>
+                    @if (form.controls.agentId.invalid && form.controls.agentId.touched) {
+                      <div class="text-danger" style="font-size:.75rem;margin-top:2px">Please select your agent profile.</div>
+                    }
+
+                    @if (showAgentDrop() && agentSearchText()) {
+                      <div class="party-dropdown shadow border rounded-2 bg-white position-absolute w-100 z-3" style="top:calc(100% + 4px)">
+                        @if (searchingAgents()) {
+                          <div class="py-3 text-center text-muted small">
+                            <span class="spinner-border spinner-border-sm me-1"></span>Searching…
+                          </div>
+                        } @else if (!agentResults().length) {
+                          <div class="py-3 text-center text-muted small">
+                            <i class="bi bi-inbox me-1"></i>No agent found — ask Admin to create your agent profile.
+                          </div>
+                        } @else {
+                          @for (a of agentResults(); track a.agentID) {
+                            <div class="party-drop-item d-flex align-items-center gap-2 px-3 py-2" (click)="selectAgent(a)">
+                              <div class="party-drop-icon">
+                                <i class="bi bi-person-badge-fill text-primary"></i>
+                              </div>
+                              <div class="flex-grow-1 overflow-hidden">
+                                <div class="fw-semibold text-truncate" style="font-size:.82rem">{{ a.name }}</div>
+                                <div class="text-muted" style="font-size:.7rem">Code: {{ a.producerCode }} · {{ a.region }}</div>
+                              </div>
+                            </div>
+                          }
+                        }
+                      </div>
+                    }
+                  }
+
+                } @else {
+                  <!-- Other roles: full search -->
+                  @if (selectedAgent()) {
+                    <div class="form-control form-control-sm d-flex align-items-center justify-content-between party-selected">
+                      <div class="d-flex align-items-center gap-2 overflow-hidden">
+                        <i class="bi bi-person-badge-fill text-primary flex-shrink-0"></i>
+                        <div class="overflow-hidden">
+                          <div class="fw-semibold text-truncate" style="font-size:.82rem">{{ selectedAgent()!.name }}</div>
+                          <div class="text-muted" style="font-size:.7rem">{{ selectedAgent()!.producerCode }} · {{ selectedAgent()!.region }}</div>
+                        </div>
+                      </div>
+                      <button type="button" class="btn-close btn-close-sm ms-2 flex-shrink-0" (click)="clearAgent()"></button>
+                    </div>
+                  } @else {
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-transparent">
+                        @if (searchingAgents()) {
+                          <span class="spinner-border spinner-border-sm text-primary"></span>
+                        } @else {
+                          <i class="bi bi-search text-muted"></i>
+                        }
+                      </span>
+                      <input type="text" class="form-control form-control-sm"
+                             [class.is-invalid]="form.controls.agentId.invalid && form.controls.agentId.touched"
+                             [value]="agentSearchText()"
+                             (input)="onAgentSearch($any($event.target).value)"
+                             (focus)="agentResults().length ? showAgentDrop.set(true) : null"
+                             placeholder="Search agent by name…" />
+                    </div>
+                    @if (form.controls.agentId.invalid && form.controls.agentId.touched) {
+                      <div class="text-danger" style="font-size:.75rem;margin-top:2px">Please select an agent.</div>
+                    }
+                  }
+
+                  @if (showAgentDrop() && agentSearchText()) {
+                    <div class="party-dropdown shadow border rounded-2 bg-white position-absolute w-100 z-3" style="top:calc(100% + 4px)">
+                      @if (searchingAgents()) {
+                        <div class="py-3 text-center text-muted small">
+                          <span class="spinner-border spinner-border-sm me-1"></span>Searching…
+                        </div>
+                      } @else if (!agentResults().length) {
+                        <div class="py-3 text-center text-muted small">
+                          <i class="bi bi-inbox me-1"></i>No agents found for "{{ agentSearchText() }}"
+                        </div>
+                      } @else {
+                        @for (a of agentResults(); track a.agentID) {
+                          <div class="party-drop-item d-flex align-items-center gap-2 px-3 py-2" (click)="selectAgent(a)">
+                            <div class="party-drop-icon">
+                              <i class="bi bi-person-badge-fill text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden">
+                              <div class="fw-semibold text-truncate" style="font-size:.82rem">{{ a.name }}</div>
+                              <div class="text-muted" style="font-size:.7rem">
+                                Code: {{ a.producerCode }} · {{ a.region }}
+                                <span class="ms-1 badge"
+                                  [class.bg-success]="a.status==='Active'"
+                                  [class.bg-secondary]="a.status!=='Active'"
+                                  style="font-size:.6rem">{{ a.status }}</span>
+                              </div>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted flex-shrink-0" style="font-size:.7rem"></i>
+                          </div>
+                        }
+                      }
+                    </div>
+                  }
+                }
+
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-medium required-mark">Product Line</label>

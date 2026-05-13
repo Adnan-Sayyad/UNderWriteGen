@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +6,24 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { SubmissionApiService } from '../../services/submission-api.service';
 import { Submission, Attachment, CompletenessCheck, Questionnaire, SubmissionStatus, DocType, Subjectivity, UWNote } from '../../models/submission.model';
+import { AuthService } from '../../../../core/auth/auth.service';
+
+// Which statuses each role can transition TO from a given current status
+const ROLE_TRANSITIONS: Record<string, Record<string, SubmissionStatus[]>> = {
+  Agent:         { Draft:        ['IntakeComplete'] },
+  UWAssistant:   { IntakeComplete: ['UnderReview'] },
+  Underwriter:   { IntakeComplete: ['UnderReview'],
+                   UnderReview:    ['Quoted', 'Declined'] },
+  PricingAnalyst:{ UnderReview:   ['Quoted'] },
+  Operations:    { Quoted:        ['Expired'], Declined: ['Expired'] },
+  Compliance:    {},   // read-only
+  Admin:         { Draft:        ['IntakeComplete','UnderReview','Quoted','Declined','Expired'],
+                   IntakeComplete:['Draft','UnderReview','Quoted','Declined','Expired'],
+                   UnderReview:  ['Draft','IntakeComplete','Quoted','Declined','Expired'],
+                   Quoted:       ['Draft','IntakeComplete','UnderReview','Declined','Expired'],
+                   Declined:     ['Draft','IntakeComplete','UnderReview','Quoted','Expired'],
+                   Expired:      ['Draft','IntakeComplete','UnderReview','Quoted','Declined'] },
+};
 
 type TabId = 'overview' | 'questionnaire' | 'attachments' | 'completeness' | 'subjectivities' | 'notes';
 
@@ -46,6 +64,17 @@ export class SubmissionDetailPage implements OnInit {
 
   readonly updatingStatus      = signal(false);
   readonly allStatuses         = ALL_STATUSES;
+
+  private readonly auth        = inject(AuthService);
+
+  // Statuses this user can change TO from the current submission status
+  readonly allowedTransitions  = computed<SubmissionStatus[]>(() => {
+    const role    = this.auth.currentUser()?.role ?? '';
+    const current = this.submission()?.status ?? '';
+    return ROLE_TRANSITIONS[role]?.[current] ?? [];
+  });
+
+  readonly canChangeStatus     = computed(() => this.allowedTransitions().length > 0);
   readonly docTypes            = DOC_TYPES;
 
   readonly selectedDocType     = signal<DocType>('KYC');
@@ -158,7 +187,7 @@ export class SubmissionDetailPage implements OnInit {
 
   // ── Status Update ──────────────────────────────────────────────────────────
 
-  updateStatus(newStatus: string): void {
+  updateStatus(newStatus: string, selectEl?: EventTarget | null): void {
     if (!newStatus || newStatus === this.submission()?.status) return;
     this.updatingStatus.set(true);
     this.svc.updateStatus(this.submissionId, newStatus).subscribe({
@@ -167,7 +196,9 @@ export class SubmissionDetailPage implements OnInit {
         const updated = d?.data ?? d;
         this.submission.update(s => s ? { ...s, status: updated?.status ?? newStatus as SubmissionStatus } : s);
         this.updatingStatus.set(false);
-        this.flash('success', `Status updated to ${newStatus}`);
+        // Reset the dropdown back to placeholder
+        if (selectEl) (selectEl as HTMLSelectElement).value = '';
+        this.flash('success', `Status changed to ${newStatus}`);
       },
       error: () => { this.updatingStatus.set(false); this.flash('danger', 'Failed to update status'); },
     });
