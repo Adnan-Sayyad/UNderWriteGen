@@ -38,3 +38,32 @@ export interface CompletenessCheck {
   status: CheckStatus;
   checkedDate: string;
 }
+
+export type RiskBand = 'Low' | 'Medium' | 'High';
+
+export interface RiskScore {
+  riskScoreId:  string;
+  submissionId: string;
+  modelVersion: string;
+  scoreValue:   number;
+  band:         RiskBand;
+  scoredDate:   string;
+}
+
+export interface UWNote {
+  noteId:       string;
+  submissionId: string;
+  authorId:     string;
+  noteText:     string;
+  createdDate:  string;
+}
+
+export type SubjectivityStatus = 'Open' | 'Met' | 'Waived';
+
+export interface Subjectivity {
+  subjectivityId: string;
+  submissionId:   string;
+  description:    string;
+  dueDate:        string;
+  status:         SubjectivityStatus;
+}

@@ -100,6 +100,12 @@ export class UnderwritingApiService {
   }
 
   updateSubjectivity(id: string, payload: Partial<Subjectivity>) {
+    // Status-only update → PATCH /subjectivities/{id}/status
+    if (payload.status && Object.keys(payload).length === 1) {
+      return this.http.patch<ApiResponse<Subjectivity>>(
+        `${this.base}/subjectivities/${id}/status`, { status: payload.status }
+      );
+    }
     return this.http.put<ApiResponse<Subjectivity>>(`${this.base}/subjectivities/${id}`, payload);
   }
 }

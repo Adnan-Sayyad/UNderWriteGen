@@ -89,6 +89,22 @@
           <i class="bi bi-check2-circle me-1"></i>Completeness
         </button>
       </li>
+      <li class="nav-item">
+        <button class="nav-link position-relative" [class.active]="activeTab()==='subjectivities'" (click)="setTab('subjectivities')">
+          <i class="bi bi-exclamation-circle me-1"></i>Subjectivities
+          @if (subjectivities().length) {
+            <span class="badge bg-warning text-dark ms-1">{{ subjectivities().length }}</span>
+          }
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" [class.active]="activeTab()==='notes'" (click)="setTab('notes')">
+          <i class="bi bi-journal-text me-1"></i>UW Notes
+          @if (notes().length) {
+            <span class="badge bg-info text-dark ms-1">{{ notes().length }}</span>
+          }
+        </button>
+      </li>
     </ul>
 
     <!-- ── Overview Tab ───────────────────────────────────────────────────── -->
@@ -246,8 +262,14 @@
               </select>
             </div>
             <div class="col-md-5">
-              <label class="form-label form-label-sm mb-1">File</label>
-              <input type="file" class="form-control form-control-sm" (change)="onFileChange($event)" />
+              <label class="form-label form-label-sm mb-1">File <span class="text-muted fw-normal">(JPG, PDF, DOC, DOCX)</span></label>
+              <input type="file" class="form-control form-control-sm"
+                     accept=".jpg,.jpeg,.pdf,.doc,.docx"
+                     [class.is-invalid]="!!fileError()"
+                     (change)="onFileChange($event)" />
+              @if (fileError()) {
+                <div class="invalid-feedback d-block">{{ fileError() }}</div>
+              }
             </div>
             <div class="col-auto">
               <button class="btn btn-sm btn-primary"
@@ -381,6 +403,110 @@
                 <i class="bi bi-check-circle me-1"></i>All required items are present. Submission is complete.
               </div>
             }
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ── Subjectivities Tab ───────────────────────────────────────────────── -->
+    @if (activeTab() === 'subjectivities') {
+      <!-- View Only — create from UW Workbench -->
+      <div class="alert alert-info py-2 mb-3 small">
+        <i class="bi bi-info-circle me-1"></i>
+        Subjectivities are created from <strong>UW Workbench</strong>. Here you can view and resolve them.
+      </div>
+
+      <!-- List -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold"><i class="bi bi-list-check me-2"></i>Subjectivities</div>
+        <div class="card-body p-0">
+          @if (loadingSubj()) {
+            <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+          } @else if (!subjectivities().length) {
+            <app-empty-state icon="bi-check-circle" title="No subjectivities"
+                             message="No conditions raised for this submission."></app-empty-state>
+          } @else {
+            <div class="list-group list-group-flush">
+              @for (sub of subjectivities(); track sub.subjectivityId) {
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1 me-3">
+                      <p class="mb-1 fw-semibold">{{ sub.description }}</p>
+                      <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>Due: {{ sub.dueDate | date:'mediumDate' }}</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="badge" [ngClass]="subjStatusClass(sub.status)">{{ sub.status }}</span>
+                      @if (sub.status === 'Open') {
+                        <button class="btn btn-sm btn-outline-success" (click)="updateSubjectivityStatus(sub, 'Met')">
+                          <i class="bi bi-check-lg me-1"></i>Met
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="updateSubjectivityStatus(sub, 'Waived')">
+                          <i class="bi bi-slash-circle me-1"></i>Waive
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ── UW Notes Tab ─────────────────────────────────────────────────────── -->
+    @if (activeTab() === 'notes') {
+      <!-- View Only — add notes from UW Workbench -->
+      <div class="alert alert-info py-2 mb-3 small">
+        <i class="bi bi-info-circle me-1"></i>
+        UW Notes are added from <strong>UW Workbench</strong>. Here you can view the notes history.
+      </div>
+
+      <!-- Notes List -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">
+          <i class="bi bi-journal-text me-2"></i>Notes History
+        </div>
+        <div class="card-body p-0">
+          @if (loadingNotes()) {
+            <div class="text-center py-4">
+              <div class="spinner-border text-info" role="status"></div>
+            </div>
+          } @else if (!notes().length) {
+            <app-empty-state icon="bi-journal" title="No notes yet"
+                             message="No underwriting notes have been added for this submission."></app-empty-state>
+          } @else {
+            <div class="list-group list-group-flush">
+              @for (note of notes(); track note.noteId) {
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1 me-3">
+                      <p class="mb-1">{{ note.noteText }}</p>
+                      <div class="d-flex gap-3">
+                        <small class="text-muted">
+                          <i class="bi bi-person me-1"></i>
+                          {{ note.authorId | slice:0:8 }}…
+                        </small>
+                        <small class="text-muted">
+                          <i class="bi bi-clock me-1"></i>
+                          {{ note.createdDate | date:'medium' }}
+                        </small>
+                      </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger"
+                            title="Delete note"
+                            (click)="deleteNote(note.noteId)"
+                            [disabled]="deletingNoteId() === note.noteId">
+                      @if (deletingNoteId() === note.noteId) {
+                        <span class="spinner-border spinner-border-sm"></span>
+                      } @else {
+                        <i class="bi bi-trash"></i>
+                      }
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
           }
         </div>
       </div>

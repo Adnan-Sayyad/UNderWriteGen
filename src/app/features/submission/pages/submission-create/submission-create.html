@@ -12,57 +12,281 @@
     </div>
   }
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-body">
-      <form [formGroup]="form" novalidate>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="form-section">
-              <div class="form-section-title">Party & Agent</div>
-              <div class="mb-3">
-                <label class="form-label small fw-medium required-mark">Party ID</label>
-                <input type="text" class="form-control form-control-sm"
-                       [class.is-invalid]="form.controls.partyId.invalid && form.controls.partyId.touched"
-                       formControlName="partyId" placeholder="Enter party UUID" />
-                <div class="invalid-feedback">Party ID is required.</div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label small fw-medium required-mark">Agent ID</label>
-                <input type="text" class="form-control form-control-sm"
-                       [class.is-invalid]="form.controls.agentId.invalid && form.controls.agentId.touched"
-                       formControlName="agentId" placeholder="Enter agent UUID" />
-                <div class="invalid-feedback">Agent ID is required.</div>
-              </div>
+  <!-- Stepper -->
+  <div class="stepper mb-4">
+    <div class="stepper-item" [class.active]="step() === 1" [class.done]="step() > 1">
+      <div class="stepper-circle">@if (step() > 1) { <i class="bi bi-check-lg"></i> } @else { 1 }</div>
+      <span class="stepper-label">Basic Info</span>
+    </div>
+    <div class="stepper-line" [class.done]="step() > 1"></div>
+    <div class="stepper-item" [class.active]="step() === 2" [class.done]="step() > 2">
+      <div class="stepper-circle">@if (step() > 2) { <i class="bi bi-check-lg"></i> } @else { 2 }</div>
+      <span class="stepper-label">Questionnaire</span>
+    </div>
+    <div class="stepper-line" [class.done]="step() > 2"></div>
+    <div class="stepper-item" [class.active]="step() === 3" [class.done]="step() > 3">
+      <div class="stepper-circle">@if (step() > 3) { <i class="bi bi-check-lg"></i> } @else { 3 }</div>
+      <span class="stepper-label">Attachments</span>
+    </div>
+    <div class="stepper-line" [class.done]="step() > 3"></div>
+    <div class="stepper-item" [class.active]="step() === 4">
+      <div class="stepper-circle">4</div>
+      <span class="stepper-label">Completeness</span>
+    </div>
+  </div>
+
+  <!-- ── Step 1: Basic Info ─────────────────────────────────────────────── -->
+  @if (step() === 1) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-info-circle me-2"></i>Submission Details</div>
+      <div class="card-body">
+        <form [formGroup]="form" novalidate>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-medium required-mark">Party ID</label>
+              <input type="text" class="form-control form-control-sm"
+                     [class.is-invalid]="form.controls.partyId.invalid && form.controls.partyId.touched"
+                     formControlName="partyId" placeholder="Enter party UUID" />
+              <div class="invalid-feedback">Party ID is required.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-medium required-mark">Agent ID</label>
+              <input type="text" class="form-control form-control-sm"
+                     [class.is-invalid]="form.controls.agentId.invalid && form.controls.agentId.touched"
+                     formControlName="agentId" placeholder="Enter agent UUID" />
+              <div class="invalid-feedback">Agent ID is required.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-medium required-mark">Product Line</label>
+              <select class="form-select form-select-sm" formControlName="productLine">
+                @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-medium required-mark">Inception Date</label>
+              <input type="date" class="form-control form-control-sm"
+                     [class.is-invalid]="form.controls.inceptionDate.invalid && form.controls.inceptionDate.touched"
+                     formControlName="inceptionDate" />
+              <div class="invalid-feedback">Inception date is required.</div>
             </div>
           </div>
+          <div class="d-flex gap-2 justify-content-end border-top pt-3 mt-3">
+            <a routerLink="/submissions" class="btn btn-sm btn-outline-secondary">Cancel</a>
+            <button class="btn btn-sm btn-primary" (click)="createSubmission()" [disabled]="saving()">
+              @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Next <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ── Step 2: Questionnaire ──────────────────────────────────────────── -->
+  @if (step() === 2) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-list-check me-2"></i>Risk Questionnaire</div>
+      <div class="card-body">
+        <div class="row g-3">
           <div class="col-md-6">
-            <div class="form-section">
-              <div class="form-section-title">Product Details</div>
-              <div class="mb-3">
-                <label class="form-label small fw-medium required-mark">Product Line</label>
-                <select class="form-select form-select-sm" formControlName="productLine">
-                  @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label small fw-medium required-mark">Inception Date</label>
-                <input type="date" class="form-control form-control-sm"
-                       [class.is-invalid]="form.controls.inceptionDate.invalid && form.controls.inceptionDate.touched"
-                       formControlName="inceptionDate" />
-                <div class="invalid-feedback">Inception date is required.</div>
-              </div>
-            </div>
+            <label class="form-label small fw-medium required-mark">Occupation Type</label>
+            <input type="text" class="form-control form-control-sm"
+                   [class.is-invalid]="!!qErrors()['occupationType']"
+                   [value]="qOccupationType()"
+                   (input)="qOccupationType.set($any($event.target).value)"
+                   placeholder="e.g. Salaried, Business" />
+            @if (qErrors()['occupationType']) {
+              <div class="invalid-feedback d-block">{{ qErrors()['occupationType'] }}</div>
+            }
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium required-mark">Sum Insured (₹)</label>
+            <input type="number" class="form-control form-control-sm" min="1"
+                   [class.is-invalid]="!!qErrors()['sumInsured']"
+                   [value]="qSumInsured()"
+                   (input)="qSumInsured.set(+$any($event.target).value)" />
+            @if (qErrors()['sumInsured']) {
+              <div class="invalid-feedback d-block">{{ qErrors()['sumInsured'] }}</div>
+            }
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium">Existing Conditions</label>
+            <select class="form-select form-select-sm"
+                    [value]="qExistingConditions()"
+                    (change)="qExistingConditions.set($any($event.target).value)">
+              <option>None</option>
+              <option>Diabetes</option>
+              <option>Hypertension</option>
+              <option>Heart Disease</option>
+              <option>Cancer</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium">Smoking Status</label>
+            <select class="form-select form-select-sm"
+                    [value]="qSmokingStatus()"
+                    (change)="qSmokingStatus.set($any($event.target).value)">
+              <option>Non-Smoker</option>
+              <option>Smoker</option>
+              <option>Ex-Smoker</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium">Annual Income (₹)</label>
+            <input type="number" class="form-control form-control-sm" min="0"
+                   [value]="qAnnualIncome()"
+                   (input)="qAnnualIncome.set(+$any($event.target).value)" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium">Additional Notes</label>
+            <textarea class="form-control form-control-sm" rows="3"
+                      [value]="qAdditionalNotes()"
+                      (input)="qAdditionalNotes.set($any($event.target).value)"></textarea>
+          </div>
+        </div>
+        <div class="d-flex gap-2 justify-content-end border-top pt-3 mt-3">
+          <button class="btn btn-sm btn-outline-secondary" (click)="skipQuestionnaire()">
+            Skip for now
+          </button>
+          <button class="btn btn-sm btn-primary" (click)="saveQuestionnaire()" [disabled]="saving()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Save & Next <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Step 3: Attachments ────────────────────────────────────────────── -->
+  @if (step() === 3) {
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-paperclip me-2"></i>Upload Documents</div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          Allowed formats: <strong>JPG, PDF, DOC, DOCX</strong> only.
+        </p>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label small fw-medium">Document Type</label>
+            <select class="form-select form-select-sm"
+                    [value]="selectedDocType()"
+                    (change)="selectedDocType.set($any($event.target).value)">
+              @for (dt of docTypes; track dt) { <option [value]="dt">{{ dt }}</option> }
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small fw-medium">File</label>
+            <input type="file" class="form-control form-control-sm"
+                   accept=".jpg,.jpeg,.pdf,.doc,.docx"
+                   [class.is-invalid]="!!fileError()"
+                   (change)="onFileChange($event)" />
+            @if (fileError()) {
+              <div class="invalid-feedback d-block">{{ fileError() }}</div>
+            }
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-sm btn-primary"
+                    (click)="uploadAttachment()"
+                    [disabled]="!selectedFile() || uploading()">
+              @if (uploading()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              <i class="bi bi-upload me-1"></i>Upload
+            </button>
           </div>
         </div>
 
-        <div class="d-flex gap-2 justify-content-end border-top pt-3 mt-2">
-          <a routerLink="/submissions" class="btn btn-sm btn-outline-secondary">Cancel</a>
-          <button class="btn btn-sm btn-primary" (click)="save()" [disabled]="saving()">
-            @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-            Create Submission
+        @if (attachments().length) {
+          <div class="table-responsive mt-3">
+            <table class="table table-sm table-hover mb-0 align-middle">
+              <thead class="table-light">
+                <tr><th>Type</th><th>File</th><th>Date</th></tr>
+              </thead>
+              <tbody>
+                @for (a of attachments(); track a.attachmentId) {
+                  <tr>
+                    <td><span class="badge bg-secondary">{{ a.docType }}</span></td>
+                    <td class="small text-muted">{{ a.fileUri }}</td>
+                    <td class="small text-muted">{{ a.uploadedDate | date:'mediumDate' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="text-muted small mt-3 mb-0">No documents uploaded yet.</p>
+        }
+
+        <div class="d-flex gap-2 justify-content-end border-top pt-3 mt-3">
+          <button class="btn btn-sm btn-outline-secondary" (click)="proceedToCheck()">
+            Skip Attachments
+          </button>
+          <button class="btn btn-sm btn-primary" (click)="proceedToCheck()" [disabled]="uploading()">
+            Next <i class="bi bi-arrow-right ms-1"></i>
           </button>
         </div>
-      </form>
+      </div>
     </div>
-  </div>
+  }
+
+  <!-- ── Step 4: Completeness Check ────────────────────────────────────── -->
+  @if (step() === 4) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-check2-circle me-2"></i>Completeness Check</div>
+      <div class="card-body">
+        @if (runningCheck()) {
+          <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2 mb-0">Running completeness check…</p>
+          </div>
+        } @else if (completeness()) {
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <div class="detail-item">
+                <span class="detail-label">Status</span>
+                <span class="fw-semibold"
+                      [class.text-success]="completeness()!.status === 'Complete'"
+                      [class.text-warning]="completeness()!.status !== 'Complete'">
+                  <i class="bi me-1"
+                     [class.bi-check-circle-fill]="completeness()!.status === 'Complete'"
+                     [class.bi-clock-fill]="completeness()!.status !== 'Complete'"></i>
+                  {{ completeness()!.status }}
+                </span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="detail-item">
+                <span class="detail-label">Missing Items</span>
+                <span class="fw-semibold">{{ completeness()!.missingItemsJSON.length }}</span>
+              </div>
+            </div>
+          </div>
+
+          @if (completeness()!.missingItemsJSON.length) {
+            <div class="alert alert-warning py-2 mb-3">
+              <p class="fw-semibold mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Missing Items</p>
+              <ul class="mb-0 ps-3 small">
+                @for (item of completeness()!.missingItemsJSON; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          } @else {
+            <div class="alert alert-success py-2 mb-3">
+              <i class="bi bi-check-circle me-1"></i>All required items are present. Submission is complete!
+            </div>
+          }
+
+          <div class="d-flex gap-2 justify-content-end border-top pt-3">
+            <button class="btn btn-sm btn-outline-secondary" (click)="finishToList()">
+              <i class="bi bi-list me-1"></i>Back to List
+            </button>
+            <button class="btn btn-sm btn-primary" (click)="finish()">
+              <i class="bi bi-eye me-1"></i>View Submission
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
 </div>
