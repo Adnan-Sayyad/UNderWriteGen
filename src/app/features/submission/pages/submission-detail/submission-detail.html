@@ -4,51 +4,9 @@
     icon="bi-file-earmark-text"
     [breadcrumbs]="breadcrumbs">
     @if (submission()) {
-      <span class="badge fs-6 me-2" [ngClass]="statusClass(submission()!.status)">
+      <span class="badge fs-6" [ngClass]="statusClass(submission()!.status)">
         {{ submission()!.status }}
       </span>
-
-      @if (submission()!.status !== 'Declined' && submission()!.status !== 'Expired') {
-        <a [routerLink]="['/pricing/quotes/new', submission()!.submissionId]"
-           class="btn btn-sm btn-primary me-1">
-          <i class="bi bi-calculator me-1"></i>Generate Quote
-        </a>
-      }
-      <a [routerLink]="['/risk/profiles', submission()!.submissionId]"
-         class="btn btn-sm btn-outline-secondary me-1">
-        <i class="bi bi-shield-check me-1"></i>Risk Profile
-      </a>
-      <a [routerLink]="['/underwriting/decision', submission()!.submissionId]"
-         class="btn btn-sm btn-outline-primary me-1">
-        <i class="bi bi-briefcase me-1"></i>UW Decision
-      </a>
-
-      <!-- Compliance quick-log dropdown -->
-      <div class="dropdown d-inline-block">
-        <button class="btn btn-sm btn-outline-danger dropdown-toggle"
-                type="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false">
-          <i class="bi bi-shield-exclamation me-1"></i>Compliance
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-          <li>
-            <button class="dropdown-item small" (click)="logBreach()">
-              <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Log Authority Breach
-            </button>
-          </li>
-          <li>
-            <button class="dropdown-item small" (click)="logException()">
-              <i class="bi bi-bug-fill text-warning me-2"></i>Log Exception
-            </button>
-          </li>
-          <li>
-            <button class="dropdown-item small" (click)="newChecklist()">
-              <i class="bi bi-list-check text-primary me-2"></i>New Checklist
-            </button>
-          </li>
-        </ul>
-      </div>
     }
   </app-page-header>
 
@@ -159,29 +117,6 @@
         </div>
       </div>
 
-      <!-- Status Update -->
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white fw-semibold">Update Status</div>
-        <div class="card-body">
-          <div class="row g-2 align-items-center">
-            <div class="col-md-4">
-              <select class="form-select form-select-sm"
-                      [value]="submission()!.status"
-                      (change)="updateStatus($any($event.target).value)"
-                      [disabled]="updatingStatus()">
-                @for (s of allStatuses; track s) {
-                  <option [value]="s">{{ s }}</option>
-                }
-              </select>
-            </div>
-            <div class="col-auto">
-              @if (updatingStatus()) {
-                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
     }
 
     <!-- ── Questionnaire Tab ────────────────────────────────────────────────── -->
@@ -512,25 +447,5 @@
       </div>
     }
 
-    <!-- Pricing & Quote quick section -->
-    @if (activeTab() === 'overview') {
-      <div class="card border-0 shadow-sm mt-3">
-        <div class="card-header bg-white border-bottom py-2 d-flex align-items-center justify-content-between">
-          <span class="fw-semibold small"><i class="bi bi-calculator text-primary me-2"></i>Pricing & Quotation</span>
-          @if (submission()!.status !== 'Declined' && submission()!.status !== 'Expired') {
-            <a [routerLink]="['/pricing/quotes/new', submission()!.submissionId]"
-               class="btn btn-sm btn-primary">
-              <i class="bi bi-calculator me-1"></i>Generate Quote
-            </a>
-          }
-        </div>
-        <div class="card-body py-2">
-          <p class="text-muted small mb-0">
-            Click <strong>Generate Quote</strong> to run the pricing engine for this submission.
-            The engine automatically calculates the base premium, applies risk loadings, discounts, and taxes based on the submission profile.
-          </p>
-        </div>
-      </div>
-    }
   }
 </div>

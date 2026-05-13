@@ -43,29 +43,46 @@
               <tr>
                 <th>Renewal ID</th>
                 <th>Policy ID</th>
+                <th>Renewal Offer</th>
                 <th>Offered Date</th>
                 <th>Status</th>
-                <th class="table-actions">Actions</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               @for (r of filtered(); track r.renewalId) {
                 <tr>
-                  <td><code class="small">{{ r.renewalId }}</code></td>
+                  <td><code class="small text-muted">{{ r.renewalId | slice:0:8 }}…</code></td>
                   <td>
-                    <a [routerLink]="['/policy', r.policyId]" class="text-decoration-none small">
-                      {{ r.policyId }}
+                    <a [routerLink]="['/policy', r.policyId]" class="text-decoration-none font-monospace small">
+                      {{ r.policyId | slice:0:8 }}…
                     </a>
+                  </td>
+                  <td class="small">
+                    @if ($any(r.renewalOfferJSON)['newPremium']) {
+                      <span class="text-primary fw-semibold">
+                        ₹{{ $any(r.renewalOfferJSON)['newPremium'] | number }}
+                      </span>
+                    }
+                    @if ($any(r.renewalOfferJSON)['newExpiryDate']) {
+                      <span class="text-muted ms-2">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        till {{ $any(r.renewalOfferJSON)['newExpiryDate'] | date:'mediumDate' }}
+                      </span>
+                    }
+                    @if (!$any(r.renewalOfferJSON)['newPremium'] && !$any(r.renewalOfferJSON)['newExpiryDate']) {
+                      <span class="text-muted">—</span>
+                    }
                   </td>
                   <td class="small text-muted">{{ r.offeredDate | date:'mediumDate' }}</td>
                   <td><span class="badge" [ngClass]="statusClass(r.status)">{{ r.status }}</span></td>
-                  <td class="table-actions">
+                  <td class="text-end">
                     @if (r.status === 'Offered') {
-                      <button class="btn btn-sm btn-success me-1" title="Accept" (click)="updateStatus(r, 'Accepted')">
-                        <i class="bi bi-check-lg"></i>
+                      <button class="btn btn-sm btn-success me-1" title="Accept Renewal" (click)="updateStatus(r, 'Accepted')">
+                        <i class="bi bi-check-lg me-1"></i>Accept
                       </button>
-                      <button class="btn btn-sm btn-outline-danger" title="Decline" (click)="updateStatus(r, 'Declined')">
-                        <i class="bi bi-x-lg"></i>
+                      <button class="btn btn-sm btn-outline-danger" title="Decline Renewal" (click)="updateStatus(r, 'Declined')">
+                        <i class="bi bi-x-lg me-1"></i>Decline
                       </button>
                     }
                   </td>
