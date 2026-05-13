@@ -12,10 +12,9 @@ import {
   QuoteActionResponse,
 } from '../models/pricing.model';
 
-// The dev proxy (proxy.conf.json) intercepts paths like /quotes and /pricing-params
-// and rewrites them to /api/quotes and /api/pricing-params on the target backend.
-// So the frontend must call /quotes (not /api/quotes) in development.
-// In production, environment.apiBaseUrl = '/api/v1' handles the full prefix.
+// All API calls are made under the /api prefix to avoid colliding with Angular
+// route paths (e.g. /submissions, /notifications, /reports). The dev proxy
+// (proxy.conf.json) forwards /api/* to the appropriate backend microservice.
 
 @Injectable({ providedIn: 'root' })
 export class PricingApiService {

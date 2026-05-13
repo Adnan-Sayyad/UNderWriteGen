@@ -6,6 +6,7 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PartyApiService } from '../../services/party-api.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { Agent, AgentStatus } from '../../models/party.model';
 import {
   noDigitsValidator,
@@ -36,13 +37,21 @@ export class AgentListPage implements OnInit {
   readonly currentPage  = signal(0);
   readonly pageSize     = signal(10);
 
+  readonly auth = inject(AuthService);
+
+  readonly isAdmin = computed(() => this.auth.hasRole('Admin'));
+
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
     const s = this.filterStatus();
-    return this.agents().filter(a =>
+    const list = this.agents().filter(a =>
       (!q || a.name.toLowerCase().includes(q) || a.producerCode.toLowerCase().includes(q)) &&
       (!s || a.status === s)
     );
+    return list.sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'Active' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
   });
 
   readonly totalElements = computed(() => this.filtered().length);
@@ -69,18 +78,11 @@ export class AgentListPage implements OnInit {
       noDigitsValidator(),
       Validators.pattern(/^[a-zA-Z\s\-'\.]+$/),
     ]],
-    producerCode: ['', [
-      Validators.required,
-      Validators.minLength(3),
-      Validators.maxLength(50),
-      Validators.pattern(/^[a-zA-Z0-9\-_]+$/),
-    ]],
     region: ['', [
       Validators.maxLength(100),
       Validators.pattern(/^[a-zA-Z\s\-]*$/),
     ]],
     contactInfo: ['', [smartContactInfoValidator(), Validators.maxLength(500)]],
-    status: ['Active' as AgentStatus, Validators.required],
   });
 
   constructor(private svc: PartyApiService) {
@@ -105,7 +107,7 @@ export class AgentListPage implements OnInit {
   }
 
   openCreate(): void {
-    this.form.reset({ status: 'Active' });
+    this.form.reset();
     this.selected.set(null);
     this.modalMode.set('create');
   }
@@ -113,11 +115,9 @@ export class AgentListPage implements OnInit {
   openEdit(a: Agent): void {
     this.selected.set(a);
     this.form.patchValue({
-      name:         a.name,
-      producerCode: a.producerCode,
-      region:       a.region ?? '',
-      contactInfo:  a.contactInfo ?? '',
-      status:       a.status,
+      name:        a.name,
+      region:      a.region ?? '',
+      contactInfo: a.contactInfo ?? '',
     });
     this.modalMode.set('edit');
   }
@@ -128,12 +128,10 @@ export class AgentListPage implements OnInit {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving.set(true);
     const v = this.form.value;
-    const payload: Partial<Agent> = {
-      name:         v.name!,
-      producerCode: v.producerCode!,
-      region:       v.region ?? '',
-      contactInfo:  v.contactInfo ?? undefined,
-      status:       v.status as AgentStatus,
+    const payload = {
+      name:        v.name!,
+      region:      v.region ?? '',
+      contactInfo: v.contactInfo ?? undefined,
     };
     const req = this.modalMode() === 'edit'
       ? this.svc.updateAgent(this.selected()!.agentID, payload)
