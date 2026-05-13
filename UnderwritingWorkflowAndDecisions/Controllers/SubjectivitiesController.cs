@@ -12,6 +12,9 @@ namespace UnderwritingWorkflowAndDecisions.Controllers
 
         public SubjectivitiesController(ISubjectivityService service) => _service = service;
 
+        [HttpGet]
+        public IActionResult GetAll() => Ok(_service.GetAll());
+
         [HttpGet("{submissionId:guid}")]
         public IActionResult GetBySubmission(Guid submissionId) =>
             Ok(_service.GetBySubmission(submissionId));

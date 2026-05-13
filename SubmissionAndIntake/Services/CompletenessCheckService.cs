@@ -43,10 +43,14 @@ namespace SubmissionAndIntake.Services
 
         public async Task<CompletenessCheckResponseDto> CreateCheckAsync(CreateCompletenessCheckDto dto)
         {
+            var missingJson = dto.MissingItemsJSON?.Trim() ?? "[]";
+            var isComplete  = missingJson is "[]" or "" or "null";
+
             var check = new CompletenessCheck
             {
-                SubmissionID = dto.SubmissionID,
-                MissingItemsJSON = dto.MissingItemsJSON
+                SubmissionID     = dto.SubmissionID,
+                MissingItemsJSON = dto.MissingItemsJSON,
+                Status           = isComplete ? CheckStatus.Complete : CheckStatus.Pending,
             };
 
             var created = await _repository.CreateAsync(check);

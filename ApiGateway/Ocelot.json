@@ -270,7 +270,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8087 }],
       "UpstreamPathTemplate": "/subjectivities/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH", "DELETE"]
     },
 
     {

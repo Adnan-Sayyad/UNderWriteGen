@@ -5,6 +5,7 @@ namespace UnderwritingWorkflowAndDecisions.Services
 {
     public interface ISubjectivityService
     {
+        IEnumerable<Subjectivity> GetAll();
         IEnumerable<Subjectivity> GetBySubmission(Guid submissionId);
         Subjectivity? GetById(Guid subjectivityId);
         IEnumerable<Subjectivity> GetDueBy(DateTime date);
