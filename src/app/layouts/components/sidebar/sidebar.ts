@@ -33,17 +33,17 @@ export class Sidebar {
     {
       title: 'Underwriting',
       items: [
-        { label: 'UW Workbench',    icon: 'bi-briefcase',         route: '/underwriting',  roles: ['Underwriter','Assistant','Admin'] },
-        { label: 'Risk & Evidence', icon: 'bi-shield-check',      route: '/risk',           roles: ['Underwriter','Assistant','Admin'] },
+        { label: 'UW Workbench',    icon: 'bi-briefcase',         route: '/underwriting',  roles: ['Underwriter','UWAssistant','Admin'] },
+        { label: 'Risk & Evidence', icon: 'bi-shield-check',      route: '/risk',           roles: ['Underwriter','UWAssistant','Admin'] },
         { label: 'Rules & Scoring', icon: 'bi-diagram-3',         route: '/rules',          roles: ['Underwriter','Admin'] },
       ],
     },
     {
       title: 'Pricing & Quotation',
       items: [
-        { label: 'Create Quote', icon: 'bi-plus-circle',  route: '/pricing/quotes/new', roles: ['Pricing','Underwriter','Admin'] },
-        { label: 'Quotes',       icon: 'bi-calculator',   route: '/pricing/quotes',     roles: ['Pricing','Underwriter','Admin'] },
-        { label: 'Parameters',   icon: 'bi-sliders',      route: '/pricing/params',     roles: ['Pricing','Admin'] },
+        { label: 'Create Quote', icon: 'bi-plus-circle',  route: '/pricing/quotes/new', roles: ['PricingAnalyst','Underwriter','Admin'] },
+        { label: 'Quotes',       icon: 'bi-calculator',   route: '/pricing/quotes',     roles: ['PricingAnalyst','Underwriter','Admin'] },
+        { label: 'Parameters',   icon: 'bi-sliders',      route: '/pricing/params',     roles: ['PricingAnalyst','Admin'] },
       ],
     },
     {

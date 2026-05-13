@@ -128,7 +128,33 @@
             <div class="col-md-4">
               <div class="detail-item">
                 <span class="detail-label">Status</span>
-                <span class="badge" [ngClass]="statusClass(submission()!.status)">{{ submission()!.status }}</span>
+                @if (canChangeStatus()) {
+                  <!-- Role has permission to change status -->
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge" [ngClass]="statusClass(submission()!.status)">
+                      {{ submission()!.status }}
+                    </span>
+                    <div class="d-flex align-items-center gap-1">
+                      <select class="form-select form-select-sm"
+                              style="width:auto;min-width:140px"
+                              [disabled]="updatingStatus()"
+                              (change)="updateStatus($any($event.target).value, $event.target)">
+                        <option value="">Change status…</option>
+                        @for (s of allowedTransitions(); track s) {
+                          <option [value]="s">→ {{ s }}</option>
+                        }
+                      </select>
+                      @if (updatingStatus()) {
+                        <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <!-- Read-only -->
+                  <span class="badge" [ngClass]="statusClass(submission()!.status)">
+                    {{ submission()!.status }}
+                  </span>
+                }
               </div>
             </div>
             <div class="col-md-4">

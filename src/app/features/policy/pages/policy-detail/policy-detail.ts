@@ -1,9 +1,10 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PolicyApiService } from '../../services/policy-api.service';
 import { Policy, Endorsement, Cancellation } from '../../models/policy.model';
+import { AuthService } from '../../../../core/auth/auth.service';
 
 type Tab = 'overview' | 'coverage' | 'endorsements' | 'cancellations';
 
@@ -25,6 +26,16 @@ export class PolicyDetailPage implements OnInit {
   readonly loadingEndorsements  = signal(false);
   readonly loadingCancellations = signal(false);
   readonly approvingId          = signal<string | null>(null);
+
+  private readonly auth = inject(AuthService);
+
+  // Operations → create endorsement / cancellation
+  readonly canEndorse      = computed(() => this.auth.hasRole('Operations', 'Admin'));
+  readonly canCancel       = computed(() => this.auth.hasRole('Operations', 'Admin'));
+
+  // Underwriter → approve endorsement / cancellation
+  readonly canApproveEndorsement   = computed(() => this.auth.hasRole('Underwriter', 'Admin'));
+  readonly canApproveCancellation  = computed(() => this.auth.hasRole('Underwriter', 'Admin'));
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },

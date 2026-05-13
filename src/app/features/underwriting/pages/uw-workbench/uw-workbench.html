@@ -207,7 +207,25 @@
                         </div>
                         <div class="col-md-3">
                           <div class="detail-label">Status</div>
-                          <span class="badge" [ngClass]="statusClass(selected()!.status)">{{ selected()!.status }}</span>
+                          <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge" [ngClass]="statusClass(selected()!.status)">
+                              {{ selected()!.status }}
+                            </span>
+                            @if (canChangeStatus()) {
+                              <select class="form-select form-select-sm"
+                                      style="width:auto;min-width:145px"
+                                      [disabled]="updatingStatus()"
+                                      (change)="updateStatus($any($event.target).value, $event.target)">
+                                <option value="">Change…</option>
+                                @for (s of allowedTransitions(); track s) {
+                                  <option [value]="s">→ {{ s }}</option>
+                                }
+                              </select>
+                              @if (updatingStatus()) {
+                                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                              }
+                            }
+                          </div>
                         </div>
                         <div class="col-md-3">
                           <div class="detail-label">Inception Date</div>

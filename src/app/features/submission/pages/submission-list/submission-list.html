@@ -35,7 +35,13 @@
           </select>
         </div>
         <div class="col text-end">
-          <small class="text-muted">{{ filtered().length }} of {{ totalElements() }} record(s)</small>
+          <small class="text-muted">
+            @if (isAgentRole()) {
+              {{ filtered().length }} record(s)
+            } @else {
+              {{ filtered().length }} of {{ totalElements() }} record(s)
+            }
+          </small>
           <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()">
             <i class="bi bi-arrow-clockwise"></i>
           </button>
@@ -118,15 +124,17 @@
           </table>
         </div>
 
-        <app-pagination
-          [page]="currentPage()"
-          [size]="pageSize()"
-          [totalElements]="totalElements()"
-          [totalPages]="totalPages()"
-          [disabled]="loading()"
-          (pageChange)="onPageChange($event)"
-          (sizeChange)="onSizeChange($event)">
-        </app-pagination>
+        @if (!isAgentRole()) {
+          <app-pagination
+            [page]="currentPage()"
+            [size]="pageSize()"
+            [totalElements]="totalElements()"
+            [totalPages]="totalPages()"
+            [disabled]="loading()"
+            (pageChange)="onPageChange($event)"
+            (sizeChange)="onSizeChange($event)">
+          </app-pagination>
+        }
       }
     </div>
   </div>

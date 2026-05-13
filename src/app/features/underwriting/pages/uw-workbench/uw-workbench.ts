@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,10 +6,20 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { SubmissionApiService } from '../../../submission/services/submission-api.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 import {
-  Submission, Subjectivity, UWNote,
+  Submission, Subjectivity, UWNote, SubmissionStatus,
   Attachment, Questionnaire, CompletenessCheck, RiskScore
 } from '../../../submission/models/submission.model';
+
+const ROLE_TRANSITIONS: Record<string, Record<string, SubmissionStatus[]>> = {
+  UWAssistant:   { IntakeComplete: ['UnderReview'] },
+  Underwriter:   { IntakeComplete: ['UnderReview'],
+                   UnderReview:    ['Quoted', 'Declined'] },
+  Admin:         { IntakeComplete: ['UnderReview', 'Quoted', 'Declined'],
+                   UnderReview:    ['IntakeComplete', 'Quoted', 'Declined'],
+                   Quoted:         ['UnderReview', 'Declined'] },
+};
 
 type DetailTab = 'overview' | 'questionnaire' | 'attachments' | 'subjectivities' | 'notes';
 
@@ -61,6 +71,18 @@ export class UwWorkbenchPage implements OnInit {
   // Note create
   readonly newNoteText    = signal('');
   readonly addingNote     = signal(false);
+
+  // Status change
+  readonly updatingStatus = signal(false);
+  private readonly auth   = inject(AuthService);
+
+  readonly allowedTransitions = computed<SubmissionStatus[]>(() => {
+    const role    = this.auth.currentUser()?.role ?? '';
+    const current = this.selected()?.status ?? '';
+    return ROLE_TRANSITIONS[role]?.[current] ?? [];
+  });
+
+  readonly canChangeStatus = computed(() => this.allowedTransitions().length > 0);
 
   readonly breadcrumbs = [
     { label: 'Home', route: '/' },
@@ -150,6 +172,30 @@ export class UwWorkbenchPage implements OnInit {
     this.svc.getRiskScore(id).subscribe({
       next: res => this.riskScore.set(res?.data ?? null),
       error: () => this.riskScore.set(null),
+    });
+  }
+
+  updateStatus(newStatus: string, el?: EventTarget | null): void {
+    const id = this.selected()?.submissionId;
+    if (!id || !newStatus) return;
+    this.updatingStatus.set(true);
+    this.svc.updateStatus(id, newStatus).subscribe({
+      next: () => {
+        // Update selected & list in-place
+        this.selected.update(s => s ? { ...s, status: newStatus as SubmissionStatus } : s);
+        this.submissions.update(list =>
+          list.map(s => s.submissionId === id ? { ...s, status: newStatus as SubmissionStatus } : s)
+        );
+        // If new status is no longer in workbench range → remove from list & close
+        if (!['IntakeComplete','UnderReview','Quoted'].includes(newStatus)) {
+          this.submissions.update(list => list.filter(s => s.submissionId !== id));
+          this.selected.set(null);
+        }
+        this.updatingStatus.set(false);
+        if (el) (el as HTMLSelectElement).value = '';
+        this.flash('success', `Status changed to ${newStatus}`);
+      },
+      error: () => { this.updatingStatus.set(false); this.flash('danger', 'Status update failed.'); },
     });
   }
 
