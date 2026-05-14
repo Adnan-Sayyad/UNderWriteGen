@@ -1,39 +1,26 @@
-<div class="chart-container">
+<div class="score-grid">
   @if (!data.length) {
-    <p class="text-muted small text-center py-3">No hit ratio data available.</p>
+    <p class="text-muted small text-center py-3 w-100">No hit ratio data available.</p>
   } @else {
-    <!-- Summary stats -->
-    <div class="d-flex gap-3 mb-3 pb-2 border-bottom">
-      <div class="summary-stat">
-        <span class="stat-value text-info">{{ totalQuotes }}</span>
-        <span class="stat-label">Total Quotes</span>
-      </div>
-      <div class="summary-stat">
-        <span class="stat-value text-success">{{ totalBound }}</span>
-        <span class="stat-label">Bound</span>
-      </div>
-      <div class="summary-stat">
-        <span class="stat-value text-primary">{{ overallHitRatio | number:'1.1-1' }}%</span>
-        <span class="stat-label">Overall</span>
-      </div>
-    </div>
-
-    <!-- Bar chart -->
     @for (item of data; track item.scopeValue) {
-      <div class="chart-row mb-2">
-        <div class="chart-label" [title]="item.scopeValue">{{ item.scopeValue }}</div>
-        <div class="chart-bar-area">
-          <div class="progress chart-bar">
-            <div class="progress-bar bg-primary"
-                 [style.width.%]="barWidth(item.hitRatioPercent)"
-                 role="progressbar">
-              {{ item.hitRatioPercent | number:'1.1-1' }}%
-            </div>
-          </div>
-          <div class="chart-sub">{{ item.boundPolicies }} bound / {{ item.quotes }} quotes</div>
+      @if (item.quotes > 0) {
+      <div class="score-card">
+        <div class="score-scope">{{ item.scopeValue }}</div>
+        <div class="score-value" [class.text-success]="item.hitRatioPercent >= 50"
+                                  [class.text-warning]="item.hitRatioPercent >= 25 && item.hitRatioPercent < 50"
+                                  [class.text-danger]="item.hitRatioPercent < 25">
+          {{ item.hitRatioPercent | number:'1.1-1' }}%
         </div>
-        <div class="chart-value text-primary">{{ item.hitRatioPercent | number:'1.1-1' }}%</div>
+        <div class="score-detail">{{ item.boundPolicies }} bound / {{ item.quotes }} quoted</div>
+        <div class="score-track mt-2">
+          <div class="score-fill"
+               [class.bg-success]="item.hitRatioPercent >= 50"
+               [class.bg-warning]="item.hitRatioPercent >= 25 && item.hitRatioPercent < 50"
+               [class.bg-danger]="item.hitRatioPercent < 25"
+               [style.width.%]="item.hitRatioPercent"></div>
+        </div>
       </div>
+      }
     }
   }
 </div>

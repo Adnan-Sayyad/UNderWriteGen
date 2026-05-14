@@ -37,4 +37,10 @@ export class ReferralPatternsChart {
     if (rate >= 20) return 'warning';
     return 'success';
   }
+
+  riskLabel(rate: number): string {
+    if (rate >= 40) return 'High';
+    if (rate >= 20) return 'Medium';
+    return 'Low';
+  }
 }
