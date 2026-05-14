@@ -7,6 +7,8 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { PolicyApiService } from '../../services/policy-api.service';
 import { Policy, PolicyStatus } from '../../models/policy.model';
+import { PricingApiService } from '../../../pricing/services/pricing-api.service';
+import { Quote } from '../../../pricing/models/pricing.model';
 
 const STATUSES: PolicyStatus[] = ['Active', 'Cancelled', 'Expired'];
 const PRODUCT_LINES = ['Life', 'Health', 'PnC', 'Commercial'];
@@ -40,6 +42,11 @@ export class PolicyListPage implements OnInit {
   readonly bindInceptionDate = signal('');
   readonly bindExpiryDate    = signal('');
 
+  // Accepted quotes for bind dropdown
+  readonly acceptedQuotes = signal<Quote[]>([]);
+  readonly loadingQuoted  = signal(false);
+  readonly bindQuoteId    = signal('');
+
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
     const s = this.filterStatus();
@@ -57,7 +64,7 @@ export class PolicyListPage implements OnInit {
     { label: 'Policy Desk' },
   ];
 
-  constructor(private svc: PolicyApiService) {}
+  constructor(private svc: PolicyApiService, private pricingSvc: PricingApiService) {}
 
   ngOnInit(): void { this.load(); }
 
@@ -81,14 +88,36 @@ export class PolicyListPage implements OnInit {
 
   openBindModal(): void {
     this.showBindModal.set(true);
+    this.bindQuoteId.set('');
     this.bindSubId.set('');
     this.bindPolicyNumber.set('');
     this.bindProductLine.set('Life');
     this.bindInceptionDate.set('');
     this.bindExpiryDate.set('');
+    this.loadAcceptedQuotes();
   }
 
   closeBindModal(): void { this.showBindModal.set(false); }
+
+  loadAcceptedQuotes(): void {
+    this.loadingQuoted.set(true);
+    this.pricingSvc.getAllQuotes('Accepted').subscribe({
+      next: (res: any) => {
+        const items: Quote[] = Array.isArray(res) ? res : (res?.data ?? res?.content ?? []);
+        this.acceptedQuotes.set(items.filter((q: any) => q.status === 'Accepted'));
+        this.loadingQuoted.set(false);
+      },
+      error: () => this.loadingQuoted.set(false),
+    });
+  }
+
+  onQuoteSelect(quoteId: string): void {
+    this.bindQuoteId.set(quoteId);
+    const q = this.acceptedQuotes().find(x => x.quoteId === quoteId);
+    if (q) {
+      this.bindSubId.set(q.submissionId);
+    }
+  }
 
   bindPolicy(): void {
     const sid = this.bindSubId().trim();
@@ -96,7 +125,7 @@ export class PolicyListPage implements OnInit {
     const pl  = this.bindProductLine();
     const id  = this.bindInceptionDate();
     const ed  = this.bindExpiryDate();
-    if (!sid || !pn || !pl || !id || !ed) {
+    if (!this.bindQuoteId() || !sid || !pn || !pl || !id || !ed) {
       this.flash('danger', 'All fields are required to bind a policy.');
       return;
     }
@@ -105,7 +134,7 @@ export class PolicyListPage implements OnInit {
       next: () => {
         this.binding.set(false);
         this.closeBindModal();
-        this.flash('success', 'Policy bound successfully.');
+        this.flash('success', 'Policy bound successfully!');
         this.load(0);
       },
       error: (err: any) => {
@@ -117,6 +146,14 @@ export class PolicyListPage implements OnInit {
 
   statusClass(s: string): string {
     return s === 'Active' ? 'bg-success' : s === 'Cancelled' ? 'bg-danger' : 'bg-secondary';
+  }
+
+  productClass(p: string): string {
+    const map: Record<string, string> = {
+      Life: 'bg-success', Health: 'bg-info text-dark',
+      PnC: 'bg-warning text-dark', Commercial: 'bg-primary',
+    };
+    return map[p] ?? 'bg-secondary';
   }
 
   private flash(type: 'success' | 'danger', text: string) {

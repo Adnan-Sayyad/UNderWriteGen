@@ -5,12 +5,16 @@
     icon="bi-journal-bookmark"
     [breadcrumbs]="breadcrumbs">
     @if (policy()) {
-      <button class="btn btn-sm btn-outline-primary me-2" (click)="goEndorsement()">
-        <i class="bi bi-pencil-square me-1"></i>Endorse
-      </button>
-      <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
-        <i class="bi bi-x-circle me-1"></i>Cancel Policy
-      </button>
+      @if (canEndorse()) {
+        <button class="btn btn-sm btn-outline-primary me-2" (click)="goEndorsement()">
+          <i class="bi bi-pencil-square me-1"></i>Endorse
+        </button>
+      }
+      @if (canCancel()) {
+        <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
+          <i class="bi bi-x-circle me-1"></i>Cancel Policy
+        </button>
+      }
     }
   </app-page-header>
 
@@ -147,9 +151,11 @@
                 <i class="bi bi-pencil-square text-primary"></i>
                 <span class="fw-semibold small">Endorsements</span>
               </div>
-              <button class="btn btn-sm btn-outline-primary" (click)="goEndorsement()">
-                <i class="bi bi-plus me-1"></i>New Endorsement
-              </button>
+              @if (canEndorse()) {
+                <button class="btn btn-sm btn-outline-primary" (click)="goEndorsement()">
+                  <i class="bi bi-plus me-1"></i>New Endorsement
+                </button>
+              }
             </div>
             @if (loadingEndorsements()) {
               <div class="card-body text-center py-4">
@@ -185,7 +191,7 @@
                           <span class="badge" [ngClass]="statusClass(e.status)">{{ e.status }}</span>
                         </td>
                         <td>
-                          @if (e.status === 'Proposed') {
+                          @if (e.status === 'Proposed' && canApproveEndorsement()) {
                             <button class="btn btn-sm btn-success"
                                     [disabled]="approvingId() === e.endorsementId"
                                     (click)="approveEndorsement(e.endorsementId)">
@@ -195,6 +201,8 @@
                                 <i class="bi bi-check-lg me-1"></i>Approve
                               }
                             </button>
+                          } @else if (e.status === 'Proposed') {
+                            <span class="text-muted small">Pending UW review</span>
                           }
                         </td>
                       </tr>
@@ -214,7 +222,7 @@
                 <i class="bi bi-x-circle text-danger"></i>
                 <span class="fw-semibold small">Cancellation Requests</span>
               </div>
-              @if (policy()!.status === 'Active') {
+              @if (policy()!.status === 'Active' && canCancel()) {
                 <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
                   <i class="bi bi-x-circle me-1"></i>Request Cancellation
                 </button>
@@ -250,7 +258,7 @@
                           <span class="badge" [ngClass]="statusClass(c.status)">{{ c.status }}</span>
                         </td>
                         <td>
-                          @if (c.status === 'Requested') {
+                          @if (c.status === 'Requested' && canApproveCancellation()) {
                             <button class="btn btn-sm btn-warning"
                                     [disabled]="approvingId() === c.cancellationId"
                                     (click)="approveCancellation(c.cancellationId)">
@@ -260,6 +268,8 @@
                                 <i class="bi bi-check-lg me-1"></i>Approve
                               }
                             </button>
+                          } @else if (c.status === 'Requested') {
+                            <span class="text-muted small">Pending UW review</span>
                           }
                         </td>
                       </tr>
@@ -286,12 +296,16 @@
             </div>
             <hr />
             <div class="d-grid gap-2">
-              <button class="btn btn-sm btn-outline-primary" (click)="goEndorsement()">
-                <i class="bi bi-pencil-square me-1"></i>Add Endorsement
-              </button>
-              <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
-                <i class="bi bi-x-circle me-1"></i>Request Cancellation
-              </button>
+              @if (canEndorse()) {
+                <button class="btn btn-sm btn-outline-primary" (click)="goEndorsement()">
+                  <i class="bi bi-pencil-square me-1"></i>Add Endorsement
+                </button>
+              }
+              @if (canCancel()) {
+                <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
+                  <i class="bi bi-x-circle me-1"></i>Request Cancellation
+                </button>
+              }
               <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/policy', 'renewals']">
                 <i class="bi bi-arrow-repeat me-1"></i>View Renewals
               </a>

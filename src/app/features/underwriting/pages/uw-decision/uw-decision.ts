@@ -6,6 +6,7 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 
 import { UnderwritingApiService } from '../../services/underwriting-api.service';
 import { UWDecision, UWNote, DecisionType } from '../../models/underwriting.model';
+import { SubmissionApiService } from '../../../submission/services/submission-api.service';
 
 const DECISIONS: { value: DecisionType; label: string; css: string; outlineCss: string }[] = [
   { value: 'Approve',  label: 'Approve',      css: 'btn-success',          outlineCss: 'btn-outline-success' },
@@ -52,6 +53,7 @@ export class UwDecisionPage implements OnInit {
 
   constructor(
     private svc: UnderwritingApiService,
+    private subSvc: SubmissionApiService,
     private route: ActivatedRoute,
     private router: Router,
   ) {}
@@ -101,15 +103,31 @@ export class UwDecisionPage implements OnInit {
   private doSubmit(): void {
     this.saving.set(true);
     const v = this.decisionForm.value;
+    const decision = v.decision as DecisionType;
     this.svc.submitDecision(this.submissionId(), {
-      decision: v.decision as DecisionType,
-      reason:   v.reason!,
+      decision,
+      reason: v.reason!,
     }).subscribe({
       next: (res: any) => {
         this.existingDecision.set(res?.data ?? null);
         this.saving.set(false);
-        this.flash('success', 'Decision submitted.');
-        this.router.navigate(['/underwriting/workbench']);
+        if (decision === 'Approve') {
+          // Auto-update submission status to Quoted
+          this.subSvc.updateStatus(this.submissionId(), 'Quoted').subscribe({
+            next: () => {
+              this.flash('success', '✅ Approved! Submission status updated to Quoted.');
+              setTimeout(() => this.router.navigate(['/underwriting/workbench']), 1800);
+            },
+            error: () => {
+              // Even if status update fails, decision was saved
+              this.flash('success', '✅ Decision approved. (Status update failed — update manually.)');
+              setTimeout(() => this.router.navigate(['/underwriting/workbench']), 2000);
+            },
+          });
+        } else {
+          this.flash('success', 'Decision submitted.');
+          setTimeout(() => this.router.navigate(['/underwriting/workbench']), 1500);
+        }
       },
       error: (err: any) => {
         this.saving.set(false);

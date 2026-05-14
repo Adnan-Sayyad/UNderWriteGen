@@ -1,1 +1,83 @@
-/* Policy list – shared globals apply */
+/* ── Step Labels ── */
+.step-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #0d6efd;
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.step-number-success {
+  background: #198754;
+}
+
+/* ── Submission Pick List ── */
+.pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pick-list::-webkit-scrollbar { width: 4px; }
+.pick-list::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+.pick-list::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 4px; }
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid #e9ecef;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fff;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.pick-item:hover {
+  border-color: #86b7fe;
+  background: #f8fbff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(13,110,253,.08);
+}
+
+.pick-item.active {
+  border-color: #198754;
+  background: #f0faf4;
+  box-shadow: 0 0 0 3px rgba(25,135,84,.1);
+}
+
+.pick-check i {
+  font-size: 1.2rem;
+  transition: color 0.15s;
+}
+
+.pick-meta {
+  font-size: .75rem;
+  color: #6c757d;
+}
+
+/* ── Empty State ── */
+.empty-pick-state {
+  text-align: center;
+  padding: 24px 16px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 1.5px dashed #dee2e6;
+}

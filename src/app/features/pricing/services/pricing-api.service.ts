@@ -90,4 +90,12 @@ export class PricingApiService {
   getQuotesBySubmission(submissionId: string) {
     return this.http.get<Quote[]>(`${this.base}/quotes/submission/${submissionId}`);
   }
+
+  /** GET /api/quotes?status=Accepted — all accepted quotes for policy binding */
+  getAllQuotes(status?: string) {
+    const url = status
+      ? `${this.base}/quotes?status=${status}`
+      : `${this.base}/quotes`;
+    return this.http.get<any>(url);
+  }
 }
