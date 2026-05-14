@@ -90,20 +90,16 @@ namespace RulesScoringAndReferralMatrix.Services
 
         public async Task<RiskScoreResponseDto> CalculateScoreForSubmissionAsync(Guid submissionId)
         {
-            var scoreValue = Math.Round(new Random().NextDouble() * 100, 2);
-            var band = scoreValue < 33 ? Band.Low : scoreValue < 66 ? Band.Medium : Band.High;
+            // Derive a deterministic score from the submissionId so the same submission
+            // always produces the same value regardless of how many times this is called.
+            var seed       = BitConverter.ToInt32(submissionId.ToByteArray(), 0);
+            var scoreValue = Math.Round(new Random(seed).NextDouble() * 100, 2);
+            var band       = scoreValue < 33 ? Band.Low : scoreValue < 66 ? Band.Medium : Band.High;
 
-            var score = new RiskScore
-            {
-                SubmissionID = submissionId,
-                ModelVersion = "v1.0",
-                ScoreValue = scoreValue,
-                Band = band,
-                ScoredDate = DateTime.UtcNow
-            };
-
-            var created = await _repository.CreateAsync(score);
-            return MapToResponseDto(created);
+            // Upsert: corrects any old random records in the DB and ensures exactly
+            // one record per submission with the stable deterministic value.
+            var record = await _repository.UpsertScoreAsync(submissionId, scoreValue, band, "v1.0");
+            return MapToResponseDto(record);
         }
 
         private static RiskScoreResponseDto MapToResponseDto(RiskScore score) => new()
