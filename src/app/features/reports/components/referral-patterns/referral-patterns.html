@@ -1,42 +1,31 @@
-<div class="chart-container">
+<div class="score-grid">
   @if (!data.length) {
-    <p class="text-muted small text-center py-3">No referral pattern data available.</p>
+    <p class="text-muted small text-center py-3 w-100">No referral pattern data available.</p>
   } @else {
-    <!-- Summary stats -->
-    <div class="d-flex gap-3 mb-3 pb-2 border-bottom">
-      <div class="summary-stat">
-        <span class="stat-value text-danger">{{ overallRate | number:'1.1-1' }}%</span>
-        <span class="stat-label">Overall Rate</span>
-      </div>
-      <div class="summary-stat">
-        <span class="stat-value text-warning">{{ totalReferrals }}</span>
-        <span class="stat-label">Referrals</span>
-      </div>
-      <div class="summary-stat">
-        <span class="stat-value text-muted">{{ totalQuotes }}</span>
-        <span class="stat-label">Quotes</span>
-      </div>
-    </div>
-
-    <!-- Per-scope bars -->
     @for (item of data; track item.scopeValue) {
-      <div class="chart-row mb-2">
-        <div class="chart-label" [title]="item.scopeValue">{{ item.scopeValue }}</div>
-        <div class="chart-bar-area">
-          <div class="progress chart-bar">
-            <div class="progress-bar"
-                 [class]="'bg-' + riskLevel(item.referralRatePercent)"
-                 [style.width.%]="barWidth(item.referralRatePercent)"
-                 role="progressbar">
-              {{ item.referralRatePercent | number:'1.1-1' }}%
-            </div>
-          </div>
-          <div class="chart-sub">{{ item.totalReferrals }} referrals / {{ item.quotes }} quotes</div>
-        </div>
-        <div class="chart-value" [class]="'text-' + riskLevel(item.referralRatePercent)">
+      @if (item.quotes > 0) {
+      <div class="score-card">
+        <div class="score-scope">{{ item.scopeValue }}</div>
+        <div class="score-value" [class]="'text-' + riskLevel(item.referralRatePercent)">
           {{ item.referralRatePercent | number:'1.1-1' }}%
         </div>
+        <div class="score-detail">{{ item.totalReferrals }} of {{ item.quotes }} referred</div>
+        <span class="badge mt-1"
+              [class.bg-success]="riskLevel(item.referralRatePercent) === 'success'"
+              [class.bg-warning]="riskLevel(item.referralRatePercent) === 'warning'"
+              [class.bg-danger]="riskLevel(item.referralRatePercent) === 'danger'"
+              [class.text-dark]="riskLevel(item.referralRatePercent) === 'warning'">
+          {{ riskLabel(item.referralRatePercent) }}
+        </span>
+        <div class="score-track mt-2">
+          <div class="score-fill"
+               [class.bg-success]="riskLevel(item.referralRatePercent) === 'success'"
+               [class.bg-warning]="riskLevel(item.referralRatePercent) === 'warning'"
+               [class.bg-danger]="riskLevel(item.referralRatePercent) === 'danger'"
+               [style.width.%]="barWidth(item.referralRatePercent)"></div>
+        </div>
       </div>
+      }
     }
   }
 </div>

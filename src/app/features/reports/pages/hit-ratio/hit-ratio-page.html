@@ -133,11 +133,11 @@
         </div>
       </div>
 
-      <!-- Data Table -->
-      <div class="card border-0 shadow-sm">
+      <!-- Aggregated Breakdown -->
+      <div class="card border-0 shadow-sm mb-4">
         <div class="card-header chart-hdr">
-          <span><i class="bi bi-table me-2 text-secondary"></i>Detailed Breakdown</span>
-          <span class="badge bg-secondary">{{ data().length }} entries</span>
+          <span><i class="bi bi-table me-2 text-secondary"></i>Aggregated Breakdown</span>
+          <span class="badge bg-secondary">{{ data().length }} scope values</span>
         </div>
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0 small">
@@ -163,7 +163,7 @@
                     {{ row.hitRatioPercent | number:'1.1-1' }}%
                   </td>
                   <td>
-                    <div class="progress" style="height:8px;width:120px">
+                    <div class="progress" style="height:6px;width:100px">
                       <div class="progress-bar"
                            [class.bg-success]="row.hitRatioPercent >= 50"
                            [class.bg-warning]="row.hitRatioPercent >= 25 && row.hitRatioPercent < 50"
@@ -178,6 +178,58 @@
           </table>
         </div>
       </div>
+
+      <!-- Individual Snapshot Reports -->
+      @if (snapshots().length) {
+        <div class="card border-0 shadow-sm">
+          <div class="card-header chart-hdr">
+            <span><i class="bi bi-calendar3 me-2 text-primary"></i>Individual Reports</span>
+            <span class="badge bg-primary-subtle text-primary">{{ snapshots().length }} snapshots</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+              <thead class="table-light">
+                <tr>
+                  <th>Scope</th>
+                  <th>Scope Value</th>
+                  <th>Date</th>
+                  <th class="text-end">Hit Ratio</th>
+                  <th class="text-end">Avg TAT (hrs)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (snap of snapshots(); track snap.reportID) {
+                  <tr>
+                    <td><span class="badge bg-secondary-subtle text-secondary">{{ snap.scope }}</span></td>
+                    <td class="fw-medium">{{ snap.scopeValue }}</td>
+                    <td class="text-muted">{{ snap.generatedDate | date:'dd MMM yyyy' }}</td>
+                    <td class="text-end fw-bold"
+                        [class.text-success]="snap.hitRatio >= 50"
+                        [class.text-warning]="snap.hitRatio >= 25 && snap.hitRatio < 50"
+                        [class.text-danger]="snap.hitRatio > 0 && snap.hitRatio < 25">
+                      {{ snap.hitRatio | number:'1.1-1' }}%
+                    </td>
+                    <td class="text-end text-muted">{{ snap.taT_AvgHours | number:'1.1-1' }}</td>
+                    <td class="text-end">
+                      <a [routerLink]="['/reports', snap.reportID]"
+                         class="btn btn-xs btn-outline-primary py-0 px-2">
+                        <i class="bi bi-eye me-1"></i>View
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      } @else {
+        <div class="card border-0 shadow-sm">
+          <div class="card-body text-center text-muted small py-4">
+            <i class="bi bi-calendar-x me-2"></i>No individual snapshots for the selected period.
+          </div>
+        </div>
+      }
 
     }
   }

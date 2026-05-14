@@ -114,6 +114,14 @@
   padding: 1rem 0.75rem 0.25rem;
 }
 
+/* Extra button size */
+.btn-xs {
+  padding: 0.125rem 0.4rem;
+  font-size: 0.75rem;
+  border-radius: 0.2rem;
+  line-height: 1.4;
+}
+
 /* Misc */
 .cursor-pointer {
   cursor: pointer;

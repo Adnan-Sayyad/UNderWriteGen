@@ -42,6 +42,7 @@ export class DashboardPage implements OnInit, OnDestroy {
   readonly loading      = signal(false);
   readonly showModal    = signal(false);
   readonly generating   = signal(false);
+  readonly collecting   = signal(false);
   readonly alertMsg     = signal<{ type: string; text: string } | null>(null);
 
   // Tracks which specific endpoints failed (vs genuinely empty)
@@ -54,8 +55,8 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   // ── Filter fields ──────────────────────────────────────────────────────────
   filterScope = '';
-  filterFrom  = '2025-01-01';
-  filterTo    = '2025-12-31';
+  filterFrom  = `${new Date().getFullYear()}-01-01`;
+  filterTo    = `${new Date().getFullYear()}-12-31`;
 
   // ── Generate form fields ───────────────────────────────────────────────────
   genScope      = '';
@@ -125,6 +126,27 @@ export class DashboardPage implements OnInit, OnDestroy {
       error: () => {
         this.loading.set(false);
         this.flash('danger', 'Failed to load analytics. Check that the Reporting service is running on port 8090.');
+      },
+    });
+  }
+
+  // ── Collect Now — pulls fresh data from all microservices immediately ────────
+  collectNow(): void {
+    this.collecting.set(true);
+    this.svc.triggerCollect().subscribe({
+      next: res => {
+        this.collecting.set(false);
+        const failed = res.results.filter(r => r.status !== 'ok').map(r => r.productLine);
+        if (failed.length) {
+          this.flash('warning', `Collection complete. Some lines had errors: ${failed.join(', ')}`);
+        } else {
+          this.flash('success', 'Data refreshed from all services — charts updated.');
+        }
+        this.loadAll();   // reload charts immediately after collection
+      },
+      error: () => {
+        this.collecting.set(false);
+        this.flash('danger', 'Collection failed. Is the Reporting service running on port 8090?');
       },
     });
   }
