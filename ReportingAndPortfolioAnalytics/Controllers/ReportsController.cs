@@ -11,10 +11,15 @@ namespace ReportingAndPortfolioAnalytics.Controllers;
 public class ReportsController : ControllerBase
 {
 	private readonly IReportService _svc;
+	private readonly IHttpDataCollectorService _collector;
 
-	public ReportsController(IReportService svc)
+	// Product lines — mirrors ReportCollectorScheduler
+	private static readonly string[] ProductLines = { "Life", "Health", "PnC", "Commercial" };
+
+	public ReportsController(IReportService svc, IHttpDataCollectorService collector)
 	{
-		_svc = svc;
+		_svc       = svc;
+		_collector = collector;
 	}
 
 	// GET /api/reports?page=1&pageSize=20
@@ -58,6 +63,36 @@ public class ReportsController : ControllerBase
 		var by = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous";
 		var result = await _svc.GenerateAsync(request, by);
 		return CreatedAtAction(nameof(GetById), new { id = result.ReportID }, result);
+	}
+
+	// POST /api/reports/collect  — triggers an immediate data collection from all other services
+	// Collects all 4 product lines right now; no need to wait for the 4-hour scheduler cycle.
+	[HttpPost("collect")]
+	public async Task<IActionResult> CollectNow(CancellationToken ct)
+	{
+		var today   = DateTime.UtcNow.Date;
+		var results = new List<object>();
+
+		foreach (var pl in ProductLines)
+		{
+			try
+			{
+				await _collector.CollectAndSnapshotAsync(
+					scope:       "Product",
+					scopeValue:  pl,
+					periodStart: today,
+					periodEnd:   today.AddDays(1).AddTicks(-1),
+					ct:          ct);
+
+				results.Add(new { productLine = pl, status = "ok" });
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				results.Add(new { productLine = pl, status = "error", error = ex.Message });
+			}
+		}
+
+		return Ok(new { collectedAt = DateTime.UtcNow, results });
 	}
 
 	// GET /api/reports/metrics/hit-ratio?scope=Product&from=2025-01-01&to=2025-12-31
