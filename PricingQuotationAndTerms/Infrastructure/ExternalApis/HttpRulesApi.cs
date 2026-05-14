@@ -7,15 +7,12 @@ namespace PricingQuotationAndTerms.Infrastructure.ExternalApis;
 
 /// <summary>
 /// PRODUCTION implementation — calls the real Rules/Scoring microservice.
-/// Maps the RiskScoreResponseDto (Band as enum int) to RiskScoreDto (Band as string).
+/// Band is returned as a string ("Low" | "Medium" | "High") by the Rules service.
 /// </summary>
 public class HttpRulesApi : IRulesApi
 {
     private readonly HttpClient _http;
     private readonly ILogger<HttpRulesApi> _logger;
-
-    // Band enum: 0=Low, 1=Medium, 2=High (matches RulesScoringAndReferralMatrix Band enum)
-    private static readonly string[] BandNames = ["Low", "Medium", "High"];
 
     public HttpRulesApi(HttpClient http, ILogger<HttpRulesApi> logger)
     {
@@ -37,15 +34,13 @@ public class HttpRulesApi : IRulesApi
 
             response.EnsureSuccessStatusCode();
 
-            // Deserialize Rules service response — Band is an integer enum
+            // Deserialize Rules service response — Band is a string "Low"|"Medium"|"High"
             var raw = await response.Content.ReadFromJsonAsync<RiskScoreRaw>(
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }, ct);
 
             if (raw is null) return null;
 
-            string bandName = (raw.Band >= 0 && raw.Band < BandNames.Length)
-                ? BandNames[raw.Band]
-                : "Medium";
+            string bandName = string.IsNullOrWhiteSpace(raw.Band) ? "Medium" : raw.Band;
 
             return new RiskScoreDto
             {
@@ -70,7 +65,7 @@ public class HttpRulesApi : IRulesApi
         public Guid    SubmissionID { get; set; }
         public string? ModelVersion { get; set; }
         public double  ScoreValue   { get; set; }
-        public int     Band         { get; set; }   // 0=Low, 1=Medium, 2=High
+        public string  Band         { get; set; } = string.Empty;  // "Low" | "Medium" | "High"
         public DateTime ScoredDate  { get; set; }
     }
 }
