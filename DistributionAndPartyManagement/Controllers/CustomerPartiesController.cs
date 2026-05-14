@@ -94,7 +94,14 @@ namespace DistributionAndPartyManagement.Controllers
 			return Ok(ApiResponse<CustomerPartyResponseDto>.Ok(result, "Customer deactivated."));
 		}
 
-		private string GetRole()   => User.FindFirstValue(ClaimTypes.Role) ?? "";
-		private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+		// .NET 7+ JsonWebTokenHandler stores claims with their short JWT names ("role", "sub"),
+		// not the long ClaimTypes URIs — check both to handle all token handler variants.
+		private string GetRole() =>
+			User.FindFirstValue("role") ??
+			User.FindFirstValue(ClaimTypes.Role) ?? "";
+
+		private string GetUserId() =>
+			User.FindFirstValue("sub") ??
+			User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 	}
 }

@@ -82,7 +82,8 @@ namespace DistributionAndPartyManagement.Controllers
 			return Ok(ApiResponse<AgentResponseDto>.Ok(result, "Agent deactivated."));
 		}
 
+		// .NET 7+ JsonWebTokenHandler stores "role" with short name, not ClaimTypes.Role URI.
 		private bool IsAdmin() =>
-			User.FindFirstValue(ClaimTypes.Role) == "Admin";
+			(User.FindFirstValue("role") ?? User.FindFirstValue(ClaimTypes.Role)) == "Admin";
 	}
 }

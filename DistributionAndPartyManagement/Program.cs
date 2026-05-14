@@ -38,7 +38,10 @@ builder.Services.AddAuthentication(options =>
 		ValidAudience = builder.Configuration["Jwt:Audience"],
 		IssuerSigningKey = new SymmetricSecurityKey(
 			Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
-		ClockSkew = TimeSpan.Zero
+		ClockSkew = TimeSpan.Zero,
+		// JWT stores role as the short claim "role"; map it so User.FindFirstValue(ClaimTypes.Role) works
+		RoleClaimType = "role",
+		NameClaimType = "sub"
 	};
 });
 
