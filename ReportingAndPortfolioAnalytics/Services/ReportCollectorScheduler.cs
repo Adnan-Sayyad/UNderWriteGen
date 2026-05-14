@@ -10,9 +10,10 @@ public class ReportCollectorScheduler : BackgroundService
 	private readonly ILogger<ReportCollectorScheduler> _logger;
 	private readonly TimeSpan _interval;
 
-	// Product lines to collect — expand this list as new lines go live
+	// Product lines — must match exact ProductLine strings in SubmissionAndIntake
+	// Enum values: Life | Health | PnC | Commercial
 	private static readonly string[] ProductLines =
-		{ "Motor", "Health", "Life", "Commercial" };
+		{ "Life", "Health", "PnC", "Commercial" };
 
 	public ReportCollectorScheduler(
 		IServiceScopeFactory scopeFactory,
@@ -22,8 +23,8 @@ public class ReportCollectorScheduler : BackgroundService
 		_scopeFactory = scopeFactory;
 		_logger = logger;
 
-		// Default: collect every 4 hours. Override in appsettings.json
-		var hours = config.GetValue<int>("Collector:IntervalHours", 4);
+		// Default: collect every 4 hours. Override in appsettings.json (supports decimals e.g. 0.5 = 30 min)
+		var hours = config.GetValue<double>("Collector:IntervalHours", 4);
 		_interval = TimeSpan.FromHours(hours);
 	}
 

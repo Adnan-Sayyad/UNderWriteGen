@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using ReportingAndPortfolioAnalytics.Domain;
 using ReportingAndPortfolioAnalytics.DTOs;
 using ReportingAndPortfolioAnalytics.Repositories;
@@ -7,201 +7,249 @@ namespace ReportingAndPortfolioAnalytics.Services;
 
 public class HttpDataCollectorService : IHttpDataCollectorService
 {
-	private readonly IHttpClientFactory _http;
-	private readonly IReportRepository _repo;
-	private readonly ILogger<HttpDataCollectorService> _logger;
+    private readonly IHttpClientFactory _http;
+    private readonly IReportRepository  _repo;
+    private readonly ILogger<HttpDataCollectorService> _logger;
 
-	private static readonly JsonSerializerOptions _json = new()
-	{
-		PropertyNameCaseInsensitive = true
-	};
+    private static readonly JsonSerializerOptions _json = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
-	public HttpDataCollectorService(
-		IHttpClientFactory http,
-		IReportRepository repo,
-		ILogger<HttpDataCollectorService> logger)
-	{
-		_http = http;
-		_repo = repo;
-		_logger = logger;
-	}
+    public HttpDataCollectorService(
+        IHttpClientFactory http,
+        IReportRepository  repo,
+        ILogger<HttpDataCollectorService> logger)
+    {
+        _http   = http;
+        _repo   = repo;
+        _logger = logger;
+    }
 
-	public async Task CollectAndSnapshotAsync(
-		string scope, string scopeValue,
-		DateTime periodStart, DateTime periodEnd,
-		CancellationToken ct = default)
-	{
-		_logger.LogInformation("Collecting data for {Scope}={ScopeValue} {From} → {To}",
-			scope, scopeValue, periodStart, periodEnd);
+    // ── Main entry point ─────────────────────────────────────────────────────
+    public async Task CollectAndSnapshotAsync(
+        string scope, string scopeValue,
+        DateTime periodStart, DateTime periodEnd,
+        CancellationToken ct = default)
+    {
+        _logger.LogInformation("Collecting data for {Scope}={ScopeValue}", scope, scopeValue);
 
-		var from = periodStart.ToString("yyyy-MM-dd");
-		var to = periodEnd.ToString("yyyy-MM-dd");
+        // ── 1. All submissions → filter by product line client-side ────────────
+        var allSubs  = await GetListAsync<SubmissionResponseDto>("SubmissionService", "submissions", ct);
+        var submissions = allSubs
+            .Where(s => s.ProductLine.Equals(scopeValue, StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
-		// ── Fetch from each service in parallel ───────────────────────────────
-		var submissionsTask = GetAsync<List<SubmissionResponseDto>>(
-			"SubmissionService",
-			$"/submissions?productLine={scopeValue}&from={from}&to={to}", ct);
+        if (submissions.Count == 0)
+        {
+            _logger.LogWarning("No submissions for {ScopeValue}. Snapshot skipped.", scopeValue);
+            return;
+        }
 
-		var quotesTask = GetAsync<List<QuoteResponseDto>>(
-			"PricingService",
-			$"/quotes?productLine={scopeValue}&status=Accepted&from={from}&to={to}", ct);
+        var subIds = new HashSet<Guid>(submissions.Select(s => s.SubmissionID));
 
-		var referralsTask = GetAsync<List<ReferralResponseDto>>(
-			"RulesService",
-			$"/referrals?productLine={scopeValue}&from={from}&to={to}", ct);
+        // ── 2. Latest quote per submission (parallel) ─────────────────────────
+        var quoteTasks = submissions
+            .Select(s => GetSingleAsync<QuoteResponseDto>(
+                "PricingService", $"quotes/submission/{s.SubmissionID}/latest", ct))
+            .ToList();
 
-		var policiesTask = GetAsync<List<PolicyResponseDto>>(
-			"PolicyService",
-			$"/policies?productLine={scopeValue}&status=Active&from={from}&to={to}", ct);
+        // ── 3. All referrals → keep those whose SubmissionID is in our set ────
+        var allReferralsTask = GetListAsync<ReferralResponseDto>("RulesService", "referrals", ct);
 
-		var decisionsTask = GetAsync<List<UWDecisionResponseDto>>(
-			"UWWorkflowService",
-			$"/uw-decisions?productLine={scopeValue}&from={from}&to={to}", ct);
+        // ── 4. Policies for this product line ────────────────────────────────
+        // Route: GET /api/policies/product-line/{line}
+        var policiesTask = GetListAsync<PolicyResponseDto>(
+            "PolicyService", $"policies/product-line/{scopeValue}", ct);
 
-		await Task.WhenAll(submissionsTask, quotesTask, referralsTask, policiesTask, decisionsTask);
+        // ── 5. UW decisions per submission (parallel) ────────────────────────
+        var decisionTasks = submissions
+            .Select(s => GetListAsync<UWDecisionResponseDto>(
+                "UWWorkflowService", $"uw-decisions/{s.SubmissionID}", ct))
+            .ToList();
 
-		var submissions = submissionsTask.Result ?? new();
-		var quotes = quotesTask.Result ?? new();
-		var referrals = referralsTask.Result ?? new();
-		var policies = policiesTask.Result ?? new();
-		var decisions = decisionsTask.Result ?? new();
+        // ── 6. Risk scores per submission (parallel) ─────────────────────────
+        // Route: GET /risk-scores/{submissionId}  returns Band as "Low"|"Medium"|"High"
+        var riskTasks = submissions
+            .Select(s => GetSingleAsync<RiskScoreResponseDto>(
+                "RulesService", $"risk-scores/{s.SubmissionID}", ct))
+            .ToList();
 
-		// ── Compute metrics ───────────────────────────────────────────────────
+        // Wait for all I/O
+        await Task.WhenAll(
+            Task.WhenAll(quoteTasks),
+            allReferralsTask,
+            policiesTask,
+            Task.WhenAll(decisionTasks),
+            Task.WhenAll(riskTasks));
 
-		// Hit ratio
-		var totalQuotes = submissions.Count;
-		var boundCount = quotes.Count(q => q.Status == "Accepted");
+        var quotes      = quoteTasks.Select(t => t.Result).Where(q => q is not null).ToList();
+        var referrals   = (await allReferralsTask).Where(r => subIds.Contains(r.SubmissionID)).ToList();
+        var policies    = (await policiesTask).Where(p => p.Status == "Active").ToList();
+        var allDecisions= decisionTasks.SelectMany(t => t.Result).ToList();
+        var riskScores  = riskTasks.Select(t => t.Result).Where(r => r is not null).ToList();
 
-		// TAT — only finalised submissions
-		var finalised = submissions
-			.Where(s => s.Status is "Quoted" or "Declined" && s.CompletedDate.HasValue)
-			.ToList();
+        // ── Compute metrics ──────────────────────────────────────────────────
 
-		var tatValues = finalised
-			.Select(s => (decimal)(s.CompletedDate!.Value - s.CreatedDate).TotalHours)
-			.ToList();
+        var totalQuotes  = submissions.Count;
+        var boundCount   = policies.Count;              // bound = active policies
+        var totalPremium = quotes.Sum(q => q!.TotalPremium);
+        var avgPremium   = boundCount == 0 ? 0m
+            : Math.Round(totalPremium / boundCount, 2);
 
-		// Risk mix — fetch risk scores for each submission
-		var riskScoreTasks = finalised
-			.Select(s => GetAsync<RiskScoreResponseDto>(
-				"RulesService",
-				$"/risk-scores/{s.SubmissionID}", ct))
-			.ToList();
+        // TAT: estimate using days since submission created (no CompletedDate in API)
+        var tatValues = submissions
+            .Select(s => (decimal)(DateTime.UtcNow - s.CreatedDate).TotalHours)
+            .ToList();
 
-		await Task.WhenAll(riskScoreTasks);
-		var riskScores = riskScoreTasks
-			.Select(t => t.Result)
-			.Where(r => r is not null)
-			.ToList();
+        // Risk mix: Band "Low" | "Medium" | "High"
+        var riskMix = new RiskMixMetric
+        {
+            Low    = riskScores.Count(r => r!.Band.Equals("Low",    StringComparison.OrdinalIgnoreCase)),
+            Medium = riskScores.Count(r => r!.Band.Equals("Medium", StringComparison.OrdinalIgnoreCase)),
+            High   = riskScores.Count(r => r!.Band.Equals("High",   StringComparison.OrdinalIgnoreCase)),
+        };
 
-		// Premium
-		var totalPremium = quotes.Sum(q => q.TotalPremium);
-		var avgPremium = boundCount == 0 ? 0 : Math.Round(totalPremium / boundCount, 2);
+        var decidedByCount = allDecisions
+            .Where(d => !string.IsNullOrEmpty(d.DecidedBy))
+            .Select(d => d.DecidedBy)
+            .Distinct()
+            .Count();
 
-		// Build metrics object
-		var metrics = new ReportMetrics
-		{
-			Quotes = totalQuotes,
-			BoundPolicies = boundCount,
-			TotalReferrals = referrals.Count,
-			TotalGrossPremium = totalPremium,
-			AvgPremium = avgPremium,
-			TAT_AvgHours = tatValues.Count > 0 ? Math.Round(tatValues.Average(), 2) : 0,
-			TAT_MinHours = tatValues.Count > 0 ? tatValues.Min() : 0,
-			TAT_MaxHours = tatValues.Count > 0 ? tatValues.Max() : 0,
-			TotalDecisions = decisions.Count,
-			AvgDecisionsPerUW = decisions.Count == 0 ? 0
-				: Math.Round((decimal)decisions.Count
-					/ Math.Max(decisions.Select(d => d.DecidedBy).Distinct().Count(), 1), 2),
-			RiskMix = new RiskMixMetric
-			{
-				High = riskScores.Count(r => r!.Band == "High"),
-				Medium = riskScores.Count(r => r!.Band == "Medium"),
-				Low = riskScores.Count(r => r!.Band == "Low"),
-			}
-		};
+        var metrics = new ReportMetrics
+        {
+            Quotes             = totalQuotes,
+            BoundPolicies      = boundCount,
+            TotalReferrals     = referrals.Count,
+            TotalGrossPremium  = totalPremium,
+            AvgPremium         = avgPremium,
+            TAT_AvgHours       = tatValues.Count > 0 ? Math.Round(tatValues.Average(), 2) : 0,
+            TAT_MinHours       = tatValues.Count > 0 ? tatValues.Min() : 0,
+            TAT_MaxHours       = tatValues.Count > 0 ? tatValues.Max() : 0,
+            TotalDecisions     = allDecisions.Count,
+            AvgDecisionsPerUW  = allDecisions.Count == 0 ? 0
+                : Math.Round((decimal)allDecisions.Count / Math.Max(decidedByCount, 1), 2),
+            RiskMix            = riskMix
+        };
 
-		// ── Guard: skip saving if all upstream services returned empty data ──────
-		if (totalQuotes == 0 && quotes.Count == 0 && referrals.Count == 0 && decisions.Count == 0)
-		{
-			_logger.LogWarning(
-				"All upstream services returned empty data for {Scope}={ScopeValue}. Snapshot not saved.",
-				scope, scopeValue);
-			return;
-		}
+        // ── Save / update today's snapshot ───────────────────────────────────
+        var existing = await _repo.GetTodaySnapshotAsync(scope, scopeValue);
+        if (existing is not null)
+        {
+            existing.MetricsJSON   = JsonSerializer.Serialize(metrics);
+            existing.GeneratedDate = DateTime.UtcNow;
+            existing.GeneratedBy   = "http-collector";
+        }
+        else
+        {
+            await _repo.AddAsync(new UWReport
+            {
+                Scope         = scope,
+                ScopeValue    = scopeValue,
+                PeriodStart   = periodStart,
+                PeriodEnd     = periodEnd,
+                MetricsJSON   = JsonSerializer.Serialize(metrics),
+                GeneratedDate = DateTime.UtcNow,
+                GeneratedBy   = "http-collector"
+            });
+        }
 
-		// ── Save snapshot ─────────────────────────────────────────────────────
-		var existing = await _repo.GetTodaySnapshotAsync(scope, scopeValue);
+        await _repo.SaveChangesAsync();
+        _logger.LogInformation(
+            "Snapshot saved: {Scope}={ScopeValue} | quotes={Q} bound={B} refs={R} premium={P}",
+            scope, scopeValue, totalQuotes, boundCount, referrals.Count, totalPremium);
+    }
 
-		if (existing is not null)
-		{
-			// Overwrite today's snapshot with freshly collected data
-			existing.MetricsJSON = JsonSerializer.Serialize(metrics);
-			existing.GeneratedDate = DateTime.UtcNow;
-			existing.GeneratedBy = "http-collector";
-		}
-		else
-		{
-			await _repo.AddAsync(new UWReport
-			{
-				Scope = scope,
-				ScopeValue = scopeValue,
-				PeriodStart = periodStart,
-				PeriodEnd = periodEnd,
-				MetricsJSON = JsonSerializer.Serialize(metrics),
-				GeneratedDate = DateTime.UtcNow,
-				GeneratedBy = "http-collector"
-			});
-		}
+    // ── HTTP helpers ──────────────────────────────────────────────────────────
 
-		await _repo.SaveChangesAsync();
-		_logger.LogInformation("Snapshot saved for {Scope}={ScopeValue}", scope, scopeValue);
-	}
+    // Get a list — handles flat array [ ] AND paged envelopes { data/content: [...] }
+    private async Task<List<T>> GetListAsync<T>(
+        string clientName, string url, CancellationToken ct)
+    {
+        try
+        {
+            var client   = _http.CreateClient(clientName);
+            var response = await client.GetAsync(url, ct);
 
-	// ── Helper — safe HTTP GET with null on failure ───────────────────────────
-	// Accepts either a flat JSON array or a paged envelope ({ content: [...], ... }).
-	// Some upstream services (RulesService/referrals) now return a paged envelope,
-	// so when T is a List<U> we transparently unwrap the `content` array.
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("HTTP {Status} from {Client}{Url}",
+                    (int)response.StatusCode, clientName, url);
+                return new List<T>();
+            }
 
-	private async Task<T?> GetAsync<T>(string clientName, string url, CancellationToken ct)
-	{
-		try
-		{
-			var client = _http.CreateClient(clientName);
-			var response = await client.GetAsync(url, ct);
+            var json = await response.Content.ReadAsStringAsync(ct);
+            if (string.IsNullOrWhiteSpace(json)) return new List<T>();
 
-			if (!response.IsSuccessStatusCode)
-			{
-				_logger.LogWarning("HTTP {Status} from {Client}{Url}",
-					(int)response.StatusCode, clientName, url);
-				return default;
-			}
+            var first = json.AsSpan().TrimStart()[0];
 
-			var json = await response.Content.ReadAsStringAsync(ct);
-			if (string.IsNullOrWhiteSpace(json)) return default;
+            // Flat array
+            if (first == '[')
+                return JsonSerializer.Deserialize<List<T>>(json, _json) ?? new();
 
-			// Detect paged envelope: callers expect List<U>, response is { content: [...] }.
-			var firstNonWhitespace = json.AsSpan().TrimStart()[0];
-			var typeIsList = typeof(T).IsGenericType
-				&& typeof(T).GetGenericTypeDefinition() == typeof(List<>);
+            // Envelope object — try "data" then "content" keys
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
 
-			if (firstNonWhitespace == '{' && typeIsList)
-			{
-				using var doc = JsonDocument.Parse(json);
-				if (doc.RootElement.ValueKind == JsonValueKind.Object &&
-				    doc.RootElement.TryGetProperty("content", out var content) &&
-				    content.ValueKind == JsonValueKind.Array)
-				{
-					return JsonSerializer.Deserialize<T>(content.GetRawText(), _json);
-				}
-			}
+            foreach (var key in new[] { "data", "content", "items", "results" })
+            {
+                if (root.TryGetProperty(key, out var arr) &&
+                    arr.ValueKind == JsonValueKind.Array)
+                {
+                    return JsonSerializer.Deserialize<List<T>>(arr.GetRawText(), _json) ?? new();
+                }
+            }
 
-			return JsonSerializer.Deserialize<T>(json, _json);
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError(ex, "Failed to call {Client}{Url}", clientName, url);
-			return default;
-		}
-	}
+            _logger.LogWarning("Unexpected response shape from {Client}{Url}: {Json}",
+                clientName, url, json[..Math.Min(json.Length, 200)]);
+            return new List<T>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get list from {Client}{Url}", clientName, url);
+            return new List<T>();
+        }
+    }
+
+    // Get a single item — handles direct object { } AND envelopes { data: { } }
+    private async Task<T?> GetSingleAsync<T>(
+        string clientName, string url, CancellationToken ct)
+        where T : class
+    {
+        try
+        {
+            var client   = _http.CreateClient(clientName);
+            var response = await client.GetAsync(url, ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("HTTP {Status} from {Client}{Url}",
+                    (int)response.StatusCode, clientName, url);
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(ct);
+            if (string.IsNullOrWhiteSpace(json)) return null;
+
+            var first = json.AsSpan().TrimStart()[0];
+            if (first != '{') return null;
+
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Try unwrapping data envelope
+            if (root.TryGetProperty("data", out var data) &&
+                data.ValueKind == JsonValueKind.Object)
+            {
+                return JsonSerializer.Deserialize<T>(data.GetRawText(), _json);
+            }
+
+            return JsonSerializer.Deserialize<T>(json, _json);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get single from {Client}{Url}", clientName, url);
+            return null;
+        }
+    }
 }
