@@ -97,12 +97,18 @@ public class ReportService : IReportService
 		.GroupBy(r => r.ScopeValue)
 		.Select(g =>
 		{
-			var m = g.Select(r => ParseMetrics(r.MetricsJSON)).ToList();
+			// Only use snapshots where TAT was actually collected (AvgHours > 0)
+			// Old bad snapshots had zeros; we exclude them so min isn't pulled to 0
+			var all = g.Select(r => ParseMetrics(r.MetricsJSON)).ToList();
+			var m   = all.Where(x => x.TAT_AvgHours > 0).ToList();
+			if (m.Count == 0) m = all; // fall back if no valid snapshots
+
+			var validMin = m.Where(x => x.TAT_MinHours > 0).ToList();
 			return new TatDto
 			{
 				ScopeValue = g.Key,
 				AvgHours = Math.Round(m.Average(x => x.TAT_AvgHours), 2),
-				MinHours = m.Min(x => x.TAT_MinHours),
+				MinHours = validMin.Count > 0 ? validMin.Min(x => x.TAT_MinHours) : m.Min(x => x.TAT_MinHours),
 				MaxHours = m.Max(x => x.TAT_MaxHours)
 			};
 		});

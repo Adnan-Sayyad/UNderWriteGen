@@ -28,6 +28,8 @@ builder.Services.AddScoped<IQuestionnaireService, QuestionnaireService>();
 builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 builder.Services.AddScoped<ICompletenessCheckService, CompletenessCheckService>();
 
+builder.Services.AddHttpContextAccessor();
+
 // Inter-service HTTP clients
 builder.Services.AddHttpClient<IDistributionValidationService, HttpDistributionValidationService>(c =>
     c.BaseAddress = new Uri(builder.Configuration["Services:DistributionApi"]!));

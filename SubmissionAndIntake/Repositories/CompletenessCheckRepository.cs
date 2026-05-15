@@ -41,8 +41,9 @@ namespace SubmissionAndIntake.Repositories
 
         public async Task<CompletenessCheck> CreateAsync(CompletenessCheck check)
         {
-            check.CheckID = Guid.NewGuid();
-            check.Status = CheckStatus.Pending;
+            check.CheckID    = Guid.NewGuid();
+            check.CheckedDate ??= DateTime.UtcNow;
+            // Status is set by the caller (Service layer) — do NOT override here
             _context.CompletenessChecks.Add(check);
             await _context.SaveChangesAsync();
             return check;

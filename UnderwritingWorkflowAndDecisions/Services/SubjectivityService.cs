@@ -15,6 +15,9 @@ namespace UnderwritingWorkflowAndDecisions.Services
             _notifications = notifications;
         }
 
+        public IEnumerable<Subjectivity> GetAll() =>
+            _db.Subjectivities.OrderBy(s => s.DueDate).ToList();
+
         public IEnumerable<Subjectivity> GetBySubmission(Guid submissionId) =>
             _db.Subjectivities.Where(s => s.SubmissionID == submissionId).ToList();
 
