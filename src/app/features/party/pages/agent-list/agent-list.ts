@@ -39,7 +39,8 @@ export class AgentListPage implements OnInit {
 
   readonly auth = inject(AuthService);
 
-  readonly isAdmin = computed(() => this.auth.hasRole('Admin'));
+  /** Agents list is view-only for all roles — no one can add or edit from here. */
+  readonly canManageAgents = computed(() => false);
 
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();

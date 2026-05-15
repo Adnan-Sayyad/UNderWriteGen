@@ -80,10 +80,17 @@
                     <button class="btn btn-sm btn-outline-primary me-1" (click)="selectSubmission(s)" title="View Details">
                       <i class="bi bi-eye"></i>
                     </button>
-                    <a [routerLink]="['/underwriting/decision', s.submissionId]"
-                       class="btn btn-sm btn-primary" title="Make Decision">
-                      <i class="bi bi-check2-circle me-1"></i>Decide
-                    </a>
+                    @if (s.status === 'Quoted') {
+                      <a [routerLink]="['/pricing/quotes/new', s.submissionId]"
+                         class="btn btn-sm btn-warning text-dark" title="Create Quote in Pricing">
+                        <i class="bi bi-calculator me-1"></i>→ Pricing
+                      </a>
+                    } @else {
+                      <a [routerLink]="['/underwriting/decision', s.submissionId]"
+                         class="btn btn-sm btn-primary" title="Make Decision">
+                        <i class="bi bi-check2-circle me-1"></i>Decide
+                      </a>
+                    }
                   </td>
                 </tr>
               }
@@ -120,11 +127,18 @@
             <span class="badge" [ngClass]="productClass(selected()!.productLine)">{{ selected()!.productLine }}</span>
             <span class="badge bg-light text-dark">{{ selected()!.status }}</span>
           </div>
-          <div class="d-flex gap-2 ms-auto">
-            <a [routerLink]="['/underwriting/decision', selected()!.submissionId]"
-               class="btn btn-sm btn-warning text-dark" (click)="closeDetail()">
-              <i class="bi bi-check2-circle me-1"></i>Make Decision
-            </a>
+          <div class="d-flex gap-2 ms-auto align-items-center">
+            @if (selected()!.status === 'Quoted') {
+              <a [routerLink]="['/pricing/quotes/new', selected()!.submissionId]"
+                 class="btn btn-sm btn-warning text-dark fw-semibold" (click)="closeDetail()">
+                <i class="bi bi-calculator me-1"></i>→ Create Quote in Pricing
+              </a>
+            } @else {
+              <a [routerLink]="['/underwriting/decision', selected()!.submissionId]"
+                 class="btn btn-sm btn-warning text-dark" (click)="closeDetail()">
+                <i class="bi bi-check2-circle me-1"></i>Make Decision
+              </a>
+            }
             <button type="button" class="btn-close btn-close-white" (click)="closeDetail()"></button>
           </div>
         </div>
@@ -166,6 +180,14 @@
                 }
               </button>
             </li>
+            <li class="nav-item">
+              <button class="nav-link" [class.active]="detailTab()==='rules'" (click)="setDetailTab('rules')">
+                <i class="bi bi-shield-check me-1"></i>Rules &amp; Decision
+                @if (rulesResult()) {
+                  <span class="badge bg-primary ms-1">Evaluated</span>
+                }
+              </button>
+            </li>
           </ul>
 
           <!-- Tab Content -->
@@ -179,6 +201,19 @@
 
             <!-- ── OVERVIEW ── -->
             @if (detailTab() === 'overview' && !detailLoading()) {
+              @if (selected()!.status === 'Quoted') {
+                <div class="alert alert-warning d-flex align-items-center gap-3 mb-3">
+                  <i class="bi bi-calculator fs-4 flex-shrink-0"></i>
+                  <div class="flex-grow-1">
+                    <strong>This submission has been Quoted.</strong>
+                    A Pricing Analyst should now generate a quote for the agent.
+                  </div>
+                  <a [routerLink]="['/pricing/quotes/new', selected()!.submissionId]"
+                     class="btn btn-warning text-dark fw-semibold flex-shrink-0" (click)="closeDetail()">
+                    <i class="bi bi-calculator me-1"></i>→ Create Quote
+                  </a>
+                </div>
+              }
               <div class="row g-4">
 
                 <!-- Basic Info Card -->
@@ -538,6 +573,171 @@
               }
             }
 
+            <!-- ── RULES & DECISION ── -->
+            @if (detailTab() === 'rules' && !detailLoading()) {
+
+              <!-- Rules Evaluation -->
+              <div class="card border-0 bg-light mb-4">
+                <div class="card-header bg-transparent fw-semibold small text-uppercase text-muted d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-shield-check me-1"></i>Rules Evaluation</span>
+                  <button class="btn btn-sm btn-primary"
+                          (click)="evaluateRules()"
+                          [disabled]="evaluatingRules()">
+                    @if (evaluatingRules()) {
+                      <span class="spinner-border spinner-border-sm me-1"></span>Evaluating…
+                    } @else {
+                      <i class="bi bi-play-circle me-1"></i>Run Evaluation
+                    }
+                  </button>
+                </div>
+                <div class="card-body">
+                  @if (!rulesResult()) {
+                    <p class="text-muted small mb-0">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Click <strong>Run Evaluation</strong> to evaluate all active UW rules, calculate the risk score, and check the referral matrix.
+                    </p>
+                  } @else {
+                    <!-- Summary Banner -->
+                    <div class="alert mb-3 py-2"
+                         [class.alert-danger]="rulesResult().hasBlockingRules"
+                         [class.alert-warning]="!rulesResult().hasBlockingRules && rulesResult().needsReferral"
+                         [class.alert-success]="!rulesResult().hasBlockingRules && !rulesResult().needsReferral">
+                      <div class="fw-semibold">
+                        <i class="bi me-1"
+                           [class.bi-x-circle-fill]="rulesResult().hasBlockingRules"
+                           [class.bi-exclamation-triangle-fill]="!rulesResult().hasBlockingRules && rulesResult().needsReferral"
+                           [class.bi-check-circle-fill]="!rulesResult().hasBlockingRules && !rulesResult().needsReferral"></i>
+                        Recommendation: {{ rulesResult().recommendation }}
+                      </div>
+                      @if (rulesResult().requiredAuthority) {
+                        <div class="small mt-1">Required Authority: <strong>{{ rulesResult().requiredAuthority }}</strong></div>
+                      }
+                    </div>
+
+                    <!-- Risk Score row -->
+                    <div class="row g-3 mb-3">
+                      <div class="col-md-3">
+                        <div class="detail-label">Risk Score</div>
+                        <div class="fw-bold fs-5">{{ rulesResult().riskScore | number:'1.0-1' }}</div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="detail-label">Risk Band</div>
+                        <span class="badge fs-6"
+                              [class.bg-success]="rulesResult().riskBand === 'Low'"
+                              [class.bg-warning]="rulesResult().riskBand === 'Medium'"
+                              [class.bg-danger]="rulesResult().riskBand === 'High'">
+                          {{ rulesResult().riskBand }}
+                        </span>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="detail-label">Blocking Rules</div>
+                        <span class="badge" [class.bg-danger]="rulesResult().hasBlockingRules" [class.bg-success]="!rulesResult().hasBlockingRules">
+                          {{ rulesResult().hasBlockingRules ? 'Yes' : 'None' }}
+                        </span>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="detail-label">Needs Referral</div>
+                        <span class="badge" [class.bg-warning]="rulesResult().needsReferral" [class.bg-success]="!rulesResult().needsReferral"
+                              [class.text-dark]="rulesResult().needsReferral">
+                          {{ rulesResult().needsReferral ? 'Yes' : 'No' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Rule Results Table -->
+                    @if (rulesResult().results?.length) {
+                      <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th>Rule</th>
+                              <th>Product Line</th>
+                              <th>Severity</th>
+                              <th>Triggered</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (r of rulesResult().results; track r.uwRuleID) {
+                              <tr>
+                                <td class="small">{{ r.ruleName ?? r.uwRuleID }}</td>
+                                <td><span class="badge bg-secondary">{{ r.productLine }}</span></td>
+                                <td>
+                                  <span class="badge"
+                                        [class.bg-danger]="r.severity === 'Block' || r.severity === 2"
+                                        [class.bg-warning]="r.severity === 'Refer' || r.severity === 1"
+                                        [class.text-dark]="r.severity === 'Refer' || r.severity === 1"
+                                        [class.bg-info]="r.severity === 'Informational' || r.severity === 0">
+                                    {{ r.severity }}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span class="badge" [class.bg-danger]="r.triggered" [class.bg-success]="!r.triggered">
+                                    {{ r.triggered ? 'Yes' : 'No' }}
+                                  </span>
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+
+              <!-- UW Decision Form -->
+              <div class="card border-0 bg-light">
+                <div class="card-header bg-transparent fw-semibold small text-uppercase text-muted">
+                  <i class="bi bi-check2-circle me-1"></i>Underwriting Decision
+                </div>
+                <div class="card-body">
+                  <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                      <label class="form-label form-label-sm">Decision <span class="text-danger">*</span></label>
+                      <select class="form-select form-select-sm"
+                              [value]="decisionValue()"
+                              (change)="decisionValue.set($any($event.target).value)">
+                        <option value="">Select decision…</option>
+                        <option value="Approve">Approve</option>
+                        <option value="Decline">Decline</option>
+                        <option value="MoreInfo">Request More Info</option>
+                        <option value="Refer">Refer to Senior UW</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label form-label-sm">Reason / Notes</label>
+                      <input type="text" class="form-control form-control-sm"
+                             placeholder="Brief reason for this decision…"
+                             [value]="decisionReason()"
+                             (input)="decisionReason.set($any($event.target).value)" />
+                    </div>
+                    <div class="col-md-2">
+                      <button class="btn btn-sm w-100"
+                              [class.btn-primary]="decisionValue() === 'Approve'"
+                              [class.btn-danger]="decisionValue() === 'Decline'"
+                              [class.btn-warning]="decisionValue() === 'MoreInfo' || decisionValue() === 'Refer'"
+                              [class.btn-secondary]="!decisionValue()"
+                              (click)="submitDecision()"
+                              [disabled]="!decisionValue() || submittingDecision()">
+                        @if (submittingDecision()) {
+                          <span class="spinner-border spinner-border-sm me-1"></span>
+                        } @else {
+                          <i class="bi bi-send me-1"></i>
+                        }
+                        Submit
+                      </button>
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    <a [routerLink]="['/underwriting/decision', selected()!.submissionId]"
+                       class="btn btn-sm btn-outline-primary" (click)="closeDetail()">
+                      <i class="bi bi-arrow-right me-1"></i>Full Decision Page
+                    </a>
+                  </div>
+                </div>
+              </div>
+            }
+
             <!-- ── UW NOTES ── -->
             @if (detailTab() === 'notes' && !detailLoading()) {
               <!-- Add Note -->
@@ -596,10 +796,17 @@
              class="btn btn-outline-secondary" (click)="closeDetail()">
             <i class="bi bi-eye me-1"></i>Full Submission
           </a>
-          <a [routerLink]="['/underwriting/decision', selected()!.submissionId]"
-             class="btn btn-primary" (click)="closeDetail()">
-            <i class="bi bi-check2-circle me-1"></i>Make Decision
-          </a>
+          @if (selected()!.status === 'Quoted') {
+            <a [routerLink]="['/pricing/quotes/new', selected()!.submissionId]"
+               class="btn btn-warning text-dark fw-semibold" (click)="closeDetail()">
+              <i class="bi bi-calculator me-1"></i>→ Create Quote in Pricing
+            </a>
+          } @else {
+            <a [routerLink]="['/underwriting/decision', selected()!.submissionId]"
+               class="btn btn-primary" (click)="closeDetail()">
+              <i class="bi bi-check2-circle me-1"></i>Make Decision
+            </a>
+          }
         </div>
 
       </div>

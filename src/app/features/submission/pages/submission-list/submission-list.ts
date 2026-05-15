@@ -45,8 +45,12 @@ export class SubmissionListPage implements OnInit {
     const isAgent   = this.auth.currentUser()?.role === 'Agent';
 
     return this.submissions().filter(sub => {
-      // Agent: only show their own submissions (matched by Agents table agentID)
-      if (isAgent && agentId && sub.agentId !== agentId) return false;
+      // Agent: only show their own submissions.
+      // If agentId is still resolving (null), hide everything — safer than showing all.
+      if (isAgent) {
+        if (!agentId) return false;
+        if (sub.agentId !== agentId) return false;
+      }
       return (
         (!q || sub.submissionId.toLowerCase().includes(q) || sub.partyId?.toLowerCase().includes(q)) &&
         (!s || sub.status === s) &&
@@ -83,18 +87,47 @@ export class SubmissionListPage implements OnInit {
   ngOnInit(): void {
     const user = this.auth.currentUser();
     if (user?.role === 'Agent') {
-      // agentID is stored during login — just read it here
       const cacheKey = `uwpro_agent_id_${user.userId}`;
-      const agentId  = localStorage.getItem(cacheKey)
+      const cached   = localStorage.getItem(cacheKey)
                     ?? localStorage.getItem('uwpro_my_agent_id');
-      if (agentId) {
-        this.myAgentId.set(agentId);
-        // make sure both keys are in sync
-        localStorage.setItem(cacheKey, agentId);
-        localStorage.setItem('uwpro_my_agent_id', agentId);
+
+      if (cached) {
+        // Already known — set and load immediately
+        this.myAgentId.set(cached);
+        localStorage.setItem(cacheKey, cached);
+        localStorage.setItem('uwpro_my_agent_id', cached);
+        this.load();
+      } else {
+        // Not cached yet — look up this agent's record by name from the agents list,
+        // then cache it before loading submissions so the filter works on first visit.
+        this.loading.set(true);
+        const hint = user.name ?? user.email?.split('@')[0] ?? '';
+        this.partySvc.getAgents(hint).subscribe({
+          next: (res: any) => {
+            const agents: any[] = Array.isArray(res) ? res : (res?.data ?? res?.content ?? []);
+            if (agents.length > 0) {
+              // Take the first result — the search is already scoped to this agent's name
+              const agentId = agents[0].agentID ?? agents[0].agentId ?? '';
+              if (agentId) {
+                this.myAgentId.set(agentId);
+                localStorage.setItem(cacheKey, agentId);
+                localStorage.setItem('uwpro_my_agent_id', agentId);
+              }
+            }
+            this.loading.set(false);
+            this.load();
+          },
+          error: () => {
+            // Could not resolve agentId — load anyway; filter will show nothing
+            // rather than showing all submissions
+            this.loading.set(false);
+            this.load();
+          },
+        });
       }
+    } else {
+      this.load();
     }
-    this.load();
   }
 
   load(page = this.currentPage()): void {

@@ -8,26 +8,40 @@ import { SubmissionApiService } from '../../services/submission-api.service';
 import { Submission, Attachment, CompletenessCheck, Questionnaire, SubmissionStatus, DocType, Subjectivity, UWNote } from '../../models/submission.model';
 import { AuthService } from '../../../../core/auth/auth.service';
 
+const WORKFLOW_STEPS = [
+  { label: 'Intake',       icon: 'bi-upload',          statuses: ['Draft'] },
+  { label: 'Assessment',   icon: 'bi-clipboard-check', statuses: ['IntakeComplete'] },
+  { label: 'UW Review',    icon: 'bi-person-check',    statuses: ['UnderReview'] },
+  { label: 'Approved',     icon: 'bi-check-circle',    statuses: ['Approved'] },
+  { label: 'Pricing',      icon: 'bi-calculator',      statuses: ['Quoted'] },
+  { label: 'Policy Bound', icon: 'bi-shield-check',    statuses: ['PolicyBound'] },
+  { label: 'Issued',       icon: 'bi-check2-all',      statuses: ['Issued'] },
+];
+
 // Which statuses each role can transition TO from a given current status
 const ROLE_TRANSITIONS: Record<string, Record<string, SubmissionStatus[]>> = {
-  Agent:         { Draft:        ['IntakeComplete'] },
+  Agent:         { Draft: ['IntakeComplete'] },
   UWAssistant:   { IntakeComplete: ['UnderReview'] },
-  Underwriter:   { IntakeComplete: ['UnderReview'],
-                   UnderReview:    ['Quoted', 'Declined'] },
-  PricingAnalyst:{ UnderReview:   ['Quoted'] },
-  Operations:    { Quoted:        ['Expired'], Declined: ['Expired'] },
-  Compliance:    {},   // read-only
-  Admin:         { Draft:        ['IntakeComplete','UnderReview','Quoted','Declined','Expired'],
-                   IntakeComplete:['Draft','UnderReview','Quoted','Declined','Expired'],
-                   UnderReview:  ['Draft','IntakeComplete','Quoted','Declined','Expired'],
-                   Quoted:       ['Draft','IntakeComplete','UnderReview','Declined','Expired'],
-                   Declined:     ['Draft','IntakeComplete','UnderReview','Quoted','Expired'],
-                   Expired:      ['Draft','IntakeComplete','UnderReview','Quoted','Declined'] },
+  Underwriter:   { IntakeComplete: ['UnderReview'] },   // Approve/Decline via UW Decision
+  PricingAnalyst:{},   // quote generation auto-advances to Quoted
+  Operations:    { Quoted: ['PolicyBound'], PolicyBound: ['Issued'] },
+  Compliance:    {},   // checklist completion auto-advances to Issued
+  Admin:         {
+    Draft:        ['IntakeComplete','UnderReview','Approved','Quoted','PolicyBound','Issued','Declined','Expired'],
+    IntakeComplete:['Draft','UnderReview','Approved','Quoted','PolicyBound','Issued','Declined','Expired'],
+    UnderReview:  ['Draft','IntakeComplete','Approved','Quoted','PolicyBound','Issued','Declined','Expired'],
+    Approved:     ['Draft','IntakeComplete','UnderReview','Quoted','PolicyBound','Issued','Declined','Expired'],
+    Quoted:       ['Draft','IntakeComplete','UnderReview','Approved','PolicyBound','Issued','Declined','Expired'],
+    PolicyBound:  ['Draft','IntakeComplete','UnderReview','Approved','Quoted','Issued','Declined','Expired'],
+    Issued:       ['Draft','IntakeComplete','UnderReview','Approved','Quoted','PolicyBound','Declined','Expired'],
+    Declined:     ['Draft','IntakeComplete','UnderReview','Approved','Quoted','Expired'],
+    Expired:      ['Draft','IntakeComplete','UnderReview','Approved','Quoted','Declined'],
+  },
 };
 
 type TabId = 'overview' | 'questionnaire' | 'attachments' | 'completeness' | 'subjectivities' | 'notes';
 
-const ALL_STATUSES: SubmissionStatus[] = ['Draft', 'IntakeComplete', 'UnderReview', 'Quoted', 'Declined', 'Expired'];
+const ALL_STATUSES: SubmissionStatus[] = ['Draft', 'IntakeComplete', 'UnderReview', 'Approved', 'Quoted', 'PolicyBound', 'Issued', 'Declined', 'Expired'];
 const DOC_TYPES: DocType[] = ['KYC', 'Financial', 'Medical', 'Inspection', 'Photos'];
 const ALLOWED_MIME = [
   'image/jpeg',
@@ -76,6 +90,18 @@ export class SubmissionDetailPage implements OnInit {
 
   readonly canChangeStatus     = computed(() => this.allowedTransitions().length > 0);
   readonly docTypes            = DOC_TYPES;
+  readonly workflowSteps       = WORKFLOW_STEPS;
+
+  readonly workflowStep = computed<number>(() => {
+    const s = this.submission()?.status ?? '';
+    const idx = WORKFLOW_STEPS.findIndex(step => step.statuses.includes(s));
+    return idx >= 0 ? idx : s === 'Declined' || s === 'Expired' ? -1 : 0;
+  });
+
+  readonly isTerminalStatus = computed(() => {
+    const s = this.submission()?.status ?? '';
+    return s === 'Declined' || s === 'Expired' || s === 'Issued';
+  });
 
   readonly selectedDocType     = signal<DocType>('KYC');
   readonly selectedFile        = signal<File | null>(null);
@@ -419,9 +445,15 @@ export class SubmissionDetailPage implements OnInit {
 
   statusClass(status: string): string {
     const map: Record<string, string> = {
-      Draft: 'bg-secondary', IntakeComplete: 'bg-info text-dark',
-      UnderReview: 'bg-warning text-dark', Quoted: 'bg-primary',
-      Declined: 'bg-danger', Expired: 'bg-dark',
+      Draft:        'bg-secondary',
+      IntakeComplete:'bg-info text-dark',
+      UnderReview:  'bg-warning text-dark',
+      Approved:     'bg-success',
+      Quoted:       'bg-primary',
+      PolicyBound:  'bg-primary',
+      Issued:       'bg-success',
+      Declined:     'bg-danger',
+      Expired:      'bg-dark',
     };
     return map[status] ?? 'bg-secondary';
   }

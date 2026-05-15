@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -7,6 +7,7 @@ import { StatusBadge } from '../../../../shared/components/status-badge/status-b
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { RulesApiService } from '../../services/rules-api.service';
+import { PermissionsService } from '../../../../core/auth/permissions.service';
 import {
   UWRule, RuleSeverity, UWStatus, EvaluateRulesResponse,
   SEVERITIES, UW_STATUSES, PRODUCT_LINES, DEFAULT_PAGE_SIZE,
@@ -21,7 +22,11 @@ import {
   styleUrl: './rule-list.css',
 })
 export class RuleListPage implements OnInit {
-  private readonly fb = inject(FormBuilder);
+  private readonly fb   = inject(FormBuilder);
+  private readonly perms = inject(PermissionsService);
+
+  /** True for Underwriter, UWAssistant, and Admin — they see rules but cannot mutate them. */
+  readonly isViewOnly = computed(() => this.perms.isRulesViewOnly());
 
   readonly rules        = signal<UWRule[]>([]);
   readonly loading      = signal(false);
@@ -60,6 +65,7 @@ export class RuleListPage implements OnInit {
   });
 
   constructor(private svc: RulesApiService) {}
+
 
   ngOnInit(): void { this.load(); }
 

@@ -4,7 +4,7 @@
     subtitle="Manage producer agents and distribution channels"
     icon="bi-person-badge"
     [breadcrumbs]="breadcrumbs">
-    @if (isAdmin()) {
+    @if (canManageAgents()) {
       <button class="btn btn-primary btn-sm" (click)="openCreate()">
         <i class="bi bi-plus-lg me-1"></i>Add Agent
       </button>
@@ -70,7 +70,7 @@
                 <th>Region</th>
                 <th>Contact Info</th>
                 <th>Status</th>
-                @if (isAdmin()) {
+                @if (canManageAgents()) {
                   <th class="text-end table-actions">Actions</th>
                 }
               </tr>
@@ -86,7 +86,7 @@
                   <td>
                     <span class="badge" [ngClass]="statusClass(a.status)">{{ a.status }}</span>
                   </td>
-                  @if (isAdmin()) {
+                  @if (canManageAgents()) {
                     <td class="text-end table-actions">
                       <div class="d-flex justify-content-end gap-1">
                         <button class="btn btn-sm btn-outline-primary" title="Edit" (click)="openEdit(a)">
@@ -123,7 +123,7 @@
 </div>
 
 <!-- Slide-in Modal (Admin only) -->
-@if (modalMode() && isAdmin()) {
+@if (modalMode() && canManageAgents()) {
   <div class="modal-backdrop-custom" (click)="closeModal()"></div>
   <div class="modal-panel shadow-lg">
     <div class="modal-panel-header">

@@ -1,5 +1,5 @@
 export type ProductLine = 'Life' | 'Health' | 'PnC' | 'Commercial';
-export type SubmissionStatus = 'Draft' | 'IntakeComplete' | 'UnderReview' | 'Quoted' | 'Declined' | 'Expired';
+export type SubmissionStatus = 'Draft' | 'IntakeComplete' | 'UnderReview' | 'Quoted' | 'Declined' | 'Expired' | 'Approved' | 'PolicyBound' | 'Issued';
 export type DocType = 'KYC' | 'Financial' | 'Medical' | 'Inspection' | 'Photos';
 export type CheckStatus = 'Pending' | 'Complete';
 

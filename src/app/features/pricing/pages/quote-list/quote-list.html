@@ -55,6 +55,65 @@
     </div>
   }
 
+  <!-- ── Quoted Submissions Queue ── -->
+  <div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
+    <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-hourglass-split text-warning fs-5"></i>
+        <h6 class="mb-0 fw-semibold">Quoted Submissions — Awaiting Pricing</h6>
+        @if (quotedQueue().length) {
+          <span class="badge bg-warning text-dark rounded-pill">{{ quotedQueue().length }}</span>
+        }
+      </div>
+      <button class="btn btn-sm btn-outline-secondary" (click)="loadQuotedQueue()" title="Refresh queue">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+    <div class="card-body p-0">
+      @if (loadingQueue()) {
+        <div class="text-center py-4">
+          <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+          <span class="ms-2 text-muted small">Loading queue…</span>
+        </div>
+      } @else if (!quotedQueue().length) {
+        <div class="text-center py-4 text-muted small">
+          <i class="bi bi-check-circle text-success fs-4 d-block mb-1"></i>
+          No submissions awaiting pricing at this time.
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Submission ID</th>
+                <th>Product</th>
+                <th>Inception Date</th>
+                <th>Quoted On</th>
+                <th class="table-actions">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of quotedQueue(); track s.submissionId) {
+                <tr>
+                  <td class="font-monospace small" [title]="s.submissionId">{{ s.submissionId | slice:0:8 }}…</td>
+                  <td><span class="badge" [ngClass]="productClass(s.productLine)">{{ s.productLine }}</span></td>
+                  <td class="small text-muted">{{ s.inceptionDate | date:'mediumDate' }}</td>
+                  <td class="small text-muted">{{ s.createdDate | date:'mediumDate' }}</td>
+                  <td class="table-actions">
+                    <a [routerLink]="['/pricing/quotes/new', s.submissionId]"
+                       class="btn btn-sm btn-warning text-dark">
+                      <i class="bi bi-calculator me-1"></i>Create Quote
+                    </a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
   <!-- ── Search card ── -->
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white border-bottom py-3 d-flex align-items-center gap-2">

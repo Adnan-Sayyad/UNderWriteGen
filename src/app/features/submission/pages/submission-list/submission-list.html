@@ -4,9 +4,11 @@
     subtitle="All insurance submission intakes"
     icon="bi-file-earmark-text"
     [breadcrumbs]="breadcrumbs">
-    <a routerLink="/submissions/new" class="btn btn-primary btn-sm">
-      <i class="bi bi-plus-lg me-1"></i>New Submission
-    </a>
+    @if (isAgentRole()) {
+      <a routerLink="/submissions/new" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>New Submission
+      </a>
+    }
   </app-page-header>
 
   <!-- Filters -->
