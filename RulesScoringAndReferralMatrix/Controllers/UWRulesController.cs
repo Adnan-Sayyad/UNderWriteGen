@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
@@ -8,6 +9,7 @@ namespace RulesScoringAndReferralMatrix.Controllers
 {
     [ApiController]
     [Route("api/uw-rules")]
+    [Authorize(Roles = "Underwriter,UWAssistant,Operations,Admin")]
     public class UWRulesController : ControllerBase
     {
         private readonly IUWRuleService _service;
@@ -58,6 +60,7 @@ namespace RulesScoringAndReferralMatrix.Controllers
 
         // POST /api/uw-rules
         [HttpPost]
+        [Authorize(Roles = "Operations,Admin")]
         public async Task<IActionResult> Create([FromBody] CreateUWRuleDto dto)
         {
             var created = await _service.CreateRuleAsync(dto);
@@ -66,6 +69,7 @@ namespace RulesScoringAndReferralMatrix.Controllers
 
         // PUT /api/uw-rules/{ruleId}
         [HttpPut("{ruleId:guid}")]
+        [Authorize(Roles = "Operations,Admin")]
         public async Task<IActionResult> Update(Guid ruleId, [FromBody] UpdateUWRuleDto dto)
         {
             var updated = await _service.UpdateRuleAsync(ruleId, dto);
@@ -84,6 +88,7 @@ namespace RulesScoringAndReferralMatrix.Controllers
 
         // DELETE /api/uw-rules/{ruleId}
         [HttpDelete("{ruleId:guid}")]
+        [Authorize(Roles = "Operations,Admin")]
         public async Task<IActionResult> Delete(Guid ruleId)
         {
             var deleted = await _service.DeleteRuleAsync(ruleId);

@@ -7,6 +7,7 @@ namespace PricingQuotationAndTerms.Infrastructure.ExternalApis;
 
 /// <summary>
 /// PRODUCTION implementation — calls the real Rules/Scoring microservice.
+
 /// Band is returned as a string ("Low" | "Medium" | "High") by the Rules service.
 /// </summary>
 public class HttpRulesApi : IRulesApi

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
@@ -8,6 +9,7 @@ namespace RulesScoringAndReferralMatrix.Controllers
 {
     [ApiController]
     [Route("api/referral-matrix")]
+    [Authorize(Roles = "Underwriter,UWAssistant,Operations,Admin")]
     public class ReferralMatrixController : ControllerBase
     {
         private readonly IReferralMatrixService _service;

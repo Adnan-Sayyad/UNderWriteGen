@@ -26,8 +26,12 @@ namespace DistributionAndPartyManagement.Controllers
 		{
 			var result = await _customerPartyService.GetByIdAsync(partyId);
 
-			// Agent may not view customers they didn't create
-			if (GetRole() == "Agent" && result.CreatedByUserId != GetUserId())
+			// Agent may not view customers they didn't create.
+			// If CreatedByUserId is null/empty (legacy data before tracking was added), allow access.
+			var uid = GetUserId();
+			if (GetRole() == "Agent"
+				&& !string.IsNullOrEmpty(result.CreatedByUserId)
+				&& result.CreatedByUserId != uid)
 				throw new NotFoundException($"Customer with ID '{partyId}' not found.");
 
 			return Ok(ApiResponse<CustomerPartyResponseDto>.Ok(result));

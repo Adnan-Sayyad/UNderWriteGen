@@ -16,10 +16,13 @@ public class HttpSubmissionApi : ISubmissionApi
     private readonly ILogger<HttpSubmissionApi> _logger;
 
 
-    public HttpSubmissionApi(HttpClient http, ILogger<HttpSubmissionApi> logger)
+    private readonly string _internalKey;
+
+    public HttpSubmissionApi(HttpClient http, ILogger<HttpSubmissionApi> logger, IConfiguration config)
     {
-        _http   = http;
-        _logger = logger;
+        _http        = http;
+        _logger      = logger;
+        _internalKey = config["InternalServiceKey"] ?? string.Empty;
     }
 
     public async Task<SubmissionDto?> GetSubmissionByIdAsync(Guid submissionId, CancellationToken ct = default)
@@ -71,6 +74,23 @@ public class HttpSubmissionApi : ISubmissionApi
             _logger.LogError(ex, "Failed to reach Submission service for Id={Id}", submissionId);
             throw new InvalidOperationException(
                 "Submission service is unavailable. Cannot retrieve submission.", ex);
+        }
+    }
+
+    public async Task UpdateSubmissionStatusAsync(Guid submissionId, string status, CancellationToken ct = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Patch, $"submissions/{submissionId}/status");
+            request.Headers.Add("X-Internal-Service-Key", _internalKey);
+            request.Content = JsonContent.Create(new { Status = status });
+            var response = await _http.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode)
+                _logger.LogWarning("Submission status update returned {Code} for {Id}", (int)response.StatusCode, submissionId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update submission status for {Id}. Non-blocking.", submissionId);
         }
     }
 

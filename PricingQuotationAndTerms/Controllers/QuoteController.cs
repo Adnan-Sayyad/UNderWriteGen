@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PricingQuotationAndTerms.Application.DTOs.Requests;
 using PricingQuotationAndTerms.Application.Interfaces;
@@ -7,6 +8,7 @@ namespace PricingQuotationAndTerms.Controllers;
 [ApiController]
 [Route("api/quotes")]
 [Produces("application/json")]
+[Authorize]
 public class QuoteController : ControllerBase
 {
     private readonly IQuoteService _quoteService;
@@ -20,6 +22,7 @@ public class QuoteController : ControllerBase
 
     
     [HttpPost]
+    [Authorize(Roles = "PricingAnalyst,Admin")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -110,6 +113,7 @@ public class QuoteController : ControllerBase
     // Customer accepts the quote
     // ═══════════════════════════════════════════════════════
     [HttpPost("{quoteId:guid}/accept")]
+    [Authorize(Roles = "Agent,Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -140,6 +144,7 @@ public class QuoteController : ControllerBase
     // Attach or update underwriter policy terms to a quote
     // ═══════════════════════════════════════════════════════
     [HttpPatch("{quoteId:guid}/terms")]
+    [Authorize(Roles = "PricingAnalyst,Underwriter,Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -164,6 +169,7 @@ public class QuoteController : ControllerBase
     // Update quote status (Draft → Presented → Declined etc.)
     // ═══════════════════════════════════════════════════════
     [HttpPatch("{quoteId:guid}/status")]
+    [Authorize(Roles = "PricingAnalyst,Underwriter,Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

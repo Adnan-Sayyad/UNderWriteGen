@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PolicyBindingIssuanceAndEndorsements.DTOs;
 using PolicyBindingIssuanceAndEndorsements.Services;
@@ -6,6 +7,7 @@ namespace PolicyBindingIssuanceAndEndorsements.Controllers
 {
     [ApiController]
     [Route("api/renewals")]
+    [Authorize(Roles = "Operations,Admin")]
     public class RenewalsController : ControllerBase
     {
         private readonly IRenewalService _service;

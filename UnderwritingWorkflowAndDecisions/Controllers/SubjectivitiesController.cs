@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UnderwritingWorkflowAndDecisions.DTOs;
 using UnderwritingWorkflowAndDecisions.Services;
@@ -6,6 +7,7 @@ namespace UnderwritingWorkflowAndDecisions.Controllers
 {
     [ApiController]
     [Route("api/subjectivities")]
+    [Authorize(Roles = "Underwriter,UWAssistant,Agent,Admin")]
     public class SubjectivitiesController : ControllerBase
     {
         private readonly ISubjectivityService _service;

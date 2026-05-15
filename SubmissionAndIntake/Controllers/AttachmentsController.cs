@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SubmissionAndIntake.Configs.Enums;
 using SubmissionAndIntake.Contracts.ServiceContracts;
@@ -7,6 +8,7 @@ namespace SubmissionAndIntake.Controllers
 {
     [ApiController]
     [Route("api/attachments")]
+    [Authorize]
     public class AttachmentsController : ControllerBase
     {
         private readonly IAttachmentService _service;

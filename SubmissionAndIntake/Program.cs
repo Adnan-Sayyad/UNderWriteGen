@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using SubmissionAndIntake.Contracts.RepositoryContracts;
 using SubmissionAndIntake.Contracts.ServiceContracts;
 using SubmissionAndIntake.Data;
 using SubmissionAndIntake.Repositories;
 using SubmissionAndIntake.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +33,38 @@ builder.Services.AddScoped<ICompletenessCheckService, CompletenessCheckService>(
 
 builder.Services.AddHttpContextAccessor();
 
+// JWT Authentication
+var jwtKey = builder.Configuration["Jwt:SecretKey"]!;
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer           = true,
+            ValidateAudience         = true,
+            ValidateLifetime         = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
+            ValidAudience            = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        };
+    });
+
+var internalKey = builder.Configuration["InternalServiceKey"]!;
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("InternalOrAuthenticated", policy =>
+        policy.RequireAssertion(ctx =>
+        {
+            if (ctx.Resource is HttpContext http)
+            {
+                var header = http.Request.Headers["X-Internal-Service-Key"].FirstOrDefault();
+                if (header == internalKey) return true;
+            }
+            return ctx.User.Identity?.IsAuthenticated == true;
+        }));
+});
+
 // Inter-service HTTP clients
 builder.Services.AddHttpClient<IDistributionValidationService, HttpDistributionValidationService>(c =>
     c.BaseAddress = new Uri(builder.Configuration["Services:DistributionApi"]!));
@@ -55,6 +90,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

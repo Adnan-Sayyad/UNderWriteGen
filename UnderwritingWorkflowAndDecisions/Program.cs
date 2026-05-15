@@ -1,4 +1,7 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using UnderwritingWorkflowAndDecisions.Data;
 using UnderwritingWorkflowAndDecisions.Services;
 
@@ -16,12 +19,34 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<UWWorkflowDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// JWT Authentication
+var jwtKey = builder.Configuration["Jwt:SecretKey"]!;
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer           = true,
+            ValidateAudience         = true,
+            ValidateLifetime         = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
+            ValidAudience            = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        };
+    });
+builder.Services.AddAuthorization();
+
 // Register services
 builder.Services.AddScoped<IUWNoteService, UWNoteService>();
 builder.Services.AddScoped<IUWDecisionService, UWDecisionService>();
 builder.Services.AddScoped<ISubjectivityService, SubjectivityService>();
 
 // Inter-service HTTP clients
+var submissionApiUrl = builder.Configuration["Services:SubmissionApi"] ?? "http://localhost:8080/";
+builder.Services.AddHttpClient<ISubmissionClientService, HttpSubmissionClientService>(c =>
+    c.BaseAddress = new Uri(submissionApiUrl));
+
 var notificationApiUrl = builder.Configuration["Services:NotificationApi"];
 if (string.IsNullOrWhiteSpace(notificationApiUrl))
 {
@@ -46,6 +71,7 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "UW Workflow & Decisions Service v1");
 });
 
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

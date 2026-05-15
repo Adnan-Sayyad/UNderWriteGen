@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PolicyBindingIssuanceAndEndorsements.DTOs;
 using PolicyBindingIssuanceAndEndorsements.Services;
@@ -6,6 +7,7 @@ namespace PolicyBindingIssuanceAndEndorsements.Controllers
 {
     [ApiController]
     [Route("api/endorsements")]
+    [Authorize(Roles = "Operations,Admin")]
     public class EndorsementsController : ControllerBase
     {
         private readonly IEndorsementService _service;

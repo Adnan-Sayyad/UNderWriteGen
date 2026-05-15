@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SubmissionAndIntake.Contracts.ServiceContracts;
 using SubmissionAndIntake.DTOs;
@@ -6,6 +7,7 @@ namespace SubmissionAndIntake.Controllers
 {
     [ApiController]
     [Route("api/completeness-checks")]
+    [Authorize]
     public class CompletenessChecksController : ControllerBase
     {
         private readonly ICompletenessCheckService _service;

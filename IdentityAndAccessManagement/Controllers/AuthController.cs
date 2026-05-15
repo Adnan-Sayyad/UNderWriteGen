@@ -53,7 +53,7 @@ namespace IdentityAndAccessManagement.Controllers
         }
 
         // ── POST /api/auth/assign-role ────────────────────────────
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         [HttpPost("assign-role")]
         public async Task<IActionResult> AssignRole([FromBody] AssignRoleDto dto)
         {

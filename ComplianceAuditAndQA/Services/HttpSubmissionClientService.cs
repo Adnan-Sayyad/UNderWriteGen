@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 
 namespace ComplianceAuditAndQA.Services
 {
@@ -6,13 +7,16 @@ namespace ComplianceAuditAndQA.Services
     {
         private readonly HttpClient _http;
         private readonly ILogger<HttpSubmissionClientService> _logger;
+        private readonly string _internalKey;
 
         public HttpSubmissionClientService(
             HttpClient http,
-            ILogger<HttpSubmissionClientService> logger)
+            ILogger<HttpSubmissionClientService> logger,
+            IConfiguration config)
         {
-            _http   = http;
-            _logger = logger;
+            _http        = http;
+            _logger      = logger;
+            _internalKey = config["InternalServiceKey"] ?? string.Empty;
         }
 
         /// <summary>
@@ -63,6 +67,21 @@ namespace ComplianceAuditAndQA.Services
                     "Submission API unreachable or timed-out for SubmissionId={Id}. " +
                     "Allowing operation.", submissionId);
                 return true;
+            }
+        }
+
+        public async Task UpdateStatusAsync(Guid submissionId, string status, CancellationToken ct = default)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Patch, $"submissions/{submissionId}/status");
+                request.Headers.Add("X-Internal-Service-Key", _internalKey);
+                request.Content = JsonContent.Create(new { Status = status });
+                await _http.SendAsync(request, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to update submission {Id} status to {Status}.", submissionId, status);
             }
         }
     }
