@@ -14,14 +14,17 @@ import {
 
 const ROLE_TRANSITIONS: Record<string, Record<string, SubmissionStatus[]>> = {
   UWAssistant:   { IntakeComplete: ['UnderReview'] },
-  Underwriter:   { IntakeComplete: ['UnderReview'],
-                   UnderReview:    ['Quoted', 'Declined'] },
-  Admin:         { IntakeComplete: ['UnderReview', 'Quoted', 'Declined'],
-                   UnderReview:    ['IntakeComplete', 'Quoted', 'Declined'],
-                   Quoted:         ['UnderReview', 'Declined'] },
+  Underwriter:   { IntakeComplete: ['UnderReview'] },   // Approve/Decline via UW Decision panel
+  Admin:         {
+    IntakeComplete: ['UnderReview', 'Approved', 'Declined'],
+    UnderReview:    ['IntakeComplete', 'Approved', 'Declined'],
+    Approved:       ['UnderReview', 'Quoted', 'Declined'],
+    Quoted:         ['Approved', 'PolicyBound', 'Declined'],
+    PolicyBound:    ['Issued'],
+  },
 };
 
-type DetailTab = 'overview' | 'questionnaire' | 'attachments' | 'subjectivities' | 'notes';
+type DetailTab = 'overview' | 'questionnaire' | 'attachments' | 'subjectivities' | 'notes' | 'rules';
 
 @Component({
   selector: 'app-uw-workbench',
@@ -72,6 +75,15 @@ export class UwWorkbenchPage implements OnInit {
   readonly newNoteText    = signal('');
   readonly addingNote     = signal(false);
 
+  // Rules evaluation
+  readonly rulesResult      = signal<any | null>(null);
+  readonly evaluatingRules  = signal(false);
+
+  // UW Decision form
+  readonly decisionValue    = signal('');
+  readonly decisionReason   = signal('');
+  readonly submittingDecision = signal(false);
+
   // Status change
   readonly updatingStatus = signal(false);
   private readonly auth   = inject(AuthService);
@@ -101,8 +113,10 @@ export class UwWorkbenchPage implements OnInit {
     this.svc.getAll({ page, size: this.pageSize(), sort: 'createdDate', direction: 'desc' } as any).subscribe({
       next: res => {
         const all = res.content ?? [];
-        const uw  = all.filter((s: any) =>
-          ['IntakeComplete','UnderReview','Quoted'].includes(s.status));
+        const uw  = all
+          .filter((s: any) => ['IntakeComplete','UnderReview','Approved','Quoted','PolicyBound'].includes(s.status))
+          .sort((a: any, b: any) =>
+            new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
         this.submissions.set(uw);
         this.totalPages.set(res.totalPages ?? 1);
         this.totalElements.set(uw.length);
@@ -138,6 +152,9 @@ export class UwWorkbenchPage implements OnInit {
     this.subjectivities.set([]);
     this.notes.set([]);
     this.riskScore.set(null);
+    this.rulesResult.set(null);
+    this.decisionValue.set('');
+    this.decisionReason.set('');
     this.loadDetailData(sub.submissionId);
   }
 
@@ -187,7 +204,7 @@ export class UwWorkbenchPage implements OnInit {
           list.map(s => s.submissionId === id ? { ...s, status: newStatus as SubmissionStatus } : s)
         );
         // If new status is no longer in workbench range → remove from list & close
-        if (!['IntakeComplete','UnderReview','Quoted'].includes(newStatus)) {
+        if (!['IntakeComplete','UnderReview','Approved','Quoted','PolicyBound'].includes(newStatus)) {
           this.submissions.update(list => list.filter(s => s.submissionId !== id));
           this.selected.set(null);
         }
@@ -262,6 +279,49 @@ export class UwWorkbenchPage implements OnInit {
     });
   }
 
+  evaluateRules(): void {
+    const id = this.selected()?.submissionId;
+    if (!id) return;
+    this.evaluatingRules.set(true);
+    this.svc.evaluateRules(id).subscribe({
+      next: res => {
+        const data = res?.data ?? res;
+        this.rulesResult.set(data);
+        this.evaluatingRules.set(false);
+        const rec = data?.recommendation ?? '';
+        this.flash('success', `Rules evaluated — Recommendation: ${rec}`);
+      },
+      error: () => { this.evaluatingRules.set(false); this.flash('danger', 'Rules evaluation failed.'); },
+    });
+  }
+
+  submitDecision(): void {
+    const id   = this.selected()?.submissionId;
+    const dec  = this.decisionValue();
+    const user = this.auth.currentUser();
+    if (!id || !dec || !user) return;
+    this.submittingDecision.set(true);
+    this.svc.makeUWDecision({
+      submissionId: id,
+      decision:     dec,
+      reason:       this.decisionReason(),
+      decidedBy:    user.userId,
+    }).subscribe({
+      next: () => {
+        this.submittingDecision.set(false);
+        this.flash('success', `Decision recorded: ${dec}`);
+        if (dec === 'Decline') {
+          this.submissions.update(list => list.filter(s => s.submissionId !== id));
+          this.selected.set(null);
+        } else {
+          this.decisionValue.set('');
+          this.decisionReason.set('');
+        }
+      },
+      error: () => { this.submittingDecision.set(false); this.flash('danger', 'Failed to record decision.'); },
+    });
+  }
+
   riskBandClass(band: string): string {
     return band === 'Low' ? 'bg-success' : band === 'Medium' ? 'bg-warning text-dark' : 'bg-danger';
   }
@@ -296,9 +356,15 @@ export class UwWorkbenchPage implements OnInit {
 
   statusClass(s: string): string {
     const map: Record<string, string> = {
-      Draft: 'bg-secondary', IntakeComplete: 'bg-info text-dark',
-      UnderReview: 'bg-warning text-dark', Quoted: 'bg-primary',
-      Declined: 'bg-danger', Expired: 'bg-dark',
+      Draft:         'bg-secondary',
+      IntakeComplete:'bg-info text-dark',
+      UnderReview:   'bg-warning text-dark',
+      Approved:      'bg-success',
+      Quoted:        'bg-primary',
+      PolicyBound:   'bg-primary',
+      Issued:        'bg-success',
+      Declined:      'bg-danger',
+      Expired:       'bg-dark',
     };
     return map[s] ?? 'bg-secondary';
   }

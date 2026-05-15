@@ -8,7 +8,7 @@ import { PageRequest } from '../../../shared/models/pagination.model';
 import { toPagedResponse } from '../../../shared/models/paging.util';
 import { AuthService } from '../../../core/auth/auth.service';
 const PRODUCTS: ProductLine[]      = ['Life', 'Health', 'PnC', 'Commercial'];
-const STATUSES: SubmissionStatus[] = ['Draft', 'IntakeComplete', 'UnderReview', 'Quoted', 'Declined', 'Expired'];
+const STATUSES: SubmissionStatus[] = ['Draft', 'IntakeComplete', 'UnderReview', 'Quoted', 'Declined', 'Expired', 'Approved', 'PolicyBound', 'Issued'];
 
 function normalizeSubmission(r: any): Submission {
   return {
@@ -266,5 +266,37 @@ export class SubmissionApiService {
     return this.http.post<any>(`${this.base}/risk-scores/calculate/${submissionId}`, {}).pipe(
       map(res => ({ data: normalizeRiskScore(res?.data ?? res) } as ApiResponse<RiskScore>))
     );
+  }
+
+  // ── Rules Evaluation ───────────────────────────────────────────────────────
+
+  evaluateRules(submissionId: string) {
+    return this.http.post<any>(`${this.base}/uw-rules/evaluate/${submissionId}`, {});
+  }
+
+  // ── UW Decisions ──────────────────────────────────────────────────────────
+
+  makeUWDecision(payload: {
+    submissionId: string;
+    decision: string;
+    reason?: string;
+    decidedBy: string;
+  }) {
+    return this.http.post<any>(`${this.base}/uw-decisions`, {
+      submissionID: payload.submissionId,
+      decision:     payload.decision,
+      reason:       payload.reason ?? '',
+      decidedBy:    payload.decidedBy,
+    });
+  }
+
+  getUWDecisions(submissionId: string) {
+    return this.http.get<any>(`${this.base}/uw-decisions/submission/${submissionId}`);
+  }
+
+  // ── Referrals ─────────────────────────────────────────────────────────────
+
+  getReferrals(submissionId: string) {
+    return this.http.get<any>(`${this.base}/referrals/submission/${submissionId}`);
   }
 }

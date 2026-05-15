@@ -25,36 +25,47 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'submissions', pathMatch: 'full' },
 
-      { path: 'party',         loadChildren: () => import('./features/party/party.routes').then(m => m.PARTY_ROUTES) },
+      {
+        path: 'party',
+        canActivate: [roleGuard], data: { roles: ['Agent', 'Admin'] },
+        loadChildren: () => import('./features/party/party.routes').then(m => m.PARTY_ROUTES),
+      },
       { path: 'submissions',   loadChildren: () => import('./features/submission/submission.routes').then(m => m.SUBMISSION_ROUTES) },
-      { path: 'risk',          loadChildren: () => import('./features/risk/risk.routes').then(m => m.RISK_ROUTES) },
+      {
+        path: 'risk',
+        canActivate: [roleGuard], data: { roles: ['Underwriter', 'UWAssistant', 'Admin'] },
+        loadChildren: () => import('./features/risk/risk.routes').then(m => m.RISK_ROUTES),
+      },
       {
         path: 'rules',
-        canActivate: [roleGuard], data: { roles: ['Underwriter', 'Admin'] },
+        canActivate: [roleGuard], data: { roles: ['Underwriter', 'UWAssistant', 'Operations', 'Admin'] },
         loadChildren: () => import('./features/rules/rules.routes').then(m => m.RULES_ROUTES),
       },
       {
         path: 'pricing',
-        canActivate: [roleGuard], data: { roles: ['PricingAnalyst', 'Underwriter', 'Admin'] },
+        canActivate: [roleGuard], data: { roles: ['PricingAnalyst', 'Admin'] },
         loadChildren: () => import('./features/pricing/pricing.routes').then(m => m.PRICING_ROUTES),
       },
       {
         path: 'underwriting',
- 
-        canActivate: [roleGuard], data: { roles: ['Underwriter', 'UWAssistant', 'Admin'] },
+        canActivate: [roleGuard], data: { roles: ['Underwriter', 'Admin'] },
         loadChildren: () => import('./features/underwriting/underwriting.routes').then(m => m.UNDERWRITING_ROUTES),
       },
       {
         path: 'policy',
-        canActivate: [roleGuard], data: { roles: ['Operations', 'Underwriter', 'Admin'] },
+        canActivate: [roleGuard], data: { roles: ['Operations', 'Admin'] },
         loadChildren: () => import('./features/policy/policy.routes').then(m => m.POLICY_ROUTES),
       },
       {
         path: 'compliance',
-        canActivate: [roleGuard], data: { roles: ['Compliance', 'Admin'] },
+        canActivate: [roleGuard], data: { roles: ['Compliance', 'UWAssistant', 'Admin'] },
         loadChildren: () => import('./features/compliance/compliance.routes').then(m => m.COMPLIANCE_ROUTES),
       },
-      { path: 'reports',       loadChildren: () => import('./features/reports/reports.routes').then(m => m.REPORTS_ROUTES) },
+      {
+        path: 'reports',
+        canActivate: [roleGuard], data: { roles: ['Compliance', 'PricingAnalyst', 'Underwriter', 'Admin'] },
+        loadChildren: () => import('./features/reports/reports.routes').then(m => m.REPORTS_ROUTES),
+      },
       { path: 'notifications', loadChildren: () => import('./features/notifications/notifications.routes').then(m => m.NOTIFICATIONS_ROUTES) },
       { path: 'profile',       loadComponent: () => import('./features/auth/pages/profile/profile').then(m => m.ProfilePage) },
       { path: 'access-denied', loadComponent: () => import('./features/access-denied/access-denied').then(m => m.AccessDeniedPage) },

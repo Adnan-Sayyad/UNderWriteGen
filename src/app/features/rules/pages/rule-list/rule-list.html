@@ -11,9 +11,11 @@
       <button class="btn btn-sm btn-outline-primary" (click)="openEvaluate()">
         <i class="bi bi-play-circle me-1"></i>Evaluate
       </button>
-      <a routerLink="/rules/new" class="btn btn-sm btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>New Rule
-      </a>
+      @if (!isViewOnly()) {
+        <a routerLink="/rules/new" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus-lg me-1"></i>New Rule
+        </a>
+      }
     </div>
   </app-page-header>
 
@@ -76,7 +78,9 @@
                 <th>Severity</th>
                 <th>When</th>
                 <th>Status</th>
-                <th class="table-actions">Actions</th>
+                @if (!isViewOnly()) {
+                  <th class="table-actions">Actions</th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -93,20 +97,22 @@
                   <td class="small text-muted expr-preview">{{ exprPreview(r) }}</td>
                   <td><app-status-badge [status]="r.status"></app-status-badge></td>
                   <td class="table-actions">
-                    <button class="btn btn-sm btn-outline-secondary me-1"
-                            title="Toggle status" (click)="toggleStatus(r)" [disabled]="toggling() === r.uwRuleID">
-                      @if (toggling() === r.uwRuleID) { <span class="spinner-border spinner-border-sm"></span> }
-                      @else { <i class="bi" [class.bi-toggle-on]="r.status==='Active'" [class.bi-toggle-off]="r.status==='Inactive'"></i> }
-                    </button>
-                    <a class="btn btn-sm btn-outline-primary me-1" title="Edit"
-                       [routerLink]="['/rules', r.uwRuleID, 'edit']">
-                      <i class="bi bi-pencil"></i>
-                    </a>
-                    <button class="btn btn-sm btn-outline-danger"
-                            title="Delete" (click)="remove(r)" [disabled]="deleting() === r.uwRuleID">
-                      @if (deleting() === r.uwRuleID) { <span class="spinner-border spinner-border-sm"></span> }
-                      @else { <i class="bi bi-trash"></i> }
-                    </button>
+                    @if (!isViewOnly()) {
+                      <button class="btn btn-sm btn-outline-secondary me-1"
+                              title="Toggle status" (click)="toggleStatus(r)" [disabled]="toggling() === r.uwRuleID">
+                        @if (toggling() === r.uwRuleID) { <span class="spinner-border spinner-border-sm"></span> }
+                        @else { <i class="bi" [class.bi-toggle-on]="r.status==='Active'" [class.bi-toggle-off]="r.status==='Inactive'"></i> }
+                      </button>
+                      <a class="btn btn-sm btn-outline-primary me-1" title="Edit"
+                         [routerLink]="['/rules', r.uwRuleID, 'edit']">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <button class="btn btn-sm btn-outline-danger"
+                              title="Delete" (click)="remove(r)" [disabled]="deleting() === r.uwRuleID">
+                        @if (deleting() === r.uwRuleID) { <span class="spinner-border spinner-border-sm"></span> }
+                        @else { <i class="bi bi-trash"></i> }
+                      </button>
+                    }
                   </td>
                 </tr>
               }

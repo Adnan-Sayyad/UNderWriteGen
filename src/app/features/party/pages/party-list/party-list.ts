@@ -45,7 +45,7 @@ export class PartyListPage implements OnInit {
 
   readonly isAdmin   = computed(() => this.auth.hasRole('Admin'));
   readonly isAgent   = computed(() => this.auth.hasRole('Agent'));
-  readonly canAddParty = computed(() => this.isAgent()); // Admin cannot create customers
+  readonly canAddParty = computed(() => this.isAgent() || this.isAdmin());
 
   canEditParty(p: CustomerParty): boolean {
     if (this.isAdmin()) return true;

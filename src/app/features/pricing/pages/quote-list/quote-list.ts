@@ -7,6 +7,8 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { PricingApiService } from '../../services/pricing-api.service';
 import { Quote, QuoteStatus } from '../../models/pricing.model';
 import { HttpErrorResponse } from '@angular/common/http';
+import { SubmissionApiService } from '../../../submission/services/submission-api.service';
+import { Submission } from '../../../submission/models/submission.model';
 
 const SESSION_KEY = 'uwpro_recent_quotes';
 const MAX_RECENT  = 20;
@@ -82,15 +84,40 @@ export class QuoteListPage implements OnInit {
     };
   });
 
+  /* ── quoted submissions queue ───────────────────────────────────────── */
+  readonly quotedQueue    = signal<Submission[]>([]);
+  readonly loadingQueue   = signal(false);
+
   readonly breadcrumbs = [
     { label: 'Home',            route: '/' },
     { label: 'Pricing Console', route: '/pricing' },
     { label: 'Quotes' },
   ];
 
-  constructor(private svc: PricingApiService) {}
+  constructor(private svc: PricingApiService, private submissionSvc: SubmissionApiService) {}
 
-  ngOnInit(): void { this.loadRecent(); }
+  ngOnInit(): void { this.loadRecent(); this.loadQuotedQueue(); }
+
+  /* ── quoted queue ───────────────────────────────────────────────────── */
+  loadQuotedQueue(): void {
+    this.loadingQueue.set(true);
+    this.submissionSvc.getAll({ page: 0, size: 100, sort: 'createdDate', direction: 'desc' } as any).subscribe({
+      next: res => {
+        const quoted = (res.content ?? []).filter((s: Submission) => s.status === 'Quoted');
+        this.quotedQueue.set(quoted);
+        this.loadingQueue.set(false);
+      },
+      error: () => this.loadingQueue.set(false),
+    });
+  }
+
+  productClass(p: string): string {
+    const map: Record<string, string> = {
+      Life: 'bg-success', Health: 'bg-info text-dark',
+      PnC: 'bg-warning text-dark', Commercial: 'bg-primary',
+    };
+    return map[p] ?? 'bg-secondary';
+  }
 
   /* ── search ─────────────────────────────────────────────────────────── */
   search(): void {

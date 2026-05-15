@@ -349,11 +349,25 @@ export class SubmissionCreatePage implements OnInit {
   }
 
   finish(): void {
-    this.router.navigate(['/submissions', this.submissionId]);
+    this.advanceToIntakeComplete(() =>
+      this.router.navigate(['/submissions', this.submissionId])
+    );
   }
 
   finishToList(): void {
-    this.router.navigate(['/submissions']);
+    this.advanceToIntakeComplete(() =>
+      this.router.navigate(['/submissions'])
+    );
+  }
+
+  /** Advance status to IntakeComplete so the submission enters the UW Workbench queue,
+   *  then run the callback regardless of success/failure so the user isn't blocked. */
+  private advanceToIntakeComplete(then: () => void): void {
+    if (!this.submissionId) { then(); return; }
+    this.svc.updateStatus(this.submissionId, 'IntakeComplete').subscribe({
+      next:  () => then(),
+      error: () => then(),   // navigate anyway; status can be fixed manually
+    });
   }
 
   private flash(type: 'success' | 'danger', text: string) {

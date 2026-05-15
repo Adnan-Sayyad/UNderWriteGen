@@ -22,6 +22,59 @@
   } @else if (!submission()) {
     <app-empty-state icon="bi-file-earmark-x" title="Submission not found"></app-empty-state>
   } @else {
+
+    <!-- ── Workflow Progress Stepper ──────────────────────────────────────── -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body py-3 px-4">
+        @if (isTerminalStatus()) {
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi fs-4"
+               [class.bi-patch-check-fill]="submission()!.status === 'Issued'"
+               [class.bi-x-circle-fill]="submission()!.status === 'Declined'"
+               [class.bi-clock-history]="submission()!.status === 'Expired'"
+               [class.text-success]="submission()!.status === 'Issued'"
+               [class.text-danger]="submission()!.status === 'Declined'"
+               [class.text-secondary]="submission()!.status === 'Expired'"></i>
+            <div>
+              <div class="fw-semibold">Submission {{ submission()!.status }}</div>
+              <div class="text-muted small">
+                @if (submission()!.status === 'Issued') { Policy has been issued and is now in force. }
+                @else if (submission()!.status === 'Declined') { This submission has been declined by underwriting. }
+                @else { This submission has expired. }
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="workflow-stepper d-flex align-items-center gap-0">
+            @for (step of workflowSteps; track step.label; let i = $index; let last = $last) {
+              <div class="workflow-step d-flex flex-column align-items-center"
+                   [class.completed]="i < workflowStep()"
+                   [class.active]="i === workflowStep()">
+                <div class="step-circle">
+                  @if (i < workflowStep()) {
+                    <i class="bi bi-check-lg text-white"></i>
+                  } @else {
+                    <i class="bi {{ step.icon }}" [class.text-white]="i === workflowStep()" [class.text-muted]="i > workflowStep()"></i>
+                  }
+                </div>
+                <div class="step-label small mt-1 text-nowrap"
+                     [class.fw-semibold]="i === workflowStep()"
+                     [class.text-primary]="i === workflowStep()"
+                     [class.text-success]="i < workflowStep()"
+                     [class.text-muted]="i > workflowStep()">
+                  {{ step.label }}
+                </div>
+              </div>
+              @if (!last) {
+                <div class="step-connector flex-grow-1"
+                     [class.completed]="i < workflowStep()"></div>
+              }
+            }
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-3">
       <li class="nav-item">
