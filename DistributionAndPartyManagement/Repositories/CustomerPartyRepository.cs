@@ -25,10 +25,12 @@ namespace DistributionAndPartyManagement.Repositories
 			var query = _context.CustomerParties.AsQueryable();
 
 			if (!string.IsNullOrWhiteSpace(createdByUserId))
-				query = query.Where(c => c.CreatedByUserId == createdByUserId);
+				// Include the agent's own parties plus any legacy parties that pre-date owner tracking (null).
+				query = query.Where(c => c.CreatedByUserId == createdByUserId || c.CreatedByUserId == null);
 
 			if (!string.IsNullOrWhiteSpace(name))
-				query = query.Where(c => c.Name.Contains(name));
+				// Match against both the party name and the party ID so users can search either way.
+				query = query.Where(c => c.Name.Contains(name) || c.PartyID.Contains(name));
 
 			if (!string.IsNullOrWhiteSpace(partyType))
 				query = query.Where(c => c.PartyType == partyType);

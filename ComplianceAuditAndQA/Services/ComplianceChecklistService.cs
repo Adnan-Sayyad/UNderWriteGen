@@ -126,9 +126,14 @@ namespace ComplianceAuditAndQA.Services
 
             if (dto.Status is "Completed")
             {
-                var message = $"Compliance checklist '{checklist.ChecklistId}' for submission '{checklist.SubmissionId}' is now Completed.";
-                _ = _notifications.BroadcastAsync("Compliance", message, "Compliance");
+                // Auto-advance submission to Issued — policy is now in force.
+                _ = _submissionClient.UpdateStatusAsync(checklist.SubmissionId, "Issued");
+
+                var message = $"Compliance checklist '{checklist.ChecklistId}' for submission '{checklist.SubmissionId}' is Completed. Policy is now Issued.";
+                _ = _notifications.BroadcastAsync("Compliance",  message, "Compliance");
                 _ = _notifications.BroadcastAsync("Underwriter", message, "Compliance");
+                _ = _notifications.BroadcastAsync("Agent",       message, "Compliance");
+                _ = _notifications.BroadcastAsync("Operations",  message, "Compliance");
             }
 
             return MapToDto(checklist);

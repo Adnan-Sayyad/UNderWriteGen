@@ -53,6 +53,11 @@ namespace RulesScoringAndReferralMatrix.DTOs
         public Guid SubmissionID { get; set; }
         public IEnumerable<RuleEvaluationResultDto> Results { get; set; } = [];
         public bool HasBlockingRules { get; set; }
+        public bool NeedsReferral { get; set; }
+        public string? RequiredAuthority { get; set; }
+        public double? RiskScore { get; set; }
+        public string? RiskBand { get; set; }
+        public string Recommendation { get; set; } = string.Empty;
         public DateTime EvaluatedAt { get; set; }
     }
 }

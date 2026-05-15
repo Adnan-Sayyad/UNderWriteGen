@@ -8,11 +8,16 @@ namespace UnderwritingWorkflowAndDecisions.Services
     {
         private readonly UWWorkflowDbContext _db;
         private readonly INotificationClientService _notificationClient;
+        private readonly ISubmissionClientService _submissionClient;
 
-        public UWDecisionService(UWWorkflowDbContext db, INotificationClientService notificationClient)
+        public UWDecisionService(
+            UWWorkflowDbContext db,
+            INotificationClientService notificationClient,
+            ISubmissionClientService submissionClient)
         {
             _db = db;
             _notificationClient = notificationClient;
+            _submissionClient = submissionClient;
         }
 
         public IEnumerable<UWDecision> GetBySubmission(Guid submissionId) =>
@@ -39,15 +44,20 @@ namespace UnderwritingWorkflowAndDecisions.Services
             _db.UWDecisions.Add(decision);
             _db.SaveChanges();
 
-            // PDF §2.11: UW decisions trigger downstream work. Notify by decision type:
-            //  Approve/Decline → Agent (outcome) + Compliance (audit)
-            //  Refer           → UWManager
-            //  MoreInfo        → Agent (need to respond) + UWAssistant (chase docs)
             var message = $"UW Decision '{dto.Decision}' recorded for submission '{dto.SubmissionID}'. Reason: {dto.Reason}";
             switch (dto.Decision)
             {
                 case "Approve":
+                    // Auto-advance submission to Approved so PricingAnalyst can generate a quote.
+                    _ = _submissionClient.UpdateStatusAsync(dto.SubmissionID, "Approved");
+                    _ = _notificationClient.BroadcastAsync("Agent",          message, "Compliance");
+                    _ = _notificationClient.BroadcastAsync("PricingAnalyst", message, "Quote");
+                    _ = _notificationClient.BroadcastAsync("Operations",     message, "Compliance");
+                    _ = _notificationClient.BroadcastAsync("Compliance",     message, "Compliance");
+                    break;
                 case "Decline":
+                    // Auto-advance submission to Declined.
+                    _ = _submissionClient.UpdateStatusAsync(dto.SubmissionID, "Declined");
                     _ = _notificationClient.BroadcastAsync("Agent",      message, "Compliance");
                     _ = _notificationClient.BroadcastAsync("Compliance", message, "Compliance");
                     break;

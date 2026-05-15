@@ -10,11 +10,16 @@ namespace SubmissionAndIntake.Services
     {
         private readonly ICompletenessCheckRepository _repository;
         private readonly INotificationClientService _notifications;
+        private readonly ISubmissionService _submissionService;
 
-        public CompletenessCheckService(ICompletenessCheckRepository repository, INotificationClientService notifications)
+        public CompletenessCheckService(
+            ICompletenessCheckRepository repository,
+            INotificationClientService notifications,
+            ISubmissionService submissionService)
         {
             _repository = repository;
             _notifications = notifications;
+            _submissionService = submissionService;
         }
 
         public async Task<IEnumerable<CompletenessCheckResponseDto>> GetAllChecksAsync()
@@ -55,8 +60,23 @@ namespace SubmissionAndIntake.Services
 
             var created = await _repository.CreateAsync(check);
 
-            // PDF §2.11: docs missing alert — flag when a completeness check finds missing items
-            if (!string.IsNullOrWhiteSpace(created.MissingItemsJSON) && created.MissingItemsJSON.Trim() is not "[]" and not "{}")
+            if (isComplete)
+            {
+                // Auto-advance submission to IntakeComplete so the UW queue picks it up.
+                _ = _submissionService.UpdateSubmissionStatusAsync(
+                    dto.SubmissionID,
+                    new UpdateSubmissionStatusDto { Status = SubmissionStatus.IntakeComplete });
+
+                _ = _notifications.BroadcastAsync(
+                    "UWAssistant",
+                    $"Submission '{created.SubmissionID}' passed completeness check and is ready for underwriting review.",
+                    "Compliance");
+                _ = _notifications.BroadcastAsync(
+                    "Underwriter",
+                    $"Submission '{created.SubmissionID}' is IntakeComplete and awaiting risk assessment.",
+                    "Referral");
+            }
+            else
             {
                 _ = _notifications.BroadcastAsync(
                     "Agent",

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RulesScoringAndReferralMatrix.configs.Enums;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
@@ -8,6 +9,7 @@ namespace RulesScoringAndReferralMatrix.Controllers
 {
     [ApiController]
     [Route("api/risk-scores")]
+    [Authorize(Roles = "Underwriter,UWAssistant,Admin")]
     public class RiskScoresController : ControllerBase
     {
         private readonly IRiskScoreService _service;

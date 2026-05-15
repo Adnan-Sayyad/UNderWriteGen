@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SubmissionAndIntake.Configs.Enums;
 using SubmissionAndIntake.Contracts.ServiceContracts;
@@ -7,6 +8,7 @@ namespace SubmissionAndIntake.Controllers
 {
     [ApiController]
     [Route("api/submissions")]
+    [Authorize]
     public class SubmissionsController : ControllerBase
     {
         private readonly ISubmissionService _service;
@@ -59,10 +61,18 @@ namespace SubmissionAndIntake.Controllers
 
         // POST /api/submissions
         [HttpPost]
+        [Authorize(Roles = "Agent,Admin")]
         public async Task<IActionResult> Create([FromBody] CreateSubmissionDto dto)
         {
-            var created = await _service.CreateSubmissionAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { submissionId = created.SubmissionID }, created);
+            try
+            {
+                var created = await _service.CreateSubmissionAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { submissionId = created.SubmissionID }, created);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, message = ex.Message });
+            }
         }
 
         // PUT /api/submissions/{submissionId}
@@ -76,6 +86,7 @@ namespace SubmissionAndIntake.Controllers
 
         // PATCH /api/submissions/{submissionId}/status
         [HttpPatch("{submissionId:guid}/status")]
+        [Authorize(Policy = "InternalOrAuthenticated")]
         public async Task<IActionResult> UpdateStatus(Guid submissionId, [FromBody] UpdateSubmissionStatusDto dto)
         {
             var updated = await _service.UpdateSubmissionStatusAsync(submissionId, dto);
@@ -85,6 +96,7 @@ namespace SubmissionAndIntake.Controllers
 
         // DELETE /api/submissions/{submissionId}
         [HttpDelete("{submissionId:guid}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(Guid submissionId)
         {
             var deleted = await _service.DeleteSubmissionAsync(submissionId);

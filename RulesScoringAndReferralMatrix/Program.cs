@@ -1,5 +1,8 @@
+using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using RulesScoringAndReferralMatrix.Contracts.RepositoryContracts;
 using RulesScoringAndReferralMatrix.Contracts.ServiceContracts;
 using RulesScoringAndReferralMatrix.Data;
@@ -33,6 +36,24 @@ builder.Services.AddScoped<IRiskScoreService, RiskScoreService>();
 builder.Services.AddScoped<IReferralMatrixService, ReferralMatrixService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 
+// JWT Authentication
+var jwtKey = builder.Configuration["Jwt:SecretKey"]!;
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer           = true,
+            ValidateAudience         = true,
+            ValidateLifetime         = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
+            ValidAudience            = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        };
+    });
+builder.Services.AddAuthorization();
+
 // Inter-service HTTP clients
 var notificationApiUrl = builder.Configuration["Services:NotificationApi"];
 if (string.IsNullOrWhiteSpace(notificationApiUrl))
@@ -53,6 +74,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

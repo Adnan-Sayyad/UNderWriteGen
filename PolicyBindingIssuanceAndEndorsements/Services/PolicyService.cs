@@ -9,15 +9,18 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
         private readonly PolicyDbContext _db;
         private readonly ISubmissionClientService _submissionClient;
         private readonly INotificationClientService _notificationClient;
+        private readonly IComplianceClientService _complianceClient;
 
         public PolicyService(
             PolicyDbContext db,
             ISubmissionClientService submissionClient,
-            INotificationClientService notificationClient)
+            INotificationClientService notificationClient,
+            IComplianceClientService complianceClient)
         {
             _db = db;
             _submissionClient = submissionClient;
             _notificationClient = notificationClient;
+            _complianceClient = complianceClient;
         }
 
         public IEnumerable<Policy> GetAll() => _db.Policies.ToList();
@@ -61,11 +64,16 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
             _db.Policies.Add(policy);
             _db.SaveChanges();
 
-            // PDF §2.11: policy bound — notify everyone touching downstream work.
+            // Auto-advance submission to PolicyBound.
+            _ = _submissionClient.UpdateStatusAsync(dto.SubmissionID, "PolicyBound");
+
             var message = $"Policy '{policy.PolicyNumber}' has been successfully bound for submission '{dto.SubmissionID}'.";
             _ = _notificationClient.BroadcastAsync("Agent",      message, "Compliance");
             _ = _notificationClient.BroadcastAsync("Operations", message, "Compliance");
             _ = _notificationClient.BroadcastAsync("Compliance", message, "Compliance");
+
+            // Auto-create compliance checklist so Compliance team can begin 4-eyes review.
+            _ = _complianceClient.CreateChecklistAsync(dto.SubmissionID);
 
             return policy;
         }

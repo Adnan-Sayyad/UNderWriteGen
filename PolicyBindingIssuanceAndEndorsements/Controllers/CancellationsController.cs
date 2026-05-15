@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PolicyBindingIssuanceAndEndorsements.DTOs;
 using PolicyBindingIssuanceAndEndorsements.Services;
@@ -6,6 +7,7 @@ namespace PolicyBindingIssuanceAndEndorsements.Controllers
 {
     [ApiController]
     [Route("api/cancellations")]
+    [Authorize(Roles = "Operations,Admin")]
     public class CancellationsController : ControllerBase
     {
         private readonly ICancellationService _service;

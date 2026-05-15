@@ -135,6 +135,9 @@ public class QuoteService : IQuoteService, IQuoteApi
             "[EVENT] QuoteGenerated → QuoteId={QId}, Premium={P}, RiskBand={B}, Version={V}, AgentPreferred={A}",
             evt.QuoteId, evt.TotalPremium, riskScore.Band, versionNo, pricingInput.IsPreferredAgent);
 
+        // Auto-advance submission to Quoted so every module sees the correct state.
+        _ = _submissionApi.UpdateSubmissionStatusAsync(submission.Id, "Quoted", ct);
+
         // PDF §2.11: quote generated — agent presents, underwriter reviews.
         var quoteMsg = $"Quote v{versionNo} generated for submission '{submission.Id}'. Total premium: {quote.TotalPremium:C}. Valid until {quote.ValidUntil:yyyy-MM-dd}.";
         _ = _notifications.BroadcastAsync("Agent",       quoteMsg, "Quote");
@@ -178,10 +181,13 @@ public class QuoteService : IQuoteService, IQuoteApi
             "[EVENT] QuoteAccepted → QuoteId={QId}, SubmissionId={SId}, Premium={P}",
             evt.QuoteId, evt.SubmissionId, evt.TotalPremium);
 
-        // PDF §2.11: accepted quote → operations binds the policy.
+        // Submission stays Quoted; Operations proceed to bind the policy.
+        _ = _submissionApi.UpdateSubmissionStatusAsync(quote.SubmissionId, "Quoted", ct);
+
         var msg = $"Quote '{quote.Id}' accepted for submission '{quote.SubmissionId}'. Total premium: {quote.TotalPremium:C}. Ready to bind.";
         _ = _notifications.BroadcastAsync("Operations",  msg, "Quote");
         _ = _notifications.BroadcastAsync("Underwriter", msg, "Quote");
+        _ = _notifications.BroadcastAsync("Agent",       msg, "Quote");
 
         return true;
     }

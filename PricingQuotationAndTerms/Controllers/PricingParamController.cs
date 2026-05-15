@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PricingQuotationAndTerms.Application.DTOs.Requests;
 using PricingQuotationAndTerms.Application.Interfaces;
@@ -7,6 +8,7 @@ namespace PricingQuotationAndTerms.Controllers;
 [ApiController]
 [Route("api/pricing-params")]
 [Produces("application/json")]
+[Authorize(Roles = "PricingAnalyst,Admin")]
 public class PricingParamController : ControllerBase
 {
     private readonly IPricingParamService _service;

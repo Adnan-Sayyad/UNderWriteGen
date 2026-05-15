@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PolicyBindingIssuanceAndEndorsements.DTOs;
 using PolicyBindingIssuanceAndEndorsements.Services;
@@ -6,6 +7,7 @@ namespace PolicyBindingIssuanceAndEndorsements.Controllers
 {
     [ApiController]
     [Route("api/policies")]
+    [Authorize(Roles = "Operations,Compliance,Admin")]
     public class PoliciesController : ControllerBase
     {
         private readonly IPolicyService _service;
@@ -61,6 +63,7 @@ namespace PolicyBindingIssuanceAndEndorsements.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Operations,Admin")]
         public IActionResult Bind([FromBody] CreatePolicyDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.PolicyNumber))

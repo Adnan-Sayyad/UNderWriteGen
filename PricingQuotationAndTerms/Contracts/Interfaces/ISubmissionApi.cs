@@ -9,4 +9,5 @@ namespace PricingQuotationAndTerms.Contracts.Interfaces;
 public interface ISubmissionApi
 {
     Task<SubmissionDto?> GetSubmissionByIdAsync(Guid submissionId, CancellationToken ct = default);
+    Task UpdateSubmissionStatusAsync(Guid submissionId, string status, CancellationToken ct = default);
 }

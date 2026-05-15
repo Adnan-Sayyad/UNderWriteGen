@@ -80,5 +80,47 @@ namespace RulesScoringAndReferralMatrix.Repositories
             await _context.SaveChangesAsync();
             return riskScore;
         }
+
+        public async Task<RiskScore> UpsertScoreAsync(
+            Guid submissionId, double scoreValue, Band band, string modelVersion)
+        {
+            // Load all existing records for this submission
+            var all = await _context.RiskScores
+                .Where(s => s.SubmissionID == submissionId)
+                .OrderBy(s => s.ScoredDate)
+                .ToListAsync();
+
+            RiskScore record;
+
+            if (all.Count > 0)
+            {
+                // Keep the oldest record and remove duplicates
+                record = all[0];
+                if (all.Count > 1)
+                    _context.RiskScores.RemoveRange(all.Skip(1));
+
+                // Update the kept record with the deterministic value
+                record.ScoreValue   = scoreValue;
+                record.Band         = band;
+                record.ModelVersion = modelVersion;
+                record.ScoredDate   = record.ScoredDate; // preserve original date
+            }
+            else
+            {
+                record = new RiskScore
+                {
+                    RiskScoreID  = Guid.NewGuid(),
+                    SubmissionID = submissionId,
+                    ModelVersion = modelVersion,
+                    ScoreValue   = scoreValue,
+                    Band         = band,
+                    ScoredDate   = DateTime.UtcNow,
+                };
+                _context.RiskScores.Add(record);
+            }
+
+            await _context.SaveChangesAsync();
+            return record;
+        }
     }
 }

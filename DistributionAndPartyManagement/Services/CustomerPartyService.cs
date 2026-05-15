@@ -39,13 +39,13 @@ namespace DistributionAndPartyManagement.Services
 
 		public async Task<CustomerPartyResponseDto> CreateAsync(CreateCustomerPartyDto dto, string createdByUserId)
 		{
-			var count = await _repo.GetCountAsync();
-			var sequence = (count + 1).ToString("D4");
-			var date = DateTime.UtcNow.ToString("yyyyMMdd");
+			// Use a short GUID segment so the ID is always unique regardless of deletions or concurrency.
+			var date      = DateTime.UtcNow.ToString("yyyyMMdd");
+			var uniquePart = Guid.NewGuid().ToString("N")[..6].ToUpper(); // e.g. "A3B4C5"
 
 			var customer = new CustomerParty
 			{
-				PartyID = $"PTY-{date}-{sequence}",
+				PartyID = $"PTY-{date}-{uniquePart}",
 				PartyType = dto.PartyType.Trim(),
 				Name = dto.Name.Trim(),
 				DOBIncorporation = dto.DOBIncorporation,

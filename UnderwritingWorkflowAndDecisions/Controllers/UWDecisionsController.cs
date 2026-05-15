@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UnderwritingWorkflowAndDecisions.DTOs;
 using UnderwritingWorkflowAndDecisions.Services;
@@ -6,6 +7,7 @@ namespace UnderwritingWorkflowAndDecisions.Controllers
 {
     [ApiController]
     [Route("api/uw-decisions")]
+    [Authorize(Roles = "Underwriter,UWAssistant,Admin")]
     public class UWDecisionsController : ControllerBase
     {
         private readonly IUWDecisionService _service;
@@ -37,6 +39,7 @@ namespace UnderwritingWorkflowAndDecisions.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Underwriter,Admin")]
         public IActionResult Add([FromBody] CreateUWDecisionDto dto)
         {
             var validTypes = new[] { "Approve", "Decline", "Refer", "MoreInfo" };
@@ -48,6 +51,7 @@ namespace UnderwritingWorkflowAndDecisions.Controllers
         }
 
         [HttpPut("{decisionId:guid}")]
+        [Authorize(Roles = "Underwriter,Admin")]
         public IActionResult Update(Guid decisionId, [FromBody] UpdateUWDecisionDto dto)
         {
             var validTypes = new[] { "Approve", "Decline", "Refer", "MoreInfo" };
