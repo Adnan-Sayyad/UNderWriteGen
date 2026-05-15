@@ -10,8 +10,8 @@ export const PRODUCT_LINES: Lookup[] = [
 export const USER_ROLES: Lookup[] = [
   { value: 'Agent',       label: 'Agent / Broker' },
   { value: 'Underwriter', label: 'Underwriter' },
-  { value: 'Assistant',   label: 'UW Assistant' },
-  { value: 'Pricing',     label: 'Pricing / Actuarial' },
+  { value: 'UWAssistant',    label: 'UW Assistant' },
+  { value: 'PricingAnalyst', label: 'Pricing / Actuarial' },
   { value: 'Compliance',  label: 'Compliance / QA' },
   { value: 'Operations',  label: 'Operations / Policy Admin' },
   { value: 'Admin',       label: 'Administrator' },

@@ -233,7 +233,7 @@ export class QuoteDetailPage implements OnInit {
   }
 
   canManage(): boolean {
-    return this.auth.hasRole('Admin', 'Underwriter', 'Pricing');
+    return this.auth.hasRole('Admin', 'Underwriter', 'PricingAnalyst');
   }
 
   isExpiredDate(): boolean {
