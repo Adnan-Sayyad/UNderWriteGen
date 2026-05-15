@@ -106,6 +106,7 @@ export class AuthService {
     localStorage.removeItem(environment.tokenKey);
     localStorage.removeItem(environment.refreshTokenKey);
     localStorage.removeItem('uwpro_user');
+    localStorage.removeItem('uwpro_my_agent_id');   // clear agent cache on logout
     this.currentUser.set(null);
     this.router.navigate(['/auth/login']);
   }

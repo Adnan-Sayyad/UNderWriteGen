@@ -72,7 +72,7 @@
               @for (p of filtered(); track p.policyId) {
                 <tr>
                   <td class="fw-semibold font-monospace small">{{ p.policyNumber }}</td>
-                  <td><span class="badge bg-primary">{{ p.productLine }}</span></td>
+                  <td><span class="badge" [ngClass]="productClass(p.productLine)">{{ p.productLine }}</span></td>
                   <td class="small text-muted font-monospace">{{ p.submissionId | slice:0:8 }}…</td>
                   <td class="small text-muted">{{ p.inceptionDate | date:'mediumDate' }}</td>
                   <td class="small text-muted">{{ p.expiryDate | date:'mediumDate' }}</td>
@@ -110,64 +110,128 @@
 
 <!-- Bind Policy Modal -->
 @if (showBindModal()) {
-  <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.4)">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header border-0">
-          <h5 class="modal-title fs-6 fw-semibold">
-            <i class="bi bi-link-45deg me-2 text-success"></i>Bind Policy from Submission
-          </h5>
-          <button type="button" class="btn-close" (click)="closeBindModal()"></button>
-        </div>
-        <div class="modal-body">
-          <div class="alert alert-info d-flex gap-2 py-2 mb-3">
-            <i class="bi bi-info-circle-fill"></i>
-            <small>Fill in all fields to create and bind a new policy.</small>
+  <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:560px">
+      <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+
+        <!-- Header -->
+        <div class="modal-header bg-success text-white py-3 px-4">
+          <div>
+            <h5 class="modal-title fw-bold mb-0">
+              <i class="bi bi-link-45deg me-2"></i>Bind Policy
+            </h5>
+            <small class="opacity-75">Select a quoted submission to create a policy</small>
           </div>
-          <div class="row g-2">
-            <div class="col-12">
-              <label class="form-label small fw-medium">Submission ID <span class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm font-monospace"
-                     placeholder="UUID of the approved submission"
-                     [value]="bindSubId()"
-                     (input)="bindSubId.set($any($event.target).value)" />
-            </div>
-            <div class="col-6">
-              <label class="form-label small fw-medium">Policy Number <span class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm"
-                     placeholder="e.g. POL-2024-001"
-                     [value]="bindPolicyNumber()"
-                     (input)="bindPolicyNumber.set($any($event.target).value)" />
-            </div>
-            <div class="col-6">
-              <label class="form-label small fw-medium">Product Line <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm"
-                      [value]="bindProductLine()"
-                      (change)="bindProductLine.set($any($event.target).value)">
-                @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
-              </select>
-            </div>
-            <div class="col-6">
-              <label class="form-label small fw-medium">Inception Date <span class="text-danger">*</span></label>
-              <input type="date" class="form-control form-control-sm"
-                     [value]="bindInceptionDate()"
-                     (input)="bindInceptionDate.set($any($event.target).value)" />
-            </div>
-            <div class="col-6">
-              <label class="form-label small fw-medium">Expiry Date <span class="text-danger">*</span></label>
-              <input type="date" class="form-control form-control-sm"
-                     [value]="bindExpiryDate()"
-                     (input)="bindExpiryDate.set($any($event.target).value)" />
-            </div>
-          </div>
+          <button type="button" class="btn-close btn-close-white" (click)="closeBindModal()"></button>
         </div>
-        <div class="modal-footer border-0">
-          <button class="btn btn-outline-secondary btn-sm" (click)="closeBindModal()">Cancel</button>
-          <button class="btn btn-success btn-sm" (click)="bindPolicy()" [disabled]="binding()">
-            @if (binding()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-            <i class="bi bi-link-45deg me-1"></i>Bind Policy
+
+        <div class="modal-body p-0">
+
+          <!-- Step 1 -->
+          <div class="px-4 pt-4 pb-3">
+            <div class="step-label mb-3">
+              <span class="step-number">1</span>
+              <span class="fw-semibold">Choose a Quoted Submission</span>
+            </div>
+
+            @if (loadingQuoted()) {
+              <div class="text-center py-4 text-muted">
+                <div class="spinner-border spinner-border-sm text-success me-2"></div>
+                <small>Loading quoted submissions…</small>
+              </div>
+            } @else if (!acceptedQuotes().length) {
+              <div class="empty-pick-state">
+                <i class="bi bi-inbox fs-2 text-muted d-block mb-2"></i>
+                <div class="fw-semibold small">No Accepted quotes found</div>
+                <small class="text-muted">Pricing team must generate & accept a quote first.</small>
+              </div>
+            } @else {
+              <div class="pick-list">
+                @for (q of acceptedQuotes(); track q.quoteId) {
+                  <div class="pick-item" [class.active]="bindQuoteId() === q.quoteId"
+                       (click)="onQuoteSelect(q.quoteId)">
+                    <div class="pick-check">
+                      @if (bindQuoteId() === q.quoteId) {
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                      } @else {
+                        <i class="bi bi-circle text-muted"></i>
+                      }
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="fw-semibold" style="font-size:.82rem">
+                          {{ q.quoteRef || (q.quoteId | slice:0:12) + '…' }}
+                        </span>
+                        <span class="badge bg-success">Accepted</span>
+                      </div>
+                      <div class="d-flex gap-3 flex-wrap">
+                        <span class="pick-meta"><i class="bi bi-currency-rupee"></i>{{ q.totalPremium | number:'1.0-0' }} premium</span>
+                        <span class="pick-meta"><i class="bi bi-file-earmark me-1"></i>{{ q.submissionId | slice:0:8 }}…</span>
+                        <span class="pick-meta"><i class="bi bi-calendar3 me-1"></i>Valid till {{ q.validUntil | date:'mediumDate' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Step 2 — shown after selection -->
+          @if (bindQuoteId()) {
+            <div class="border-top mx-4 pt-3 pb-4">
+              <div class="step-label mb-3">
+                <span class="step-number step-number-success">2</span>
+                <span class="fw-semibold">Policy Details</span>
+              </div>
+              <div class="row g-2">
+                <div class="col-7">
+                  <label class="form-label small fw-medium mb-1">Policy Number <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm"
+                         placeholder="e.g. POL-2026-001"
+                         [value]="bindPolicyNumber()"
+                         (input)="bindPolicyNumber.set($any($event.target).value)" />
+                </div>
+                <div class="col-5">
+                  <label class="form-label small fw-medium mb-1">Product Line <span class="text-danger">*</span></label>
+                  <select class="form-select form-select-sm"
+                          [value]="bindProductLine()"
+                          (change)="bindProductLine.set($any($event.target).value)">
+                    @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-medium mb-1">Inception Date <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control form-control-sm"
+                         [value]="bindInceptionDate()"
+                         (input)="bindInceptionDate.set($any($event.target).value)" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-medium mb-1">Expiry Date <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control form-control-sm"
+                         [value]="bindExpiryDate()"
+                         (input)="bindExpiryDate.set($any($event.target).value)" />
+                </div>
+              </div>
+            </div>
+          }
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer bg-light border-top px-4 py-3">
+          <button class="btn btn-outline-secondary btn-sm px-3" (click)="closeBindModal()">
+            Cancel
+          </button>
+          <button class="btn btn-success btn-sm px-4" (click)="bindPolicy()"
+                  [disabled]="binding() || !bindQuoteId() || !bindPolicyNumber().trim() || !bindInceptionDate() || !bindExpiryDate()">
+            @if (binding()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>Binding…
+            } @else {
+              <i class="bi bi-link-45deg me-1"></i>Bind Policy
+            }
           </button>
         </div>
+
       </div>
     </div>
   </div>

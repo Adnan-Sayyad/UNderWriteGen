@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
-import { Submission, Attachment, CompletenessCheck, Questionnaire, ProductLine, SubmissionStatus } from '../models/submission.model';
+import { Submission, Attachment, CompletenessCheck, Questionnaire, ProductLine, SubmissionStatus, Subjectivity, UWNote, RiskScore } from '../models/submission.model';
 import { PagedResponse, ApiResponse } from '../../../shared/models/api-response.model';
 import { PageRequest } from '../../../shared/models/pagination.model';
 import { toPagedResponse } from '../../../shared/models/paging.util';
@@ -49,6 +49,37 @@ function normalizeCompleteness(r: any): CompletenessCheck | null {
   };
 }
 
+function normalizeRiskScore(r: any): RiskScore {
+  return {
+    riskScoreId:  r.riskScoreId  ?? r.RiskScoreID  ?? r.riskScoreID  ?? '',
+    submissionId: r.submissionId ?? r.SubmissionID  ?? '',
+    modelVersion: r.modelVersion ?? r.ModelVersion  ?? '',
+    scoreValue:   r.scoreValue   ?? r.ScoreValue    ?? 0,
+    band:         r.band         ?? r.Band          ?? 'Low',
+    scoredDate:   r.scoredDate   ?? r.ScoredDate    ?? new Date().toISOString(),
+  };
+}
+
+function normalizeNote(r: any): UWNote {
+  return {
+    noteId:       r.noteId      ?? r.noteID      ?? r.NoteID      ?? '',
+    submissionId: r.submissionId ?? r.submissionID ?? r.SubmissionID ?? '',
+    authorId:     r.authorId    ?? r.authorID    ?? r.AuthorID    ?? '',
+    noteText:     r.noteText    ?? r.NoteText    ?? '',
+    createdDate:  r.createdDate ?? r.CreatedDate ?? new Date().toISOString(),
+  };
+}
+
+function normalizeSubjectivity(r: any): Subjectivity {
+  return {
+    subjectivityId: r.subjectivityId ?? r.subjectivityID ?? r.SubjectivityID ?? '',
+    submissionId:   r.submissionId   ?? r.submissionID   ?? r.SubmissionID   ?? '',
+    description:    r.description    ?? r.Description    ?? '',
+    dueDate:        r.dueDate        ?? r.DueDate        ?? '',
+    status:         r.status         ?? r.Status         ?? 'Open',
+  };
+}
+
 function normalizeQuestionnaire(r: any): Questionnaire | null {
   if (!r) return null;
   let responses = r.responsesJSON ?? r.ResponsesJSON ?? {};
@@ -87,13 +118,13 @@ export class SubmissionApiService {
   }
 
   create(payload: Partial<Submission>) {
-    return this.http.post<ApiResponse<Submission>>(`${this.base}/submissions`, {
-      partyID:      payload.partyId,
-      agentID:      payload.agentId,
-      productLine:  payload.productLine,
-      coverageJSON: JSON.stringify(payload.coverageJSON ?? {}),
+    return this.http.post<any>(`${this.base}/submissions`, {
+      partyID:       payload.partyId,
+      agentID:       payload.agentId,
+      productLine:   payload.productLine,
+      coverageJSON:  JSON.stringify(payload.coverageJSON ?? {}),
       inceptionDate: payload.inceptionDate,
-    });
+    }).pipe(map(res => ({ data: normalizeSubmission(res?.data ?? res) } as ApiResponse<Submission>)));
   }
 
   update(id: string, payload: Partial<Submission>) {
@@ -160,10 +191,80 @@ export class SubmissionApiService {
     );
   }
 
-  runCompletenessCheck(submissionId: string) {
+  runCompletenessCheck(submissionId: string, missingItems: string[] = []) {
     return this.http.post<any>(`${this.base}/completeness-checks`, {
       submissionID:     submissionId,
-      missingItemsJSON: '[]',
+      missingItemsJSON: JSON.stringify(missingItems),
     }).pipe(map(res => ({ data: normalizeCompleteness(res?.data ?? res) } as ApiResponse<CompletenessCheck>)));
+  }
+
+  // ── Subjectivities ────────────────────────────────────────────────────────
+
+  getSubjectivities(submissionId: string) {
+    return this.http.get<any>(`${this.base}/subjectivities/${submissionId}`).pipe(
+      map(res => {
+        const items: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: items.map(normalizeSubjectivity) } as ApiResponse<Subjectivity[]>;
+      })
+    );
+  }
+
+  getAllSubjectivities() {
+    return this.http.get<any>(`${this.base}/subjectivities`).pipe(
+      map(res => {
+        const items: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: items.map(normalizeSubjectivity) } as ApiResponse<Subjectivity[]>;
+      })
+    );
+  }
+
+  createSubjectivity(submissionId: string, description: string, dueDate: string) {
+    return this.http.post<any>(`${this.base}/subjectivities`, {
+      submissionID: submissionId,
+      description,
+      dueDate,
+    }).pipe(map(res => ({ data: normalizeSubjectivity(res?.data ?? res) } as ApiResponse<Subjectivity>)));
+  }
+
+  updateSubjectivityStatus(id: string, status: string) {
+    return this.http.patch<any>(`${this.base}/subjectivities/${id}/status`, { status });
+  }
+
+  // ── UW Notes ──────────────────────────────────────────────────────────────
+
+  getNotes(submissionId: string) {
+    return this.http.get<any>(`${this.base}/uw-notes/${submissionId}`).pipe(
+      map(res => {
+        const items: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+        return { data: items.map(normalizeNote) } as ApiResponse<UWNote[]>;
+      })
+    );
+  }
+
+  addNote(submissionId: string, noteText: string) {
+    const authorId = this.auth.currentUser()?.userId ?? '00000000-0000-0000-0000-000000000000';
+    return this.http.post<any>(`${this.base}/uw-notes`, {
+      submissionID: submissionId,
+      authorID:     authorId,
+      noteText,
+    }).pipe(map(res => ({ data: normalizeNote(res?.data ?? res) } as ApiResponse<UWNote>)));
+  }
+
+  deleteNote(noteId: string) {
+    return this.http.delete<ApiResponse<void>>(`${this.base}/uw-notes/${noteId}`);
+  }
+
+  // ── Risk Score ─────────────────────────────────────────────────────────────
+
+  getRiskScore(submissionId: string) {
+    return this.http.get<any>(`${this.base}/risk-scores/${submissionId}`).pipe(
+      map(res => ({ data: normalizeRiskScore(res?.data ?? res) } as ApiResponse<RiskScore>))
+    );
+  }
+
+  calculateRiskScore(submissionId: string) {
+    return this.http.post<any>(`${this.base}/risk-scores/calculate/${submissionId}`, {}).pipe(
+      map(res => ({ data: normalizeRiskScore(res?.data ?? res) } as ApiResponse<RiskScore>))
+    );
   }
 }

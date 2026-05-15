@@ -103,15 +103,15 @@
           <div class="card-body">
             <div class="detail-row">
               <span>Average TAT</span>
-              <strong class="text-warning">{{ r.tAT_AvgHours | number:'1.1-1' }} hrs</strong>
+              <strong class="text-warning">{{ r.taT_AvgHours | number:'1.1-1' }} hrs</strong>
             </div>
             <div class="detail-row">
               <span>Minimum TAT</span>
-              <strong>{{ r.tAT_MinHours | number:'1.1-1' }} hrs</strong>
+              <strong>{{ r.taT_MinHours | number:'1.1-1' }} hrs</strong>
             </div>
             <div class="detail-row">
               <span>Maximum TAT</span>
-              <strong>{{ r.tAT_MaxHours | number:'1.1-1' }} hrs</strong>
+              <strong>{{ r.taT_MaxHours | number:'1.1-1' }} hrs</strong>
             </div>
             <div class="mt-3">
               <div class="progress tat-bar">
@@ -125,8 +125,8 @@
                 </div>
               </div>
               <div class="d-flex justify-content-between small text-muted mt-1">
-                <span>{{ r.tAT_MinHours | number:'1.0-0' }}h min</span>
-                <span>{{ r.tAT_MaxHours | number:'1.0-0' }}h max</span>
+                <span>{{ r.taT_MinHours | number:'1.0-0' }}h min</span>
+                <span>{{ r.taT_MaxHours | number:'1.0-0' }}h max</span>
               </div>
             </div>
           </div>

@@ -56,7 +56,7 @@ export class EndorsementFormPage implements OnInit {
     };
     this.saving.set(true);
     this.svc.createEndorsement(this.policyId(), payload).subscribe({
-      next: () => { this.saving.set(false); this.router.navigate(['/policy', this.policyId()]); },
+      next: () => { this.saving.set(false); this.flash('success', 'Endorsement submitted successfully!'); setTimeout(() => this.router.navigate(['/policy', this.policyId()]), 1500); },
       error: () => { this.saving.set(false); this.flash('danger', 'Failed to create endorsement.'); },
     });
   }

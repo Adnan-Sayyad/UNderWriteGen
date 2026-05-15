@@ -8,7 +8,7 @@ export interface ReportSummaryDto {
   periodStart: string | null;
   periodEnd: string | null;
   hitRatio: number;
-  tAT_AvgHours: number;
+  taT_AvgHours: number;
   referralRate: number;
   avgPremium: number;
 }
@@ -17,8 +17,8 @@ export interface ReportDetailDto extends ReportSummaryDto {
   generatedBy: string;
   quotes: number;
   boundPolicies: number;
-  tAT_MinHours: number;
-  tAT_MaxHours: number;
+  taT_MinHours: number;
+  taT_MaxHours: number;
   totalReferrals: number;
   totalGrossPremium: number;
   riskMix: RiskMixDto;

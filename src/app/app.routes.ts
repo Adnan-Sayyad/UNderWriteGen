@@ -40,9 +40,7 @@ export const routes: Routes = [
       },
       {
         path: 'underwriting',
- 
         canActivate: [roleGuard], data: { roles: ['Underwriter', 'UWAssistant', 'Admin'] },
- 
         loadChildren: () => import('./features/underwriting/underwriting.routes').then(m => m.UNDERWRITING_ROUTES),
       },
       {

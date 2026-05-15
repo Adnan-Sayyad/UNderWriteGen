@@ -58,14 +58,14 @@ export class ReportDetailPage implements OnInit {
 
   // TAT bar widths — clamped to [0, 100] to prevent negative values
   get tatMinBarPct(): number {
-    if (!this.r || this.r.tAT_MaxHours <= 0) return 0;
-    return Math.min(Math.max(Math.round((this.r.tAT_MinHours / this.r.tAT_MaxHours) * 100), 0), 100);
+    if (!this.r || this.r.taT_MaxHours <= 0) return 0;
+    return Math.min(Math.max(Math.round((this.r.taT_MinHours / this.r.taT_MaxHours) * 100), 0), 100);
   }
 
   get tatAvgBarPct(): number {
-    if (!this.r || this.r.tAT_MaxHours <= 0) return 0;
-    const range = this.r.tAT_AvgHours - this.r.tAT_MinHours;
-    return Math.min(Math.max(Math.round((range / this.r.tAT_MaxHours) * 100), 0), 100);
+    if (!this.r || this.r.taT_MaxHours <= 0) return 0;
+    const range = this.r.taT_AvgHours - this.r.taT_MinHours;
+    return Math.min(Math.max(Math.round((range / this.r.taT_MaxHours) * 100), 0), 100);
   }
 
   // Safe date formatter — returns — on invalid or null input

@@ -35,7 +35,13 @@
           </select>
         </div>
         <div class="col text-end">
-          <small class="text-muted">{{ filtered().length }} of {{ totalElements() }} record(s)</small>
+          <small class="text-muted">
+            @if (isAgentRole()) {
+              {{ filtered().length }} record(s)
+            } @else {
+              {{ filtered().length }} of {{ totalElements() }} record(s)
+            }
+          </small>
           <button class="btn btn-sm btn-outline-secondary ms-2" (click)="load()">
             <i class="bi bi-arrow-clockwise"></i>
           </button>
@@ -77,40 +83,11 @@
                   <td class="small text-muted">{{ sub.inceptionDate | date:'mediumDate' }}</td>
                   <td class="small text-muted">{{ sub.createdDate | date:'mediumDate' }}</td>
                   <td><span class="badge" [ngClass]="statusClass(sub.status)">{{ sub.status }}</span></td>
-                  <td style="white-space:nowrap">
-                    <div class="d-flex gap-1">
-                      <a [routerLink]="['/submissions', sub.submissionId]"
-                         class="btn btn-sm btn-outline-primary" title="View">
-                        <i class="bi bi-eye"></i>
-                      </a>
-                      <!-- Compliance quick-log dropdown -->
-                      <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                type="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false"
-                                title="Compliance Actions">
-                          <i class="bi bi-shield-check"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                          <li>
-                            <button class="dropdown-item small" (click)="logBreach(sub.submissionId)">
-                              <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Log Authority Breach
-                            </button>
-                          </li>
-                          <li>
-                            <button class="dropdown-item small" (click)="logException(sub.submissionId)">
-                              <i class="bi bi-bug-fill text-warning me-2"></i>Log Exception
-                            </button>
-                          </li>
-                          <li>
-                            <button class="dropdown-item small" (click)="newChecklist(sub.submissionId)">
-                              <i class="bi bi-list-check text-primary me-2"></i>New Checklist
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
+                  <td>
+                    <a [routerLink]="['/submissions', sub.submissionId]"
+                       class="btn btn-sm btn-outline-primary" title="View">
+                      <i class="bi bi-eye"></i>
+                    </a>
                   </td>
                 </tr>
               }
@@ -118,15 +95,17 @@
           </table>
         </div>
 
-        <app-pagination
-          [page]="currentPage()"
-          [size]="pageSize()"
-          [totalElements]="totalElements()"
-          [totalPages]="totalPages()"
-          [disabled]="loading()"
-          (pageChange)="onPageChange($event)"
-          (sizeChange)="onSizeChange($event)">
-        </app-pagination>
+        @if (!isAgentRole()) {
+          <app-pagination
+            [page]="currentPage()"
+            [size]="pageSize()"
+            [totalElements]="totalElements()"
+            [totalPages]="totalPages()"
+            [disabled]="loading()"
+            (pageChange)="onPageChange($event)"
+            (sizeChange)="onSizeChange($event)">
+          </app-pagination>
+        }
       }
     </div>
   </div>

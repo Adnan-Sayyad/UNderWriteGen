@@ -6,7 +6,7 @@ import { catchError, of } from 'rxjs';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ReportsApiService } from '../../services/reports-api.service';
-import { ReferralRateDto, ReportScope } from '../../models/reports.model';
+import { ReferralRateDto, ReportScope, ReportSummaryDto } from '../../models/reports.model';
 import { ReferralPatternsChart } from '../../components/referral-patterns/referral-patterns';
 import { ReportsNav } from '../../components/reports-nav/reports-nav';
 
@@ -18,13 +18,14 @@ import { ReportsNav } from '../../components/reports-nav/reports-nav';
   styleUrl: './referrals-page.css',
 })
 export class ReferralsPage implements OnInit {
-  readonly data     = signal<ReferralRateDto[]>([]);
-  readonly loading  = signal(false);
-  readonly hasError = signal(false);
+  readonly data      = signal<ReferralRateDto[]>([]);
+  readonly snapshots = signal<ReportSummaryDto[]>([]);
+  readonly loading   = signal(false);
+  readonly hasError  = signal(false);
 
   filterScope = '';
-  filterFrom  = '2025-01-01';
-  filterTo    = '2025-12-31';
+  filterFrom  = `${new Date().getFullYear()}-01-01`;
+  filterTo    = `${new Date().getFullYear()}-12-31`;
 
   readonly scopes: ReportScope[] = ['Product', 'Region', 'Agent', 'Period'];
 
@@ -50,6 +51,18 @@ export class ReferralsPage implements OnInit {
     ).subscribe({
       next: res => { this.data.set(Array.isArray(res) ? res : []); this.loading.set(false); },
       error: () => this.loading.set(false),
+    });
+
+    // Individual dated snapshots for the breakdown table
+    this.svc.getReports(1, 100).pipe(
+      catchError(() => of([] as ReportSummaryDto[]))
+    ).subscribe(res => {
+      let rows = Array.isArray(res) ? res : [];
+      if (f) rows = rows.filter(r => r.generatedDate >= f);
+      if (t) rows = rows.filter(r => r.generatedDate <= t + 'T23:59:59');
+      if (s) rows = rows.filter(r => r.scope === s);
+      rows = rows.filter(r => r.referralRate > 0);
+      this.snapshots.set(rows.sort((a, b) => b.generatedDate.localeCompare(a.generatedDate)));
     });
   }
 

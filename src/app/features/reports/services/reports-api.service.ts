@@ -74,4 +74,11 @@ export class ReportsApiService {
     return this.http.get<UWProductivityDto[]>(`${this.base}/metrics/uw-productivity`,
       { params: this.metricParams(scope, from, to) });
   }
+
+  // Triggers an immediate data collection from all microservices (no scheduler wait)
+  triggerCollect() {
+    return this.http.post<{ collectedAt: string; results: { productLine: string; status: string }[] }>(
+      `${this.base}/collect`, {}
+    );
+  }
 }
