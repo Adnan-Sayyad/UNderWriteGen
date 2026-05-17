@@ -160,7 +160,37 @@ namespace IdentityAndAccessManagement.Seeders
                     CreatedAt   = DateTime.UtcNow
                 },
                 "Operations",
-                "Ops@Michael123!")
+                "Ops@Michael123!"),
+
+                // ── 6. PricingAnalyst ─────────────────────────────
+                (new ApplicationUser
+                {
+                    Id          = Guid.NewGuid(),
+                    FirstName   = "Priya",
+                    LastName    = "Sharma",
+                    Email       = "priya.sharma@underwritepro.com",
+                    PhoneNumber = "9876543210",
+                    Role        = "PricingAnalyst",
+                    Status      = "Active",
+                    CreatedAt   = DateTime.UtcNow
+                },
+                "PricingAnalyst",
+                "Price@Priya123!"),
+
+                // ── 7. UWAssistant ────────────────────────────────
+                (new ApplicationUser
+                {
+                    Id          = Guid.NewGuid(),
+                    FirstName   = "Rahul",
+                    LastName    = "Verma",
+                    Email       = "rahul.verma@underwritepro.com",
+                    PhoneNumber = "8765432109",
+                    Role        = "UWAssistant",
+                    Status      = "Active",
+                    CreatedAt   = DateTime.UtcNow
+                },
+                "UWAssistant",
+                "Uwa@Rahul123!")
             };
         }
     }

@@ -29,7 +29,9 @@ public class HttpSubmissionApi : ISubmissionApi
     {
         try
         {
-            var response = await _http.GetAsync($"submissions/{submissionId}", ct);
+            using var getRequest = new HttpRequestMessage(HttpMethod.Get, $"submissions/{submissionId}");
+            getRequest.Headers.Add("X-Internal-Service-Key", _internalKey);
+            var response = await _http.SendAsync(getRequest, ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
