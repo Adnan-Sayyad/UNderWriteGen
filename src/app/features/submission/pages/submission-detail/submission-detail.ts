@@ -103,6 +103,17 @@ export class SubmissionDetailPage implements OnInit {
     return s === 'Declined' || s === 'Expired' || s === 'Issued';
   });
 
+  // Show "Generate Quote" button only for PricingAnalyst/Admin when submission is Approved
+  readonly canGenerateQuote = computed(() => {
+    const role   = this.auth.currentUser()?.role ?? '';
+    const status = this.submission()?.status ?? '';
+    return (role === 'PricingAnalyst' || role === 'Admin') && status === 'Approved';
+  });
+
+  goToGenerateQuote(): void {
+    this.router.navigate(['/pricing/quotes/new', this.submissionId]);
+  }
+
   readonly selectedDocType     = signal<DocType>('KYC');
   readonly selectedFile        = signal<File | null>(null);
   readonly fileError           = signal<string | null>(null);

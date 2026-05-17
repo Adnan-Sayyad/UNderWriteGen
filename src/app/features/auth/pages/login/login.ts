@@ -56,7 +56,19 @@ export class LoginPage {
 
     const { email, password } = this.form.value;
     this.auth.login({ email: email!, password: password! }).subscribe({
-      next: () => this.router.navigate(['/submissions']),
+      next: () => {
+        const role = this.auth.currentUser()?.role;
+        const destination: Record<string, string> = {
+          Agent:         '/submissions',
+          Underwriter:   '/underwriting',
+          UWAssistant:   '/submissions',
+          PricingAnalyst:'/pricing',
+          Compliance:    '/compliance',
+          Operations:    '/policy',
+          Admin:         '/submissions',
+        };
+        this.router.navigate([destination[role ?? ''] ?? '/submissions']);
+      },
       error: (err) => {
         this.loading.set(false);
         this.error.set(err?.error?.message ?? err?.message ?? 'Invalid email or password.');

@@ -7,6 +7,11 @@
       <span class="badge fs-6" [ngClass]="statusClass(submission()!.status)">
         {{ submission()!.status }}
       </span>
+      @if (canGenerateQuote()) {
+        <button class="btn btn-primary btn-sm ms-2" (click)="goToGenerateQuote()">
+          <i class="bi bi-calculator me-1"></i>Generate Quote
+        </button>
+      }
     }
   </app-page-header>
 

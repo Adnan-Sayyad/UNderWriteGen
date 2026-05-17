@@ -28,27 +28,27 @@
   <!-- ── Stats bar (from session history) ── -->
   @if (recentQuotes().length) {
     <div class="stats-bar mb-4">
-      <div class="stat-card">
+      <div class="stat-card" style="cursor:pointer" [class.ring-active]="filterStatus()===''" (click)="setFilter('')">
         <div class="stat-value">{{ stats().total }}</div>
-        <div class="stat-label">Session Quotes</div>
+        <div class="stat-label">All Quotes</div>
       </div>
-      <div class="stat-card stat-card--draft">
+      <div class="stat-card stat-card--draft" style="cursor:pointer" [class.ring-active]="filterStatus()==='Draft'" (click)="setFilter('Draft')">
         <div class="stat-value">{{ stats().draft }}</div>
         <div class="stat-label">Draft</div>
       </div>
-      <div class="stat-card stat-card--presented">
+      <div class="stat-card stat-card--presented" style="cursor:pointer" [class.ring-active]="filterStatus()==='Presented'" (click)="setFilter('Presented')">
         <div class="stat-value">{{ stats().presented }}</div>
         <div class="stat-label">Presented</div>
       </div>
-      <div class="stat-card stat-card--accepted">
+      <div class="stat-card stat-card--accepted" style="cursor:pointer" [class.ring-active]="filterStatus()==='Accepted'" (click)="setFilter('Accepted')">
         <div class="stat-value">{{ stats().accepted }}</div>
         <div class="stat-label">Accepted</div>
       </div>
-      <div class="stat-card stat-card--declined">
+      <div class="stat-card stat-card--declined" style="cursor:pointer" [class.ring-active]="filterStatus()==='Declined'" (click)="setFilter('Declined')">
         <div class="stat-value">{{ stats().declined }}</div>
         <div class="stat-label">Declined</div>
       </div>
-      <div class="stat-card stat-card--expired">
+      <div class="stat-card stat-card--expired" style="cursor:pointer" [class.ring-active]="filterStatus()==='Expired'" (click)="setFilter('Expired')">
         <div class="stat-value">{{ stats().expired }}</div>
         <div class="stat-label">Expired</div>
       </div>

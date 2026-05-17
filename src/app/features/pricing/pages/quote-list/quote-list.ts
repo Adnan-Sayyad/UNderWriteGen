@@ -194,12 +194,12 @@ export class QuoteListPage implements OnInit {
   removeRecent(quoteId: string): void {
     const updated = this.recentQuotes().filter(q => q.quoteId !== quoteId);
     this.recentQuotes.set(updated);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
   }
 
   clearRecent(): void {
     this.recentQuotes.set([]);
-    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
   }
 
   /* ── helpers ────────────────────────────────────────────────────────── */
@@ -233,7 +233,7 @@ export class QuoteListPage implements OnInit {
   /* ── private ────────────────────────────────────────────────────────── */
   private loadRecent(): void {
     try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
+      const raw = localStorage.getItem(SESSION_KEY);
       this.recentQuotes.set(raw ? JSON.parse(raw) : []);
     } catch { this.recentQuotes.set([]); }
   }
@@ -248,7 +248,7 @@ export class QuoteListPage implements OnInit {
     const deduped = this.recentQuotes().filter(r => r.quoteId !== q.quoteId);
     const updated = [entry, ...deduped].slice(0, MAX_RECENT);
     this.recentQuotes.set(updated);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
   }
 
   private updateRecentStatus(quoteId: string, status: QuoteStatus): void {
@@ -256,7 +256,7 @@ export class QuoteListPage implements OnInit {
       r.quoteId === quoteId ? { ...r, status } : r
     );
     this.recentQuotes.set(updated);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
   }
 
   private flash(type: 'success' | 'danger', text: string): void {
