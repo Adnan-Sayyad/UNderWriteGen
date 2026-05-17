@@ -28,6 +28,7 @@ namespace SubmissionAndIntake.Controllers
 
         // GET /api/submissions/{submissionId}
         [HttpGet("{submissionId:guid}")]
+        [Authorize(Policy = "InternalOrAuthenticated")]
         public async Task<IActionResult> GetById(Guid submissionId)
         {
             var submission = await _service.GetSubmissionByIdAsync(submissionId);
