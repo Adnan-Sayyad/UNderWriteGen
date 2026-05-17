@@ -67,7 +67,6 @@ if (app.Environment.IsDevelopment())
 // Global exception handling middleware
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
