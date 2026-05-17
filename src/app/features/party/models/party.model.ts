@@ -8,7 +8,7 @@ export interface Agent {
   name:         string;
   producerCode: string;
  
-  contactInfo:  string;
+  contactInfo:  string | null;
  
   region:       string;
   status:       AgentStatus;
@@ -20,7 +20,7 @@ export interface CustomerParty {
   name:             string;
   dOBIncorporation: string | null;
  
-  contactInfo:      string;
+  contactInfo:      string | null;
   segment:          Segment;
   status:           PartyStatus;
   createdByUserId?: string | null;
