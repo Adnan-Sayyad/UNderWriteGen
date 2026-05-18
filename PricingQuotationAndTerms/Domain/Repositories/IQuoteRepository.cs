@@ -11,6 +11,7 @@ public interface IQuoteRepository
     Task AddAsync(Quote quote, CancellationToken ct = default);
     Task<Quote?> GetByIdAsync(Guid quoteId, CancellationToken ct = default);
     Task<IEnumerable<Quote>> GetBySubmissionIdAsync(Guid submissionId, CancellationToken ct = default);
+    Task<IEnumerable<Quote>> GetByStatusAsync(string? status, CancellationToken ct = default);
     Task UpdateAsync(Quote quote, CancellationToken ct = default);
     Task<int> GetLatestVersionAsync(Guid submissionId, CancellationToken ct = default);
 }

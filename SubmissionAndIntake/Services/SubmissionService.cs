@@ -1,3 +1,4 @@
+using System.Text.Json;
 using SubmissionAndIntake.Configs.Enums;
 using SubmissionAndIntake.Contracts.RepositoryContracts;
 using SubmissionAndIntake.Contracts.ServiceContracts;
@@ -11,15 +12,18 @@ namespace SubmissionAndIntake.Services
         private readonly ISubmissionRepository _repository;
         private readonly IDistributionValidationService _distributionValidation;
         private readonly INotificationClientService _notifications;
+        private readonly IQuestionnaireRepository _questionnaireRepo;
 
         public SubmissionService(
             ISubmissionRepository repository,
             IDistributionValidationService distributionValidation,
-            INotificationClientService notifications)
+            INotificationClientService notifications,
+            IQuestionnaireRepository questionnaireRepo)
         {
             _repository = repository;
             _distributionValidation = distributionValidation;
             _notifications = notifications;
+            _questionnaireRepo = questionnaireRepo;
         }
 
         public async Task<IEnumerable<SubmissionResponseDto>> GetAllSubmissionsAsync()
@@ -31,7 +35,38 @@ namespace SubmissionAndIntake.Services
         public async Task<SubmissionResponseDto?> GetSubmissionByIdAsync(Guid id)
         {
             var submission = await _repository.GetByIdAsync(id);
-            return submission is null ? null : MapToResponseDto(submission);
+            if (submission is null) return null;
+
+            var dto = MapToResponseDto(submission);
+
+            // Enrich with questionnaire data (SumInsured, OccupationType etc.)
+            var questionnaires = await _questionnaireRepo.GetBySubmissionIdAsync(id);
+            var latest = questionnaires.OrderByDescending(q => q.CompletedDate).FirstOrDefault();
+            if (latest is not null && !string.IsNullOrWhiteSpace(latest.ResponsesJSON))
+            {
+                try
+                {
+                    var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var q = JsonSerializer.Deserialize<QuestionnaireResponses>(latest.ResponsesJSON, opts);
+                    if (q is not null)
+                    {
+                        dto.SumInsured         = q.SumInsured;
+                        dto.OccupationType     = q.OccupationType ?? string.Empty;
+                        dto.PolicyTenureMonths = q.PolicyTenureMonths > 0 ? q.PolicyTenureMonths : 12;
+                    }
+                }
+                catch { /* ignore parse errors — SumInsured stays 0 */ }
+            }
+
+            return dto;
+        }
+
+        // Local helper to parse questionnaire ResponsesJSON
+        private sealed class QuestionnaireResponses
+        {
+            public decimal SumInsured         { get; set; }
+            public string? OccupationType     { get; set; }
+            public int     PolicyTenureMonths { get; set; }
         }
 
         public async Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsByAgentIdAsync(string agentId)

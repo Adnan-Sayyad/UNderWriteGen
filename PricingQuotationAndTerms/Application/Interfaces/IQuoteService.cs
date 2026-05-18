@@ -12,5 +12,6 @@ public interface IQuoteService
     Task<bool>                       UpdateStatusAsync(Guid quoteId, UpdateQuoteStatusRequest request, CancellationToken ct = default);
     Task<bool>                       UpdateTermsAsync(UpdateQuoteTermsRequest request, CancellationToken ct = default);
     Task<IEnumerable<QuoteResponse>> GetQuotesBySubmissionIdAsync(Guid submissionId, CancellationToken ct = default);
+    Task<IEnumerable<QuoteResponse>> GetAllQuotesAsync(string? status, CancellationToken ct = default);
     Task<bool>                       IsQuoteAcceptedAsync(Guid quoteId, CancellationToken ct = default);
 }

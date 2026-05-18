@@ -13,16 +13,26 @@ namespace RulesScoringAndReferralMatrix.Controllers
     public class RiskScoresController : ControllerBase
     {
         private readonly IRiskScoreService _service;
+        private readonly IConfiguration _config;
 
-        public RiskScoresController(IRiskScoreService service)
+        public RiskScoresController(IRiskScoreService service, IConfiguration config)
         {
             _service = service;
+            _config  = config;
         }
 
         // GET /api/risk-scores/{submissionId}
+        // Accepts JWT (UW/Admin) OR X-Internal-Service-Key (Pricing service).
         [HttpGet("{submissionId:guid}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetLatestBySubmissionId(Guid submissionId)
         {
+            var internalKey = _config["InternalServiceKey"];
+            var headerKey   = Request.Headers["X-Internal-Service-Key"].FirstOrDefault();
+            var isInternal  = !string.IsNullOrEmpty(internalKey) && headerKey == internalKey;
+            var isAuthed    = User.Identity?.IsAuthenticated == true;
+            if (!isInternal && !isAuthed) return Unauthorized();
+
             var score = await _service.GetLatestScoreBySubmissionIdAsync(submissionId);
             if (score is null) return NotFound();
             return Ok(score);

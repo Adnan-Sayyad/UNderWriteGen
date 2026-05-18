@@ -47,15 +47,19 @@ public class HttpSubmissionApi : ISubmissionApi
 
             if (raw is null) return null;
 
-            // Extract SumInsured from coverageJSON e.g. {"sumInsured": 500000, ...}
-            decimal sumInsured = 0;
-            try
+            // SumInsured: prefer the questionnaire-enriched field on the response.
+            // Fall back to parsing CoverageJSON for legacy/migration scenarios.
+            decimal sumInsured = raw.SumInsured;
+            if (sumInsured <= 0)
             {
-                var coverage = JsonSerializer.Deserialize<JsonElement>(raw.CoverageJSON ?? "{}");
-                if (coverage.TryGetProperty("sumInsured", out var si))
-                    sumInsured = si.GetDecimal();
+                try
+                {
+                    var coverage = JsonSerializer.Deserialize<JsonElement>(raw.CoverageJSON ?? "{}");
+                    if (coverage.TryGetProperty("sumInsured", out var si))
+                        sumInsured = si.GetDecimal();
+                }
+                catch { /* leave as 0 if parse fails */ }
             }
-            catch { /* leave as 0 if parse fails */ }
 
             return new SubmissionDto
             {
@@ -64,8 +68,8 @@ public class HttpSubmissionApi : ISubmissionApi
                 AgentId            = raw.AgentID,
                 ProductLine        = raw.ProductLine,
                 SumInsured         = sumInsured,
-                PolicyTenureMonths = 12,          // default — not stored on Submission
-                OccupationType     = "General",   // default — not stored on Submission
+                PolicyTenureMonths = raw.PolicyTenureMonths > 0 ? raw.PolicyTenureMonths : 12,
+                OccupationType     = !string.IsNullOrWhiteSpace(raw.OccupationType) ? raw.OccupationType : "General",
                 InceptionDate      = raw.InceptionDate,
                 CoverageJson       = raw.CoverageJSON ?? string.Empty,
                 IsRenewal          = false
@@ -101,13 +105,17 @@ public class HttpSubmissionApi : ISubmissionApi
     /// </summary>
     private sealed class SubmissionRaw
     {
-        public Guid     SubmissionID  { get; set; }
-        public string   PartyID       { get; set; } = string.Empty;
-        public string   AgentID       { get; set; } = string.Empty;
-        public string   ProductLine   { get; set; } = string.Empty;  // "Life","Health","PnC","Commercial"
-        public string?  CoverageJSON  { get; set; }
-        public DateTime InceptionDate { get; set; }
-        public DateTime CreatedDate   { get; set; }
-        public string   Status        { get; set; } = string.Empty;
+        public Guid     SubmissionID       { get; set; }
+        public string   PartyID            { get; set; } = string.Empty;
+        public string   AgentID            { get; set; } = string.Empty;
+        public string   ProductLine        { get; set; } = string.Empty;
+        public string?  CoverageJSON       { get; set; }
+        public DateTime InceptionDate      { get; set; }
+        public DateTime CreatedDate        { get; set; }
+        public string   Status             { get; set; } = string.Empty;
+        // Questionnaire-enriched fields (added to SubmissionResponseDto)
+        public decimal  SumInsured         { get; set; }
+        public string   OccupationType     { get; set; } = string.Empty;
+        public int      PolicyTenureMonths { get; set; }
     }
 }

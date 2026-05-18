@@ -20,7 +20,9 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
         {
             try
             {
-                var response = await _http.GetAsync($"submissions/{submissionId}", ct);
+                using var request = new HttpRequestMessage(HttpMethod.Get, $"submissions/{submissionId}");
+                request.Headers.Add("X-Internal-Service-Key", _internalKey);
+                var response = await _http.SendAsync(request, ct);
                 if (response.StatusCode == HttpStatusCode.NotFound) return false;
                 return response.IsSuccessStatusCode;
             }

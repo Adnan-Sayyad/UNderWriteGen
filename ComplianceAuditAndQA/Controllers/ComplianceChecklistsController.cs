@@ -10,9 +10,13 @@ namespace ComplianceAuditAndQA.Controllers
     public class ComplianceChecklistsController : ControllerBase
     {
         private readonly IComplianceChecklistService _service;
+        private readonly IConfiguration _config;
 
-        public ComplianceChecklistsController(IComplianceChecklistService service)
-            => _service = service;
+        public ComplianceChecklistsController(IComplianceChecklistService service, IConfiguration config)
+        {
+            _service = service;
+            _config  = config;
+        }
 
         // ── GET /api/compliance-checklists ────────────────────────
         [HttpGet]
@@ -45,10 +49,20 @@ namespace ComplianceAuditAndQA.Controllers
         }
 
         // ── POST /api/compliance-checklists ───────────────────────
+        // Accepts: Compliance/Admin JWT  OR  internal service key (auto-created on policy bind)
         [HttpPost]
-        [Authorize(Roles = "Compliance,Admin")]
+        [AllowAnonymous]
         public async Task<IActionResult> Create([FromBody] CreateComplianceChecklistDto dto)
         {
+            var internalKey = _config["InternalServiceKey"];
+            var headerKey   = Request.Headers["X-Internal-Service-Key"].FirstOrDefault();
+            var isInternal  = !string.IsNullOrEmpty(internalKey) && headerKey == internalKey;
+            var isAuthed    = User.Identity?.IsAuthenticated == true &&
+                              (User.IsInRole("Compliance") || User.IsInRole("Admin"));
+
+            if (!isInternal && !isAuthed)
+                return Unauthorized(new { message = "Access denied. Compliance or Admin role required." });
+
             var data = await _service.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { checklistId = data.ChecklistId },
                 ApiResponseDto<ComplianceChecklistDto>

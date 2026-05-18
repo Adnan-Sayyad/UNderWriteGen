@@ -12,10 +12,12 @@ namespace SubmissionAndIntake.Controllers
     public class SubmissionsController : ControllerBase
     {
         private readonly ISubmissionService _service;
+        private readonly IConfiguration _config;
 
-        public SubmissionsController(ISubmissionService service)
+        public SubmissionsController(ISubmissionService service, IConfiguration config)
         {
             _service = service;
+            _config  = config;
         }
 
         // GET /api/submissions
@@ -27,10 +29,20 @@ namespace SubmissionAndIntake.Controllers
         }
 
         // GET /api/submissions/{submissionId}
+        // Accepts either a valid JWT OR the X-Internal-Service-Key header
+        // (used by Pricing, Policy, and other internal services).
         [HttpGet("{submissionId:guid}")]
-        [Authorize(Policy = "InternalOrAuthenticated")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(Guid submissionId)
         {
+            var internalKey = _config["InternalServiceKey"];
+            var headerKey   = Request.Headers["X-Internal-Service-Key"].FirstOrDefault();
+            var isInternal  = !string.IsNullOrEmpty(internalKey) && headerKey == internalKey;
+            var isAuthed    = User.Identity?.IsAuthenticated == true;
+
+            if (!isInternal && !isAuthed)
+                return Unauthorized();
+
             var submission = await _service.GetSubmissionByIdAsync(submissionId);
             if (submission is null) return NotFound();
             return Ok(submission);
@@ -87,9 +99,17 @@ namespace SubmissionAndIntake.Controllers
 
         // PATCH /api/submissions/{submissionId}/status
         [HttpPatch("{submissionId:guid}/status")]
-        [Authorize(Policy = "InternalOrAuthenticated")]
+        [AllowAnonymous]
         public async Task<IActionResult> UpdateStatus(Guid submissionId, [FromBody] UpdateSubmissionStatusDto dto)
         {
+            var internalKey = _config["InternalServiceKey"];
+            var headerKey   = Request.Headers["X-Internal-Service-Key"].FirstOrDefault();
+            var isInternal  = !string.IsNullOrEmpty(internalKey) && headerKey == internalKey;
+            var isAuthed    = User.Identity?.IsAuthenticated == true;
+
+            if (!isInternal && !isAuthed)
+                return Unauthorized();
+
             var updated = await _service.UpdateSubmissionStatusAsync(submissionId, dto);
             if (updated is null) return NotFound();
             return Ok(updated);

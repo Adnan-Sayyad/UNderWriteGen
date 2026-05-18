@@ -20,7 +20,20 @@ public class QuoteController : ControllerBase
         _logger       = logger;
     }
 
-    
+    // ═══════════════════════════════════════════════════════
+    // GET /api/quotes?status=Accepted
+    // Get all quotes, optionally filtered by status
+    // Used by Policy Desk to list Accepted quotes for binding
+    // ═══════════════════════════════════════════════════════
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllQuotes(
+        [FromQuery] string? status, CancellationToken ct)
+    {
+        var quotes = await _quoteService.GetAllQuotesAsync(status, ct);
+        return Ok(quotes);
+    }
+
     [HttpPost]
     [Authorize(Roles = "PricingAnalyst,Admin")]
     [ProducesResponseType(StatusCodes.Status201Created)]

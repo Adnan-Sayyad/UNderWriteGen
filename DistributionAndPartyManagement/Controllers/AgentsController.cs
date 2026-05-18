@@ -12,16 +12,25 @@ namespace DistributionAndPartyManagement.Controllers
 	public class AgentsController : ControllerBase
 	{
 		private readonly IAgentService _agentService;
+		private readonly IConfiguration _config;
 
-		public AgentsController(IAgentService agentService)
+		public AgentsController(IAgentService agentService, IConfiguration config)
 		{
 			_agentService = agentService;
+			_config       = config;
 		}
 
-		// GET api/agents/AGT-20260415-0001  — all authenticated roles
+		// GET api/agents/AGT-20260415-0001  — all authenticated roles OR internal service key
 		[HttpGet("{agentId}")]
+		[AllowAnonymous]
 		public async Task<IActionResult> GetById(string agentId)
 		{
+			var internalKey = _config["InternalServiceKey"];
+			var headerKey   = Request.Headers["X-Internal-Service-Key"].FirstOrDefault();
+			var isInternal  = !string.IsNullOrEmpty(internalKey) && headerKey == internalKey;
+			var isAuthed    = User.Identity?.IsAuthenticated == true;
+			if (!isInternal && !isAuthed) return Unauthorized();
+
 			var result = await _agentService.GetByIdAsync(agentId);
 			return Ok(ApiResponse<AgentResponseDto>.Ok(result));
 		}

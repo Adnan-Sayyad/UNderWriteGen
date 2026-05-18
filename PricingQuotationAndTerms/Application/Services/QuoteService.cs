@@ -260,6 +260,9 @@ public class QuoteService : IQuoteService, IQuoteApi
         Guid submissionId, CancellationToken ct = default)
         => (await _repo.GetBySubmissionIdAsync(submissionId, ct)).Select(MapToResponse);
 
+    public async Task<IEnumerable<QuoteResponse>> GetAllQuotesAsync(string? status, CancellationToken ct = default)
+        => (await _repo.GetByStatusAsync(status, ct)).Select(MapToResponse);
+
     public async Task<bool> IsQuoteAcceptedAsync(Guid quoteId, CancellationToken ct = default)
     {
         var q = await _repo.GetByIdAsync(quoteId, ct);

@@ -31,6 +31,10 @@ namespace SubmissionAndIntake.DTOs
         public DateTime InceptionDate { get; set; }
         public DateTime CreatedDate { get; set; }
         public SubmissionStatus Status { get; set; }
+        // Questionnaire-derived fields (populated from Questionnaires table on fetch)
+        public decimal SumInsured         { get; set; }
+        public string  OccupationType     { get; set; } = string.Empty;
+        public int     PolicyTenureMonths { get; set; } = 12;
     }
 
     public class UpdateSubmissionStatusDto

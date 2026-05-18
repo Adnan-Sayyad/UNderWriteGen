@@ -9,18 +9,22 @@ public class HttpAgentApi : IAgentApi
 {
     private readonly HttpClient _http;
     private readonly ILogger<HttpAgentApi> _logger;
+    private readonly string _internalKey;
 
-    public HttpAgentApi(HttpClient http, ILogger<HttpAgentApi> logger)
+    public HttpAgentApi(HttpClient http, ILogger<HttpAgentApi> logger, IConfiguration config)
     {
-        _http = http;
-        _logger = logger;
+        _http        = http;
+        _logger      = logger;
+        _internalKey = config["InternalServiceKey"] ?? string.Empty;
     }
 
     public async Task<AgentDto?> GetAgentByIdAsync(string agentId, CancellationToken ct = default)
     {
         try
         {
-            var response = await _http.GetAsync($"agents/{agentId}", ct);
+            using var req = new HttpRequestMessage(HttpMethod.Get, $"agents/{agentId}");
+            req.Headers.Add("X-Internal-Service-Key", _internalKey);
+            var response = await _http.SendAsync(req, ct);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 _logger.LogWarning("Agent not found: {Id}", agentId);

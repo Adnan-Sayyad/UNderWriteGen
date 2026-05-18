@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PricingQuotationAndTerms.Domain.Entities;
 using PricingQuotationAndTerms.Domain.Repositories;
 using PricingQuotationAndTerms.Infrastructure.Data;
+using PricingQuotationAndTerms.SharedKernel.Enums;
 
 namespace PricingQuotationAndTerms.Infrastructure.Repositories;
 
@@ -41,6 +42,18 @@ public class QuoteRepository : IQuoteRepository
             .Where(q => q.SubmissionId == submissionId)
             .OrderByDescending(q => q.VersionNo)
             .ToListAsync(ct);
+    }
+
+    // READ all quotes filtered by status (null = all quotes)
+    public async Task<IEnumerable<Quote>> GetByStatusAsync(string? status, CancellationToken ct = default)
+    {
+        var query = _context.Quotes.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(status) &&
+            Enum.TryParse<QuoteStatus>(status, ignoreCase: true, out var parsed))
+        {
+            query = query.Where(q => q.Status == parsed);
+        }
+        return await query.OrderByDescending(q => q.CreatedAt).ToListAsync(ct);
     }
 
     // UPDATE

@@ -13,21 +13,25 @@ public class HttpRulesApi : IRulesApi
 {
     private readonly HttpClient _http;
     private readonly ILogger<HttpRulesApi> _logger;
+    private readonly string _internalKey;
 
     // Valid band names emitted by the Rules service (JsonStringEnumConverter)
     private static readonly HashSet<string> ValidBands = ["Low", "Medium", "High"];
 
-    public HttpRulesApi(HttpClient http, ILogger<HttpRulesApi> logger)
+    public HttpRulesApi(HttpClient http, ILogger<HttpRulesApi> logger, IConfiguration config)
     {
-        _http   = http;
-        _logger = logger;
+        _http        = http;
+        _logger      = logger;
+        _internalKey = config["InternalServiceKey"] ?? string.Empty;
     }
 
     public async Task<RiskScoreDto?> GetRiskScoreAsync(Guid submissionId, CancellationToken ct = default)
     {
         try
         {
-            var response = await _http.GetAsync($"risk-scores/{submissionId}", ct);
+            using var req = new HttpRequestMessage(HttpMethod.Get, $"risk-scores/{submissionId}");
+            req.Headers.Add("X-Internal-Service-Key", _internalKey);
+            var response = await _http.SendAsync(req, ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {

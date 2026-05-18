@@ -285,7 +285,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
       "UpstreamPathTemplate": "/policies/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH", "DELETE"]
     },
     {
       "DownstreamPathTemplate": "/api/endorsements",
@@ -299,7 +299,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
       "UpstreamPathTemplate": "/endorsements/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH", "DELETE"]
     },
     {
       "DownstreamPathTemplate": "/api/cancellations",
@@ -313,7 +313,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8088 }],
       "UpstreamPathTemplate": "/cancellations/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH"]
     },
     {
       "DownstreamPathTemplate": "/api/renewals",
@@ -342,7 +342,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8089 }],
       "UpstreamPathTemplate": "/compliance-checklists/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH", "DELETE"]
     },
     {
       "DownstreamPathTemplate": "/api/authority-breaches",
@@ -356,7 +356,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8089 }],
       "UpstreamPathTemplate": "/authority-breaches/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH", "DELETE"]
     },
     {
       "DownstreamPathTemplate": "/api/exception-logs",
@@ -370,7 +370,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8089 }],
       "UpstreamPathTemplate": "/exception-logs/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT"]
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "PATCH", "DELETE"]
     },
 
     {
