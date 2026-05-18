@@ -8,6 +8,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { IamApiService, UserDto } from '../../../../core/services/iam-api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { PartyApiService } from '../../../party/services/party-api.service';
 
 type ModalMode = 'create' | 'edit' | 'status' | 'assign-role' | null;
 
@@ -122,6 +123,7 @@ export class UserManagementPage implements OnInit {
   constructor(
     private iam: IamApiService,
     readonly auth: AuthService,
+    private partySvc: PartyApiService,
   ) {}
 
   ngOnInit(): void { this.loadUsers(); }
@@ -185,10 +187,34 @@ export class UserManagementPage implements OnInit {
         this.iam.assignRole({ adminId: this.adminId, userId: newUser.id, roles: [v.role!] })
           .subscribe({
             next: () => {
-              this.saving.set(false);
-              this.closeModal();
-              this.loadUsers();
-              this.flash('success', `User ${newUser.firstName} ${newUser.lastName} created.`);
+              // If role is Agent → also create an Agent record in Distribution service
+              if (v.role === 'Agent') {
+                const fullName = `${v.firstName} ${v.lastName}`;
+                this.partySvc.createAgent({
+                  name:        fullName,
+                  contactInfo: v.email!,
+                  region:      'South India',
+                } as any).subscribe({
+                  next: () => {
+                    this.saving.set(false);
+                    this.closeModal();
+                    this.loadUsers();
+                    this.flash('success', `Agent ${fullName} created with agent profile.`);
+                  },
+                  error: () => {
+                    // User created successfully even if agent record fails
+                    this.saving.set(false);
+                    this.closeModal();
+                    this.loadUsers();
+                    this.flash('success', `User ${newUser.firstName} ${newUser.lastName} created. (Agent profile creation failed — add manually in Agents page.)`);
+                  },
+                });
+              } else {
+                this.saving.set(false);
+                this.closeModal();
+                this.loadUsers();
+                this.flash('success', `User ${newUser.firstName} ${newUser.lastName} created.`);
+              }
             },
             error: err => { this.saving.set(false); this.flash('danger', err?.error?.message ?? 'Role assignment failed.'); },
           });
@@ -257,6 +283,20 @@ export class UserManagementPage implements OnInit {
     this.iam.deleteUser(u.id, this.adminId).subscribe({
       next: () => { this.loadUsers(); this.flash('success', 'User deleted.'); },
       error: err => this.flash('danger', err?.error?.message ?? 'Delete failed.'),
+    });
+  }
+
+  /** Manually creates an Agent profile in the Distribution service for an existing Agent-role user. */
+  createAgentProfile(u: UserDto): void {
+    const fullName = `${u.firstName} ${u.lastName}`.trim();
+    if (!confirm(`Create an Agent profile in Distribution for "${fullName}"?`)) return;
+    this.partySvc.createAgent({
+      name:        fullName,
+      contactInfo: u.email ?? '',
+      region:      'South India',
+    } as any).subscribe({
+      next: () => this.flash('success', `Agent profile created for ${fullName}.`),
+      error: err => this.flash('danger', err?.error?.message ?? err?.error?.Message ?? `Failed to create agent profile for ${fullName}.`),
     });
   }
 

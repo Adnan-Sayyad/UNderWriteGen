@@ -1,8 +1,8 @@
 <div class="d-flex align-items-start justify-content-between mb-3">
   <div>
-    <nav *ngIf="breadcrumbs.length" aria-label="breadcrumb" class="mb-1">
+    <nav *ngIf="visibleCrumbs.length" aria-label="breadcrumb" class="mb-1">
       <ol class="breadcrumb mb-0" style="font-size:.8rem">
-        @for (crumb of breadcrumbs; track crumb.label; let last = $last) {
+        @for (crumb of visibleCrumbs; track crumb.label; let last = $last) {
           <li class="breadcrumb-item" [class.active]="last">
             @if (!last && crumb.route) {
               <a [routerLink]="crumb.route">{{ crumb.label }}</a>

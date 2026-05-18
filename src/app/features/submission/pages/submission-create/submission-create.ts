@@ -118,18 +118,43 @@ export class SubmissionCreatePage implements OnInit {
                 status:       agent.status       ?? agent.Status       ?? 'Active',
                 contactInfo:  agent.contactInfo  ?? '',
               });
+            } else {
+              this.autoSearchAgentByName(user);
             }
           },
-          error: () => {
-            // fallback: show hint text only
-            this.agentSearchText.set(user.name ?? user.email?.split('@')[0] ?? '');
-          },
+          error: () => this.autoSearchAgentByName(user),
         });
       } else {
-        // No cache yet — show hint text so agent can search manually
-        this.agentSearchText.set(user.name ?? user.email?.split('@')[0] ?? '');
+        // No cache yet — auto-search by the logged-in user's name
+        this.autoSearchAgentByName(user);
       }
     }
+  }
+
+  /** Auto-search by the agent's display name and pre-select if exactly one match. */
+  private autoSearchAgentByName(user: any): void {
+    const name = user?.name ?? user?.email?.split('@')[0] ?? '';
+    if (!name) return;
+    this.agentSearchText.set(name);
+    this.searchingAgents.set(true);
+    this.partySvc.getAgents(name).subscribe({
+      next: (res: any) => {
+        const items: Agent[] = Array.isArray(res) ? res
+          : Array.isArray(res?.data) ? res.data
+          : [];
+        this.searchingAgents.set(false);
+        if (items.length === 1) {
+          // Only one match — auto-select silently (no dropdown shown)
+          this.selectAgent(items[0]);
+        } else if (items.length > 1) {
+          // Multiple matches — show dropdown so agent can pick
+          this.agentResults.set(items);
+          this.showAgentDrop.set(true);
+        }
+        // Zero matches — leave search text so agent sees what was searched
+      },
+      error: () => { this.searchingAgents.set(false); },
+    });
   }
 
   onPartySearch(text: string): void {

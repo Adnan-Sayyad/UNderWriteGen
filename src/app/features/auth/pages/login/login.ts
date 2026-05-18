@@ -57,15 +57,16 @@ export class LoginPage {
     const { email, password } = this.form.value;
     this.auth.login({ email: email!, password: password! }).subscribe({
       next: () => {
+        this.loading.set(false);
         const role = this.auth.currentUser()?.role;
         const destination: Record<string, string> = {
-          Agent:         '/submissions',
-          Underwriter:   '/underwriting',
-          UWAssistant:   '/submissions',
-          PricingAnalyst:'/pricing',
-          Compliance:    '/compliance',
-          Operations:    '/policy',
-          Admin:         '/submissions',
+          Agent:          '/submissions',     // manage their own submissions
+          Underwriter:    '/underwriting',    // UW workbench
+          UWAssistant:    '/underwriting',    // assist underwriters
+          PricingAnalyst: '/pricing',         // quotes & pricing params
+          Compliance:     '/compliance',      // checklists & audit
+          Operations:     '/policy',          // policy desk & bind
+          Admin:          '/admin',           // user management & system config
         };
         this.router.navigate([destination[role ?? ''] ?? '/submissions']);
       },

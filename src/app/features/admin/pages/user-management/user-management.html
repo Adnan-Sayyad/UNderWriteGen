@@ -91,6 +91,12 @@
                       <button class="btn btn-sm btn-outline-secondary" title="Assign Role" (click)="openAssignRole(u)">
                         <i class="bi bi-person-badge"></i>
                       </button>
+                      @if (u.role === 'Agent') {
+                        <button class="btn btn-sm btn-outline-success" title="Create Agent Profile in Distribution"
+                                (click)="createAgentProfile(u)">
+                          <i class="bi bi-person-plus-fill"></i>
+                        </button>
+                      }
                       <button class="btn btn-sm" [class]="statusBtnClass(u.status)"
                               [title]="'Status: ' + u.status" (click)="openStatus(u)">
                         <i class="bi" [class]="statusBtnIcon(u.status)"></i>

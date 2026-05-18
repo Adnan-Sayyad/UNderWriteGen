@@ -81,6 +81,10 @@
                     <a [routerLink]="['/policy', p.policyId]" class="btn btn-sm btn-outline-primary me-1" title="View">
                       <i class="bi bi-eye"></i>
                     </a>
+                    <button class="btn btn-sm btn-outline-success me-1" title="Download Cover Note"
+                            (click)="downloadDoc(p)">
+                      <i class="bi bi-file-earmark-arrow-down"></i>
+                    </button>
                     @if (p.status === 'Active') {
                       <a [routerLink]="['/policy', p.policyId, 'endorsement']"
                          class="btn btn-sm btn-outline-secondary" title="Endorsement">
@@ -107,6 +111,73 @@
     </div>
   </div>
 </div>
+
+<!-- Policy Document Ready Modal -->
+@if (showDocModal() && boundPolicy()) {
+  <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.55)">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
+      <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+
+        <div class="modal-header border-0 px-4 pt-4 pb-2">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center"
+                 style="width:48px;height:48px">
+              <i class="bi bi-check-circle-fill text-success fs-4"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0">Policy Bound Successfully!</h5>
+              <small class="text-muted">Your policy cover note is ready to download</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close" (click)="closeDocModal()"></button>
+        </div>
+
+        <div class="modal-body px-4 py-3">
+          <div class="rounded-3 border p-3 bg-light">
+            <div class="row g-2 small">
+              <div class="col-6">
+                <span class="text-muted d-block">Policy Number</span>
+                <span class="fw-semibold font-monospace">{{ boundPolicy()!.policyNumber }}</span>
+              </div>
+              <div class="col-6">
+                <span class="text-muted d-block">Product</span>
+                <span class="fw-semibold">{{ boundPolicy()!.productLine }}</span>
+              </div>
+              <div class="col-6">
+                <span class="text-muted d-block">Inception</span>
+                <span class="fw-semibold">{{ boundPolicy()!.inceptionDate | date:'mediumDate' }}</span>
+              </div>
+              <div class="col-6">
+                <span class="text-muted d-block">Expiry</span>
+                <span class="fw-semibold">{{ boundPolicy()!.expiryDate | date:'mediumDate' }}</span>
+              </div>
+              @if (boundQuote()) {
+                <div class="col-12">
+                  <span class="text-muted d-block">Total Premium</span>
+                  <span class="fw-bold text-success fs-6">₹{{ boundQuote()!.totalPremium | number:'1.2-2' }}</span>
+                </div>
+              }
+            </div>
+          </div>
+          <p class="text-muted small mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            The cover note will open in a new tab. Use your browser's <strong>Print → Save as PDF</strong> to save it.
+          </p>
+        </div>
+
+        <div class="modal-footer border-0 px-4 pb-4 pt-2 gap-2">
+          <button class="btn btn-outline-secondary btn-sm px-3" (click)="closeDocModal()">
+            Close
+          </button>
+          <button class="btn btn-success btn-sm px-4" (click)="downloadPolicyDoc()">
+            <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Cover Note
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+}
 
 <!-- Bind Policy Modal -->
 @if (showBindModal()) {
