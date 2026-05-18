@@ -25,8 +25,8 @@ namespace DistributionAndPartyManagement.Repositories
 			var query = _context.CustomerParties.AsQueryable();
 
 			if (!string.IsNullOrWhiteSpace(createdByUserId))
-				// Include the agent's own parties plus any legacy parties that pre-date owner tracking (null).
-				query = query.Where(c => c.CreatedByUserId == createdByUserId || c.CreatedByUserId == null);
+				// Strict ownership — agents only see parties they created.
+				query = query.Where(c => c.CreatedByUserId == createdByUserId);
 
 			if (!string.IsNullOrWhiteSpace(name))
 				// Match against both the party name and the party ID so users can search either way.

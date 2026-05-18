@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Read(//c/Users/2480129/Desktop/**)",
+      "Bash(npm --version)",
+      "Bash(npx @angular/cli version)",
+      "Bash(findstr \"Angular CLI\")"
+    ]
+  }
+}

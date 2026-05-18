@@ -27,7 +27,7 @@ namespace DistributionAndPartyManagement.Services
 		public async Task<List<CustomerPartyResponseDto>> SearchAsync(
 			string? name, string? partyType, string? segment, string? status, string? createdByUserId = null)
 		{
-			var customers = await _repo.SearchAsync(name, partyType, segmenst, status, createdByUserId);
+			var customers = await _repo.SearchAsync(name, partyType, segment, status, createdByUserId);
 			return customers.Select(MapToDto).ToList();
 		}
 

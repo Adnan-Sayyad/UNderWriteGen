@@ -17,7 +17,9 @@ namespace SubmissionAndIntake.Repositories
 
         public async Task<IEnumerable<Submission>> GetAllAsync()
         {
-            return await _context.Submissions.ToListAsync();
+            return await _context.Submissions
+                .OrderByDescending(s => s.CreatedDate)
+                .ToListAsync();
         }
 
         public async Task<Submission?> GetByIdAsync(Guid id)
