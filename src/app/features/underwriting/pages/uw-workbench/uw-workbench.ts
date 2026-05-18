@@ -110,7 +110,9 @@ export class UwWorkbenchPage implements OnInit {
 
   load(page = this.currentPage()): void {
     this.loading.set(true);
-    this.svc.getAll({ page, size: this.pageSize(), sort: 'createdDate', direction: 'desc' } as any).subscribe({
+    // Load all submissions at once so the client-side status filter (IntakeComplete+)
+    // works across the full dataset, not just a single page.
+    this.svc.getAll({ page: 0, size: 1000, sort: 'createdDate', direction: 'desc' } as any).subscribe({
       next: res => {
         const all = res.content ?? [];
         const uw  = all
@@ -118,9 +120,9 @@ export class UwWorkbenchPage implements OnInit {
           .sort((a: any, b: any) =>
             new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
         this.submissions.set(uw);
-        this.totalPages.set(res.totalPages ?? 1);
+        this.totalPages.set(Math.max(1, Math.ceil(uw.length / this.pageSize())));
         this.totalElements.set(uw.length);
-        this.currentPage.set(page);
+        this.currentPage.set(0);
         this.loading.set(false);
         // Load open subjectivity counts for all submissions
         this.svc.getAllSubjectivities().subscribe({
@@ -369,8 +371,9 @@ export class UwWorkbenchPage implements OnInit {
     return map[s] ?? 'bg-secondary';
   }
 
-  onPageChange(p: number): void { this.currentPage.set(p); this.load(p); }
-  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); this.load(0); }
+  // Data is loaded all-at-once; page/size changes just update the display counters.
+  onPageChange(p: number): void { this.currentPage.set(p); }
+  onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
 
   private flash(type: 'success'|'danger', text: string): void {
     this.alertMsg.set({ type, text });
