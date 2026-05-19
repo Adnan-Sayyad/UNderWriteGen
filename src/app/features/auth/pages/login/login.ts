@@ -68,7 +68,7 @@ export class LoginPage {
           Operations:     '/policy',          // policy desk & bind
           Admin:          '/admin',           // user management & system config
         };
-        this.router.navigate([destination[role ?? ''] ?? '/submissions']);
+        this.router.navigate([destination[role ?? ''] ?? '/access-denied']);
       },
       error: (err) => {
         this.loading.set(false);

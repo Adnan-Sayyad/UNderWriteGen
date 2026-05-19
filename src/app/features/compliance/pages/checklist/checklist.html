@@ -420,15 +420,30 @@
 
       <label class="form-label small fw-medium text-muted text-uppercase" style="letter-spacing:.05em">
         Checklist Items
+        @if (auth.hasRole('Admin', 'Compliance')) {
+          <span class="text-muted fw-normal text-lowercase" style="letter-spacing:normal">
+            — tick items to mark progress
+          </span>
+        }
       </label>
       @if (items().length) {
         <ul class="list-group">
           @for (it of items(); track $index) {
-            <li class="list-group-item d-flex align-items-center gap-2 py-2">
-              <i class="bi fs-5"
-                 [class.bi-check-circle-fill]="it.checked" [class.text-success]="it.checked"
-                 [class.bi-circle]="!it.checked" [class.text-muted]="!it.checked"></i>
-              <span [class.text-decoration-line-through]="it.checked"
+            <li class="list-group-item d-flex align-items-center gap-2 py-2"
+                style="cursor:pointer"
+                (click)="auth.hasRole('Admin','Compliance') && toggleItem($index)">
+              @if (auth.hasRole('Admin', 'Compliance')) {
+                <input type="checkbox" class="form-check-input mt-0 flex-shrink-0"
+                       [checked]="it.checked"
+                       (change)="toggleItem($index)"
+                       (click)="$event.stopPropagation()" />
+              } @else {
+                <i class="bi fs-5 flex-shrink-0"
+                   [class.bi-check-circle-fill]="it.checked" [class.text-success]="it.checked"
+                   [class.bi-circle]="!it.checked"           [class.text-muted]="!it.checked"></i>
+              }
+              <span class="flex-grow-1"
+                    [class.text-decoration-line-through]="it.checked"
                     [class.text-muted]="it.checked">{{ it.item }}</span>
             </li>
           }
@@ -440,6 +455,11 @@
     <div class="modal-panel-footer">
       <button class="btn btn-sm btn-outline-secondary" (click)="closeModal()">Close</button>
       @if (auth.hasRole('Admin', 'Compliance')) {
+        <button class="btn btn-sm btn-outline-success" (click)="saveItems()" [disabled]="saving()">
+          @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          @else { <i class="bi bi-save me-1"></i> }
+          Save Progress
+        </button>
         <button class="btn btn-sm btn-outline-primary" (click)="openStatus(selected()!)">
           <i class="bi bi-pencil-square me-1"></i>Update Status
         </button>

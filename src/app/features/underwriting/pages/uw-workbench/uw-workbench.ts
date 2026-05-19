@@ -310,14 +310,41 @@ export class UwWorkbenchPage implements OnInit {
       decidedBy:    user.userId,
     }).subscribe({
       next: () => {
-        this.submittingDecision.set(false);
-        this.flash('success', `Decision recorded: ${dec}`);
-        if (dec === 'Decline') {
-          this.submissions.update(list => list.filter(s => s.submissionId !== id));
-          this.selected.set(null);
+        this.decisionValue.set('');
+        this.decisionReason.set('');
+
+        // Map the UW decision to the appropriate submission status and update it.
+        const newStatus = dec === 'Approve'  ? 'Approved'
+                        : dec === 'Decline'  ? 'Declined'
+                        : null; // Refer / MoreInfo — leave status unchanged
+
+        if (newStatus) {
+          this.svc.updateStatus(id, newStatus).subscribe({
+            next: () => {
+              // Update in-place so the badge refreshes immediately
+              this.submissions.update(list =>
+                list.map(s => s.submissionId === id
+                  ? { ...s, status: newStatus as any }
+                  : s));
+              this.selected.update(s => s ? { ...s, status: newStatus as any } : s);
+
+              // Declined submissions leave the workbench queue
+              if (newStatus === 'Declined') {
+                this.submissions.update(list => list.filter(s => s.submissionId !== id));
+                this.selected.set(null);
+              }
+
+              this.submittingDecision.set(false);
+              this.flash('success', `Decision recorded: ${dec} — status updated to ${newStatus}.`);
+            },
+            error: () => {
+              this.submittingDecision.set(false);
+              this.flash('success', `Decision recorded: ${dec}. (Status update failed — refresh manually.)`);
+            },
+          });
         } else {
-          this.decisionValue.set('');
-          this.decisionReason.set('');
+          this.submittingDecision.set(false);
+          this.flash('success', `Decision recorded: ${dec}`);
         }
       },
       error: () => { this.submittingDecision.set(false); this.flash('danger', 'Failed to record decision.'); },

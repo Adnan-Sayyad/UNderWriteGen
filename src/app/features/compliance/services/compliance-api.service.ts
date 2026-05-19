@@ -4,7 +4,6 @@ import { environment } from '../../../../environments/environment';
 import { map } from 'rxjs/operators';
 import {
   ComplianceChecklist, CreateChecklistPayload, UpdateChecklistPayload, UpdateChecklistStatusPayload,
-  AuthorityBreach, CreateBreachPayload, UpdateBreachStatusPayload,
   ExceptionLog, CreateExceptionPayload, UpdateExceptionStatusPayload,
 } from '../models/compliance.model';
 
@@ -31,21 +30,6 @@ function unwrapArray<T>(r: any, normalize: (x: any) => T): T[] {
     console.warn('[ComplianceApiService] unwrapArray: unexpected response shape', r);
   }
   return [];
-}
-
-// ── Normalise a raw breach object (handles camelCase & PascalCase keys) ──
-function normalizeBreach(r: any): AuthorityBreach {
-  return {
-    breachId:     r.breachId     ?? r.BreachId     ?? '',
-    submissionId: r.submissionId ?? r.SubmissionId ?? '',
-    breachType:   r.breachType   ?? r.BreachType   ?? '',
-    description:  r.description  ?? r.Description  ?? '',
-    approvedBy:   r.approvedBy   ?? r.ApprovedBy,
-    approvedDate: r.approvedDate ?? r.ApprovedDate,
-    status:       r.status       ?? r.Status       ?? 'Pending',
-    createdAt:    r.createdAt    ?? r.CreatedAt     ?? '',
-    updatedAt:    r.updatedAt    ?? r.UpdatedAt,
-  };
 }
 
 // ── Normalise a raw checklist object ─────────────────────────────────────
@@ -79,7 +63,6 @@ function normalizeException(r: any): ExceptionLog {
 @Injectable({ providedIn: 'root' })
 export class ComplianceApiService {
   private readonly cl = `${environment.apiBaseUrl}/compliance-checklists`;
-  private readonly ab = `${environment.apiBaseUrl}/authority-breaches`;
   private readonly el = `${environment.apiBaseUrl}/exception-logs`;
 
   constructor(private http: HttpClient) {}
@@ -134,51 +117,6 @@ export class ComplianceApiService {
   updateChecklistStatus(id: string, payload: UpdateChecklistStatusPayload) {
     return this.http.patch<any>(`${this.cl}/${id}/status`, { Status: payload.status }).pipe(
       map(r => normalizeChecklist(unwrap<any>(r)))
-    );
-  }
-
-  // ── Authority Breaches ────────────────────────────────────────────────
-  getBreaches() {
-    return this.http.get<any>(this.ab).pipe(
-      map(r => {
-        console.log('[ComplianceAPI] GET breaches raw:', r);
-        const result = unwrapArray<AuthorityBreach>(r, normalizeBreach);
-        console.log('[ComplianceAPI] GET breaches parsed:', result);
-        return result;
-      })
-    );
-  }
-
-  getBreachesByType(breachType: string) {
-    return this.http.get<any>(`${this.ab}/type/${breachType}`).pipe(
-      map(r => unwrapArray<AuthorityBreach>(r, normalizeBreach))
-    );
-  }
-
-  createBreach(payload: CreateBreachPayload) {
-    // Send PascalCase keys — works with both old (no PropertyNameCaseInsensitive) and new backend
-    const body = {
-      SubmissionId: payload.submissionId,
-      BreachType:   payload.breachType,
-      Description:  payload.description,
-    };
-    console.log('[ComplianceAPI] POST breach body:', body);
-    return this.http.post<any>(this.ab, body).pipe(
-      map(r => {
-        console.log('[ComplianceAPI] POST breach response:', r);
-        return normalizeBreach(unwrap<any>(r));
-      })
-    );
-  }
-
-  updateBreachStatus(id: string, payload: UpdateBreachStatusPayload) {
-    const body = {
-      Status:      payload.status,
-      ApprovedBy:  payload.approvedBy,
-      ApprovedDate: payload.approvedDate,
-    };
-    return this.http.patch<any>(`${this.ab}/${id}/status`, body).pipe(
-      map(r => normalizeBreach(unwrap<any>(r)))
     );
   }
 

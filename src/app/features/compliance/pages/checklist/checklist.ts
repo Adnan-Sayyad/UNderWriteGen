@@ -255,6 +255,30 @@ export class ChecklistPage implements OnInit {
     });
   }
 
+  saveItems(): void {
+    const id = this.selected()?.checklistId;
+    if (!id) return;
+    this.saving.set(true);
+    this.svc.updateChecklist(id, {
+      itemsJson:   JSON.stringify(this.items()),
+      completedBy: this.selected()?.completedBy,
+    }).subscribe({
+      next: updated => {
+        // Refresh the in-memory record so progress bars update immediately
+        this.checklists.update(list =>
+          list.map(c => c.checklistId === id ? { ...c, itemsJson: updated.itemsJson } : c)
+        );
+        this.selected.update(c => c ? { ...c, itemsJson: updated.itemsJson } : c);
+        this.saving.set(false);
+        this.flash('success', 'Checklist items saved successfully.');
+      },
+      error: err => {
+        this.saving.set(false);
+        this.flash('danger', this.extractError(err, 'Failed to save checklist items.'));
+      },
+    });
+  }
+
   saveStatus(): void {
     if (!this.selected()) return;
     this.saving.set(true);

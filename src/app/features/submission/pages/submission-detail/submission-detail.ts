@@ -151,11 +151,6 @@ export class SubmissionDetailPage implements OnInit {
     private router: Router,
   ) {}
 
-  logBreach(): void {
-    this.router.navigate(['/compliance/authority-breaches'],
-      { queryParams: { submissionId: this.submissionId } });
-  }
-
   logException(): void {
     this.router.navigate(['/compliance/exceptions'],
       { queryParams: { submissionId: this.submissionId } });

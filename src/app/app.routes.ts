@@ -23,14 +23,19 @@ export const routes: Routes = [
     loadComponent: () => import('./layouts/main-layout/main-layout').then(m => m.MainLayout),
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'submissions', pathMatch: 'full' },
+      { path: '', redirectTo: 'access-denied', pathMatch: 'full' },
 
       {
         path: 'party',
         canActivate: [roleGuard], data: { roles: ['Agent', 'Admin'] },
         loadChildren: () => import('./features/party/party.routes').then(m => m.PARTY_ROUTES),
       },
-      { path: 'submissions',   loadChildren: () => import('./features/submission/submission.routes').then(m => m.SUBMISSION_ROUTES) },
+      {
+        path: 'submissions',
+        canActivate: [roleGuard],
+        data: { roles: ['Agent', 'Underwriter', 'UWAssistant', 'PricingAnalyst', 'Operations', 'Compliance', 'Admin'] },
+        loadChildren: () => import('./features/submission/submission.routes').then(m => m.SUBMISSION_ROUTES),
+      },
       {
         path: 'risk',
         canActivate: [roleGuard], data: { roles: ['Underwriter', 'UWAssistant', 'Admin'] },

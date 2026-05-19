@@ -28,34 +28,6 @@ export interface UpdateChecklistPayload {
 
 export interface UpdateChecklistStatusPayload { status: ChecklistStatus; }
 
-// ── Authority Breach ──────────────────────────────────────────────
-export type BreachType   = 'Authority' | 'RuleOverride' | 'PricingTolerance';
-export type BreachStatus = 'Pending' | 'Approved' | 'Rejected';
-
-export interface AuthorityBreach {
-  breachId:     string;
-  submissionId: string;
-  breachType:   BreachType;
-  description:  string;
-  approvedBy?:  string;
-  approvedDate?: string;
-  status:       BreachStatus;
-  createdAt:    string;
-  updatedAt?:   string;
-}
-
-export interface CreateBreachPayload {
-  submissionId: string;
-  breachType:   BreachType;
-  description:  string;
-}
-
-export interface UpdateBreachStatusPayload {
-  status:      BreachStatus;
-  approvedBy?: string;
-  approvedDate?: string;
-}
-
 // ── Exception Log ─────────────────────────────────────────────────
 export type ExceptionCategory = 'Data' | 'Process' | 'Compliance';
 export type ExceptionStatus   = 'Open' | 'Closed';

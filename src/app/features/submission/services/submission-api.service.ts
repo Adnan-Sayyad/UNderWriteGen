@@ -168,12 +168,16 @@ export class SubmissionApiService {
 
   uploadAttachment(submissionId: string, docType: string, file: File) {
     const uploadedBy = this.auth.currentUser()?.userId ?? 'system';
-    return this.http.post<any>(`${this.base}/attachments`, {
-      submissionID: submissionId,
-      docType,
-      fileURI:    `uploads/${submissionId}/${docType}/${file.name}`,
-      uploadedBy,
-    }).pipe(map(res => ({ data: normalizeAttachment(res?.data ?? res) } as ApiResponse<Attachment>)));
+    // Send real file bytes as multipart/form-data to the /upload endpoint.
+    // The server saves the file to wwwroot/uploads/ and stores the accessible URI.
+    const form = new FormData();
+    form.append('submissionID', submissionId);
+    form.append('docType',      docType);
+    form.append('uploadedBy',   uploadedBy);
+    form.append('file',         file, file.name);
+    return this.http.post<any>(`${this.base}/attachments/upload`, form).pipe(
+      map(res => ({ data: normalizeAttachment(res?.data ?? res) } as ApiResponse<Attachment>))
+    );
   }
 
   deleteAttachment(_submissionId: string, attachmentId: string) {

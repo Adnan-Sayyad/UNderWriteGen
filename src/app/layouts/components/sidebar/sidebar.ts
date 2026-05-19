@@ -26,7 +26,7 @@ export class Sidebar {
    *  UWAssistant    – Risk & Evidence, Rules & Scoring (view), Compliance > Checklists
    *  PricingAnalyst – Create Quote, Quotes, Parameters
    *  Operations     – Rules & Scoring (edit), Policy Desk
-   *  Compliance     – Checklists, Authority Breaches, Exception Log, Reports
+   *  Compliance     – Checklists, Exception Log, Reports
    *  Admin          – Everything (Submissions view-only, Rules view-only)
    */
   readonly navGroups: NavGroup[] = [
@@ -88,9 +88,8 @@ export class Sidebar {
     {
       title: 'Compliance',
       items: [
-        { label: 'Checklists',         icon: 'bi-clipboard2-check',   route: '/compliance/checklists',         roles: ['Compliance', 'UWAssistant', 'Admin'] },
-        { label: 'Authority Breaches', icon: 'bi-shield-exclamation', route: '/compliance/authority-breaches', roles: ['Compliance', 'Admin'] },
-        { label: 'Exception Log',      icon: 'bi-bug',                route: '/compliance/exceptions',         roles: ['Compliance', 'Admin'] },
+        { label: 'Checklists',    icon: 'bi-clipboard2-check', route: '/compliance/checklists',  roles: ['Compliance', 'UWAssistant', 'Admin'] },
+        { label: 'Exception Log', icon: 'bi-bug',              route: '/compliance/exceptions', roles: ['Compliance', 'Admin'] },
       ],
     },
 

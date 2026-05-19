@@ -328,7 +328,12 @@
                       <td class="small font-monospace">{{ a.uploadedBy | slice:0:8 }}…</td>
                       <td class="small text-muted">{{ a.uploadedDate | date:'mediumDate' }}</td>
                       <td class="table-actions">
-                        <a [href]="a.fileUri" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Download">
+                        <a [href]="a.fileUri" target="_blank"
+                           class="btn btn-sm btn-outline-primary me-1" title="View file">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                        <a [href]="'/api/attachments/download/' + a.attachmentId" target="_blank"
+                           class="btn btn-sm btn-outline-secondary me-1" title="Download file">
                           <i class="bi bi-download"></i>
                         </a>
                         <button class="btn btn-sm btn-outline-danger" title="Delete"

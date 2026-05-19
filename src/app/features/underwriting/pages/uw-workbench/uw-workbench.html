@@ -80,12 +80,16 @@
                     <button class="btn btn-sm btn-outline-primary me-1" (click)="selectSubmission(s)" title="View Details">
                       <i class="bi bi-eye"></i>
                     </button>
-                    @if (s.status === 'Quoted') {
+                    @if (s.status === 'Quoted' || s.status === 'PolicyBound') {
                       <a [routerLink]="['/pricing/quotes/new', s.submissionId]"
                          class="btn btn-sm btn-warning text-dark" title="Create Quote in Pricing">
                         <i class="bi bi-calculator me-1"></i>→ Pricing
                       </a>
-                    } @else {
+                    } @else if (s.status === 'Approved') {
+                      <span class="badge bg-success py-2 px-3">
+                        <i class="bi bi-check-circle me-1"></i>Approved
+                      </span>
+                    } @else if (s.status === 'IntakeComplete' || s.status === 'UnderReview') {
                       <a [routerLink]="['/underwriting/decision', s.submissionId]"
                          class="btn btn-sm btn-primary" title="Make Decision">
                         <i class="bi bi-check2-circle me-1"></i>Decide
@@ -128,12 +132,16 @@
             <span class="badge bg-light text-dark">{{ selected()!.status }}</span>
           </div>
           <div class="d-flex gap-2 ms-auto align-items-center">
-            @if (selected()!.status === 'Quoted') {
+            @if (selected()!.status === 'Quoted' || selected()!.status === 'PolicyBound') {
               <a [routerLink]="['/pricing/quotes/new', selected()!.submissionId]"
                  class="btn btn-sm btn-warning text-dark fw-semibold" (click)="closeDetail()">
                 <i class="bi bi-calculator me-1"></i>→ Create Quote in Pricing
               </a>
-            } @else {
+            } @else if (selected()!.status === 'Approved') {
+              <span class="badge bg-success py-2 px-3 fs-6">
+                <i class="bi bi-check-circle me-1"></i>Approved
+              </span>
+            } @else if (selected()!.status === 'IntakeComplete' || selected()!.status === 'UnderReview') {
               <a [routerLink]="['/underwriting/decision', selected()!.submissionId]"
                  class="btn btn-sm btn-warning text-dark" (click)="closeDetail()">
                 <i class="bi bi-check2-circle me-1"></i>Make Decision
@@ -499,7 +507,18 @@
                           <td><span class="badge bg-secondary fs-6">{{ a.docType }}</span></td>
                           <td class="small font-monospace">{{ a.uploadedBy | slice:0:8 }}…</td>
                           <td class="small text-muted">{{ a.uploadedDate | date:'medium' }}</td>
-                          <td><a [href]="a.fileUri" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>View</a></td>
+                          <td>
+                            <a [href]="a.fileUri" target="_blank"
+                               class="btn btn-sm btn-outline-primary me-1"
+                               title="Open file in new tab">
+                              <i class="bi bi-eye me-1"></i>View
+                            </a>
+                            <a [href]="'/api/attachments/download/' + a.attachmentId" target="_blank"
+                               class="btn btn-sm btn-outline-secondary"
+                               title="Download file">
+                              <i class="bi bi-download me-1"></i>Download
+                            </a>
+                          </td>
                         </tr>
                       }
                     </tbody>
@@ -796,12 +815,12 @@
              class="btn btn-outline-secondary" (click)="closeDetail()">
             <i class="bi bi-eye me-1"></i>Full Submission
           </a>
-          @if (selected()!.status === 'Quoted') {
+          @if (selected()!.status === 'Quoted' || selected()!.status === 'PolicyBound') {
             <a [routerLink]="['/pricing/quotes/new', selected()!.submissionId]"
                class="btn btn-warning text-dark fw-semibold" (click)="closeDetail()">
               <i class="bi bi-calculator me-1"></i>→ Create Quote in Pricing
             </a>
-          } @else {
+          } @else if (selected()!.status === 'IntakeComplete' || selected()!.status === 'UnderReview') {
             <a [routerLink]="['/underwriting/decision', selected()!.submissionId]"
                class="btn btn-primary" (click)="closeDetail()">
               <i class="bi bi-check2-circle me-1"></i>Make Decision

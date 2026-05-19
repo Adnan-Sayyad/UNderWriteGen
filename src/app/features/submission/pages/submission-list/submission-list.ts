@@ -72,10 +72,6 @@ export class SubmissionListPage implements OnInit {
     private partySvc: PartyApiService,
   ) {}
 
-  logBreach(submissionId: string): void {
-    this.router.navigate(['/compliance/authority-breaches'], { queryParams: { submissionId } });
-  }
-
   logException(submissionId: string): void {
     this.router.navigate(['/compliance/exceptions'], { queryParams: { submissionId } });
   }
