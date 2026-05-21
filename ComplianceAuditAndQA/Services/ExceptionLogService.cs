@@ -57,10 +57,6 @@ namespace ComplianceAuditAndQA.Services
                 .OrderByDescending(e => e.LoggedDate)
                 .ToListAsync();
 
-            if (!list.Any())
-                throw new KeyNotFoundException(
-                    $"No exception logs found for submission '{submissionId}'.");
-
             return list.Select(MapToDto);
         }
 
@@ -72,10 +68,6 @@ namespace ComplianceAuditAndQA.Services
                 .Where(e => e.Category == category && !e.IsDeleted)
                 .OrderByDescending(e => e.LoggedDate)
                 .ToListAsync();
-
-            if (!list.Any())
-                throw new KeyNotFoundException(
-                    $"No exception logs found for category '{category}'.");
 
             return list.Select(MapToDto);
         }

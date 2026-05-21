@@ -71,10 +71,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// ── CORS ──────────────────────────────────────────────────────
+builder.Services.AddCors(opts =>
+    opts.AddDefaultPolicy(p =>
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
 // ── DI: Service layer ─────────────────────────────────────────
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
 var app = builder.Build();
+
+// ── Auto-apply pending migrations on startup ──────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 // ── Middleware pipeline ───────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
@@ -86,7 +98,7 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = "swagger";
 });
 
-app.UseHttpsRedirection();
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

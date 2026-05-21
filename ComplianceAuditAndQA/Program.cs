@@ -41,6 +41,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(opts =>
+    opts.AddDefaultPolicy(p =>
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
 // ── Services ──────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IComplianceChecklistService, ComplianceChecklistService>();
 builder.Services.AddScoped<IAuthorityBreachService,     AuthorityBreachService>();
@@ -111,6 +115,13 @@ builder.Services.AddSwaggerGen(options =>
 // ── Build ─────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
+// ── Auto-migrate on startup ───────────────────────────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ComplianceDbContext>();
+    db.Database.Migrate();
+}
+
 // ── Seed data (run with: dotnet run seed-data) ────────────────────────────
 if (args.Contains("seed-data"))
 {
@@ -162,6 +173,7 @@ app.UseSwaggerUI(options =>
 });
 
 // ── Pipeline ──────────────────────────────────────────────────────────────
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

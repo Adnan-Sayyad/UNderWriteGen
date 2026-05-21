@@ -14,6 +14,14 @@ namespace PolicyBindingIssuanceAndEndorsements.Controllers
 
         public PoliciesController(IPolicyService service) => _service = service;
 
+        // GET api/policies/generate-number — returns a fresh unique policy number
+        [HttpGet("generate-number")]
+        public async Task<IActionResult> GenerateNumber()
+        {
+            var number = await _service.GenerateUniquePolicyNumberAsync();
+            return Ok(new { policyNumber = number });
+        }
+
         [HttpGet]
         public IActionResult GetAll() => Ok(_service.GetAll());
 
@@ -64,19 +72,31 @@ namespace PolicyBindingIssuanceAndEndorsements.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Operations,Admin")]
-        public IActionResult Bind([FromBody] CreatePolicyDto dto)
+        public async Task<IActionResult> Bind([FromBody] CreatePolicyDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.PolicyNumber))
-                return BadRequest(new { message = "PolicyNumber is required." });
             if (string.IsNullOrWhiteSpace(dto.ProductLine))
                 return BadRequest(new { message = "ProductLine is required." });
 
+            // Auto-generate a unique policy number if the caller did not supply one
+            if (string.IsNullOrWhiteSpace(dto.PolicyNumber))
+                dto.PolicyNumber = await _service.GenerateUniquePolicyNumberAsync();
+
+            // Final uniqueness guard (rare race-condition safety net)
             var existing = _service.GetByPolicyNumber(dto.PolicyNumber);
             if (existing is not null)
-                return Conflict(new { message = $"PolicyNumber '{dto.PolicyNumber}' already exists." });
+            {
+                dto.PolicyNumber = await _service.GenerateUniquePolicyNumberAsync();
+            }
 
-            var policy = _service.Bind(dto);
-            return CreatedAtAction(nameof(GetById), new { policyId = policy.PolicyID }, policy);
+            try
+            {
+                var policy = await _service.BindAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { policyId = policy.PolicyID }, policy);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{policyId:guid}")]

@@ -126,6 +126,11 @@ builder.Services.AddAuthentication(options =>
 // ── Authorization ─────────────────────────────────────────────
 builder.Services.AddAuthorization();
 
+// ── CORS ──────────────────────────────────────────────────────
+builder.Services.AddCors(opts =>
+    opts.AddDefaultPolicy(p =>
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
 // ── Register Services ─────────────────────────────────────────
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -180,6 +185,7 @@ app.UseSwaggerUI(options =>
 
 });
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 

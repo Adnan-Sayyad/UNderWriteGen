@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SubmissionAndIntake.Configs.Enums;
 using SubmissionAndIntake.Contracts.RepositoryContracts;
 using SubmissionAndIntake.Data;
 using SubmissionAndIntake.Models;
@@ -48,6 +49,15 @@ namespace SubmissionAndIntake.Repositories
             existing.ResponsesJSON = questionnaire.ResponsesJSON;
             existing.CompletedDate = questionnaire.CompletedDate;
 
+            await _context.SaveChangesAsync();
+            return existing;
+        }
+
+        public async Task<Questionnaire?> UpdateStatusAsync(Guid id, QuestionnaireStatus status)
+        {
+            var existing = await _context.Questionnaires.FirstOrDefaultAsync(q => q.QID == id);
+            if (existing is null) return null;
+            existing.Status = status;
             await _context.SaveChangesAsync();
             return existing;
         }

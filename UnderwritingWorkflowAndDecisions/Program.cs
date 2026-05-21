@@ -37,6 +37,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(opts =>
+    opts.AddDefaultPolicy(p =>
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
 // Register services
 builder.Services.AddScoped<IUWNoteService, UWNoteService>();
 builder.Services.AddScoped<IUWDecisionService, UWDecisionService>();
@@ -71,6 +75,7 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "UW Workflow & Decisions Service v1");
 });
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

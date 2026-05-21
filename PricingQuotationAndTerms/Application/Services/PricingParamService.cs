@@ -20,6 +20,12 @@ public class PricingParamService : IPricingParamService
     public async Task<IEnumerable<PricingParamResponse>> GetAllAsync(CancellationToken ct = default)
         => (await _repo.GetAllAsync(ct)).Select(Map);
 
+    public async Task<PricingParamResponse?> GetByIdAsync(Guid paramId, CancellationToken ct = default)
+    {
+        var param = await _repo.GetByIdAsync(paramId, ct);
+        return param is null ? null : Map(param);
+    }
+
     public async Task<PricingParamResponse> CreateAsync(
         CreatePricingParamRequest request, CancellationToken ct = default)
     {

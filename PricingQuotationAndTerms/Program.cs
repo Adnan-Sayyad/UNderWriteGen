@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PricingQuotationAndTerms;
 using PricingQuotationAndTerms.Infrastructure.Data;
@@ -27,6 +28,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(opts =>
+    opts.AddDefaultPolicy(p =>
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
 // ── API Infrastructure ────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -46,7 +51,10 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<QuoteDbContext>();
-    db.Database.EnsureCreated();
+    if (db.Database.IsRelational())
+        db.Database.Migrate();
+    else
+        db.Database.EnsureCreated();
 }
 
 // ── Global exception handler — returns JSON for all unhandled errors ──
@@ -71,6 +79,7 @@ app.UseSwaggerUI(c =>
 });
 
 // ── Pipeline ──────────────────────────────────────────────────────────
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

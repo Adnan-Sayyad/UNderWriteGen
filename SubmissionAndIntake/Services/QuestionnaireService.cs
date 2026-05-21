@@ -60,6 +60,12 @@ namespace SubmissionAndIntake.Services
             return updated is null ? null : MapToResponseDto(updated);
         }
 
+        public async Task<QuestionnaireResponseDto?> UpdateQuestionnaireStatusAsync(Guid id, UpdateQuestionnaireStatusDto dto)
+        {
+            var updated = await _repository.UpdateStatusAsync(id, dto.Status);
+            return updated is null ? null : MapToResponseDto(updated);
+        }
+
         public async Task<bool> DeleteQuestionnaireAsync(Guid id)
         {
             return await _repository.DeleteAsync(id);
@@ -92,7 +98,8 @@ namespace SubmissionAndIntake.Services
             SubmissionID = questionnaire.SubmissionID,
             TemplateVersion = questionnaire.TemplateVersion,
             ResponsesJSON = questionnaire.ResponsesJSON,
-            CompletedDate = questionnaire.CompletedDate
+            CompletedDate = questionnaire.CompletedDate,
+            Status = questionnaire.Status
         };
     }
 }

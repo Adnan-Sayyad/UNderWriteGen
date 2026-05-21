@@ -70,16 +70,15 @@ namespace NotificationsAndAlerts.Services
             if (!emails.Any())
                 return Enumerable.Empty<NotificationResponseDto>();
 
-            // 2. Get the current count once, then increment locally for each notification
+            // 2. Get the next available sequence number (MAX-based, not count-based,
+            //    so gaps from deleted notifications don't cause PK collisions).
             var today  = DateTime.UtcNow.ToString("yyyyMMdd");
             var prefix = $"NTF-{today}-";
-            var baseCount = await _db.Notifications
-                .Where(n => n.NotificationID.StartsWith(prefix))
-                .CountAsync();
+            var nextSeq = await GetNextSeqAsync(prefix);
 
             // 3. Create one notification per recipient
             var created = new List<Notification>();
-            var seq = baseCount;
+            var seq = nextSeq - 1;
             foreach (var email in emails)
             {
                 seq++;
@@ -167,12 +166,30 @@ namespace NotificationsAndAlerts.Services
         {
             var today  = DateTime.UtcNow.ToString("yyyyMMdd");
             var prefix = $"NTF-{today}-";
+            var next   = await GetNextSeqAsync(prefix);
+            return $"{prefix}{next:D4}";
+        }
 
-            var countToday = await _db.Notifications
+        // Returns the next available sequence number for the given prefix by
+        // inspecting the MAX existing ID rather than the count — this is safe
+        // even when earlier IDs have been deleted (which would make count-based
+        // generation produce a collision).
+        private async Task<int> GetNextSeqAsync(string prefix)
+        {
+            var latest = await _db.Notifications
                 .Where(n => n.NotificationID.StartsWith(prefix))
-                .CountAsync();
+                .MaxAsync(n => (string?)n.NotificationID);
 
-            return $"{prefix}{(countToday + 1):D4}";
+            if (latest is null) return 1;
+
+            // ID format: NTF-yyyyMMdd-NNNN  →  last segment is the sequence
+            var parts = latest.Split('-');
+            if (parts.Length >= 3 && int.TryParse(parts[^1], out int seq))
+                return seq + 1;
+
+            // Fallback (should never happen with well-formed IDs)
+            return await _db.Notifications
+                .CountAsync(n => n.NotificationID.StartsWith(prefix)) + 1;
         }
 
         private static NotificationResponseDto ToDto(Notification n) => new()

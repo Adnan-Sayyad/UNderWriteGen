@@ -63,10 +63,15 @@ public class QuoteDbContext : DbContext
         var seeds = new[]
         {
             // ── Base rates per product line ───────────────────────
-            S("Motor",    "BaseRate",                    0.025m, "Motor: 2.5% per annum",           epoch),
-            S("Health",   "BaseRate",                    0.035m, "Health: 3.5% per annum",           epoch),
-            S("Property", "BaseRate",                    0.015m, "Property: 1.5% per annum",         epoch),
-            S("Life",     "BaseRate",                    0.020m, "Life: 2.0% per annum",             epoch),
+            S("Motor",      "BaseRate",                  0.025m, "Motor: 2.5% per annum",            epoch),
+            S("Health",     "BaseRate",                  0.035m, "Health: 3.5% per annum",            epoch),
+            S("Property",   "BaseRate",                  0.015m, "Property: 1.5% per annum",          epoch),
+            S("Life",       "BaseRate",                  0.020m, "Life: 2.0% per annum",              epoch),
+            S("PnC",        "BaseRate",                  0.022m, "PnC: 2.2% per annum",               epoch),
+            S("Commercial", "BaseRate",                  0.018m, "Commercial: 1.8% per annum",        epoch),
+            // ── Min premium per product line (overrides Global floor) ──
+            S("PnC",        "MinimumPremium",            750m,   "PnC floor premium: ₹750",          epoch),
+            S("Commercial", "MinimumPremium",           1500m,   "Commercial floor premium: ₹1500",  epoch),
 
             // ── Risk loadings ─────────────────────────────────────
             S("Global",   "RiskLoading_Medium",          0.10m,  "+10% for Medium risk band",        epoch),

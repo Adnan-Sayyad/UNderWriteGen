@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet ef *)",
+      "Bash(sqlcmd -S .\\SQLEXPRESS -d NotificationsAndAlerts -Q \"EXEC sp_rename 'Notification.UserID', 'Email', 'COLUMN';\")",
+      "Bash(dotnet build *)",
+      "Bash(dotnet run *)",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro\\\\NotificationsAndAlerts\"; $env:ASPNETCORE_ENVIRONMENT = \"Development\"; $env:ASPNETCORE_URLS = \"http://localhost:8084\"; dotnet run --no-launch-profile 2>&1 | Out-String)",
+      "PowerShell(Stop-Process -Id 14260 -Force)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro\\\\NotificationsAndAlerts\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro\\\\NotificationsAndAlerts\" -Filter \"*.cs\" -Recurse)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro\\\\NotificationsAndAlerts\" -Recurse -File | Where-Object {$_.Extension -match '\\\\.\\(cs|json|md|txt\\)$'} | Select-Object FullName)",
+      "PowerShell(grep -i notification)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro_Frontend\\\\src\" -Recurse -Filter \"notification*\")",
+      "Bash(find /mnt/c/Users/2478631/Desktop/UnderwritePro_Frontend/src -name \"notification*\" 2>/dev/null || find /c/Users/2478631/Desktop/UnderwritePro_Frontend/src -name \"notification*\" 2>/dev/null)",
+      "PowerShell(try { $headers = @{ \"X-Service-Key\" = \"internal-ntf-service-key-2026\" }; $body = @{ recipientGroup = \"Agent\"; message = \"Test broadcast\"; category = \"Referral\" } | ConvertTo-Json; Invoke-RestMethod -Uri \"http://localhost:8084/api/notifications/broadcast\" -Method Post -Body $body -ContentType \"application/json\" -Headers $headers | ConvertTo-Json -Depth 5 } catch { \"STATUS: $\\($_.Exception.Response.StatusCode\\)\"; $_.ErrorDetails.Message })",
+      "PowerShell($headers = @{ \"X-Service-Key\" = \"internal-ntf-service-key-2026\" }; $body = @{ recipientGroup = \"Agent\"; message = \"Test broadcast\"; category = \"Referral\" } | ConvertTo-Json; try { $response = Invoke-WebRequest -Uri \"http://localhost:8084/api/notifications/broadcast\" -Method Post -Body $body -ContentType \"application/json\" -Headers $headers -UseBasicParsing; $response.Content } catch { $_.Exception.Response.StatusCode; $reader = New-Object System.IO.StreamReader\\($_.Exception.Response.GetResponseStream\\(\\)\\); $reader.ReadToEnd\\(\\) })",
+      "PowerShell($connStr = \"Server=.\\SQLEXPRESS;Database=IdentityAndAccessManagement;Trusted_Connection=true;TrustServerCertificate=true\"; $conn = New-Object System.Data.SqlClient.SqlConnection\\($connStr\\); $conn.Open\\(\\); $cmd = $conn.CreateCommand\\(\\); $cmd.CommandText = \"SELECT Email, Role, IsDeleted FROM Users ORDER BY Role, Email\"; $reader = $cmd.ExecuteReader\\(\\); while \\($reader.Read\\(\\)\\) { \"$\\($reader['Role']\\) | $\\($reader['Email']\\) | Deleted=$\\($reader['IsDeleted']\\)\" }; $conn.Close\\(\\))",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro\\\\DistributionAndPartyManagement\" -Recurse)",
+      "Bash(Select-Object -Property FullName)",
+      "Bash(ConvertTo-Csv -NoTypeInformation)",
+      "PowerShell(Stop-Process -Id 24248 -Force)",
+      "PowerShell(Start-Process -FilePath \"dotnet\" -ArgumentList \"run\" -WorkingDirectory \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro\\\\DistributionAndPartyManagement\" -WindowStyle Hidden; Write-Host \"Starting...\"; Start-Sleep -Seconds 9; $r = Invoke-WebRequest -Uri \"http://localhost:8082/api/agents/search\" -UseBasicParsing -ErrorAction SilentlyContinue; Write-Host \"Server ready: $\\($r.StatusCode\\)\")",
+      "Bash(Get-ChildItem -Path . -Recurse -Directory)",
+      "Bash(Select-Object -First 20 FullName)",
+      "Bash(Get-ChildItem -Path . -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(sc query *)",
+      "Bash(findstr -i \"sql\")",
+      "Bash(net start *)",
+      "Bash(findstr -i \"mssql\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro\\\\DistributionAndPartyManagement\" -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(ConvertTo-Json)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro_Frontend\" -Recurse -File)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\2478631\\\\Desktop\\\\UnderwritePro_Frontend\\\\angularFrontendUnderwritePro\" -Recurse -Directory)",
+      "Bash(cd /c/Users/2478631/Desktop/UnderwritePro_Frontend/angularFrontendUnderwritePro && find . -type d -path \"./.git\" -prune -o -type d -print | grep -v \"\\\\.git\" | grep -v \"\\\\.angular\" | sort)"
+    ]
+  }
+}

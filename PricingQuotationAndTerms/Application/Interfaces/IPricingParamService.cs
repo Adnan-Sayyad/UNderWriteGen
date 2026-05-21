@@ -6,6 +6,7 @@ namespace PricingQuotationAndTerms.Application.Interfaces;
 public interface IPricingParamService
 {
     Task<IEnumerable<PricingParamResponse>> GetAllAsync(CancellationToken ct = default);
+    Task<PricingParamResponse?>             GetByIdAsync(Guid paramId, CancellationToken ct = default);
     Task<PricingParamResponse>              CreateAsync(CreatePricingParamRequest request, CancellationToken ct = default);
     Task<PricingParamResponse>              UpdateAsync(Guid paramId, UpdatePricingParamRequest request, CancellationToken ct = default);
     Task<IEnumerable<PricingParamResponse>> GetByProductLineAsync(string productLine, CancellationToken ct = default);

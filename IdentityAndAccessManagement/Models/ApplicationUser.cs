@@ -29,6 +29,19 @@ namespace IdentityAndAccessManagement.Models
             }
         }
 
+        // Override Email so that whenever email is set it also updates the UserName.
+        // Email is globally unique, so using it as UserName prevents the
+        // firstName.lastName collision that occurs when two users share the same name.
+        public override string? Email
+        {
+            get => base.Email;
+            set
+            {
+                base.Email = value;
+                UpdateUserName();
+            }
+        }
+
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string? RefreshToken { get; set; }
@@ -45,7 +58,12 @@ namespace IdentityAndAccessManagement.Models
         // ── Private Helper ────────────────────────────────────────
         private void UpdateUserName()
         {
-            if (!string.IsNullOrWhiteSpace(_firstName) && !string.IsNullOrWhiteSpace(_lastName))
+            // Prefer email as the canonical username — it is guaranteed unique
+            // across all registrations (enforced by RegisterAsync email-duplicate check).
+            // Fall back to firstName.lastName only before an email is assigned.
+            if (!string.IsNullOrWhiteSpace(Email))
+                UserName = Email.ToLower();
+            else if (!string.IsNullOrWhiteSpace(_firstName) && !string.IsNullOrWhiteSpace(_lastName))
                 UserName = $"{_firstName.Trim().ToLower()}.{_lastName.Trim().ToLower()}";
         }
     }

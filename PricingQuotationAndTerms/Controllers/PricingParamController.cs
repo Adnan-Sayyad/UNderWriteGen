@@ -26,6 +26,18 @@ public class PricingParamController : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken ct)
         => Ok(await _service.GetAllAsync(ct));
 
+    // GET /api/pricing-params/{paramId}
+    [HttpGet("{paramId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(Guid paramId, CancellationToken ct)
+    {
+        var result = await _service.GetByIdAsync(paramId, ct);
+        return result is null
+            ? NotFound(new { error = $"Pricing parameter '{paramId}' not found." })
+            : Ok(result);
+    }
+
     // POST /api/pricing-params
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]

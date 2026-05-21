@@ -1,3 +1,5 @@
+using SubmissionAndIntake.Configs.Enums;
+
 namespace SubmissionAndIntake.DTOs
 {
     public class CreateQuestionnaireDto
@@ -15,6 +17,11 @@ namespace SubmissionAndIntake.DTOs
         public DateTime? CompletedDate { get; set; }
     }
 
+    public class UpdateQuestionnaireStatusDto
+    {
+        public QuestionnaireStatus Status { get; set; }
+    }
+
     public class QuestionnaireResponseDto
     {
         public Guid QID { get; set; }
@@ -22,6 +29,7 @@ namespace SubmissionAndIntake.DTOs
         public string TemplateVersion { get; set; } = string.Empty;
         public string ResponsesJSON { get; set; } = string.Empty;
         public DateTime? CompletedDate { get; set; }
+        public QuestionnaireStatus Status { get; set; }
     }
 
     public class QuestionnaireTemplateDto

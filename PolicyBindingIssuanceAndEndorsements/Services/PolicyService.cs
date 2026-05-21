@@ -46,9 +46,33 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
                       .ToList();
         }
 
-        public Policy Bind(CreatePolicyDto dto)
+        public async Task<string> GenerateUniquePolicyNumberAsync()
         {
-            var submissionExists = _submissionClient.SubmissionExistsAsync(dto.SubmissionID).GetAwaiter().GetResult();
+            // Format: POL-YYYYMMDD-NNNN  (e.g. POL-20260521-0001)
+            var today  = DateTime.UtcNow.ToString("yyyyMMdd");
+            var prefix = $"POL-{today}-";
+
+            // Pull only today's policy numbers to find the next available counter
+            var existing = _db.Policies
+                .Where(p => p.PolicyNumber.StartsWith(prefix))
+                .Select(p => p.PolicyNumber)
+                .ToHashSet();
+
+            int counter = 1;
+            string candidate;
+            do
+            {
+                candidate = $"{prefix}{counter:D4}";
+                counter++;
+            }
+            while (existing.Contains(candidate));
+
+            return await Task.FromResult(candidate);
+        }
+
+        public async Task<Policy> BindAsync(CreatePolicyDto dto)
+        {
+            var submissionExists = await _submissionClient.SubmissionExistsAsync(dto.SubmissionID);
             if (!submissionExists)
                 throw new KeyNotFoundException($"Submission '{dto.SubmissionID}' not found. Cannot bind policy.");
 
@@ -62,7 +86,7 @@ namespace PolicyBindingIssuanceAndEndorsements.Services
                 ExpiryDate = dto.ExpiryDate
             };
             _db.Policies.Add(policy);
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
             // Auto-advance submission to PolicyBound.
             _ = _submissionClient.UpdateStatusAsync(dto.SubmissionID, "PolicyBound");

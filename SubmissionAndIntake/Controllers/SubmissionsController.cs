@@ -72,6 +72,35 @@ namespace SubmissionAndIntake.Controllers
             return Ok(submissions);
         }
 
+        // Route aliases with "by-" prefix (used by API consumers and tests)
+        [HttpGet("by-party/{partyId}")]
+        public async Task<IActionResult> GetByPartyIdAlias(string partyId)
+        {
+            var submissions = await _service.GetSubmissionsByPartyIdAsync(partyId);
+            return Ok(submissions);
+        }
+
+        [HttpGet("by-agent/{agentId}")]
+        public async Task<IActionResult> GetByAgentIdAlias(string agentId)
+        {
+            var submissions = await _service.GetSubmissionsByAgentIdAsync(agentId);
+            return Ok(submissions);
+        }
+
+        [HttpGet("by-status/{status}")]
+        public async Task<IActionResult> GetByStatus(SubmissionStatus status)
+        {
+            var submissions = await _service.GetSubmissionsByStatusAsync(status);
+            return Ok(submissions);
+        }
+
+        [HttpGet("by-product-line/{line}")]
+        public async Task<IActionResult> GetByProductLineAlias(ProductLine line)
+        {
+            var submissions = await _service.GetSubmissionsByProductLineAsync(line);
+            return Ok(submissions);
+        }
+
         // POST /api/submissions
         [HttpPost]
         [Authorize(Roles = "Agent,Admin")]

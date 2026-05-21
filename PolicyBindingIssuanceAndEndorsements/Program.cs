@@ -37,10 +37,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(opts =>
+    opts.AddDefaultPolicy(p =>
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
 // Register services
 builder.Services.AddScoped<IPolicyService, PolicyService>();
-builder.Services.AddScoped<IEndorsementService, EndorsementService>();
-builder.Services.AddScoped<ICancellationService, CancellationService>();
 builder.Services.AddScoped<IRenewalService, RenewalService>();
 
 // Inter-service HTTP clients
@@ -74,6 +76,7 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Policy Binding, Issuance & Endorsements Service v1");
 });
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

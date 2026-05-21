@@ -50,6 +50,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// CORS
+builder.Services.AddCors(opts =>
+    opts.AddDefaultPolicy(p =>
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
 var internalKey = builder.Configuration["InternalServiceKey"]!;
 builder.Services.AddAuthorization(options =>
 {
@@ -82,6 +87,13 @@ builder.Services.AddHttpClient<INotificationClientService, HttpNotificationClien
 
 var app = builder.Build();
 
+// Auto-apply pending migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SubmissionAndIntakeDbContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -92,6 +104,7 @@ if (app.Environment.IsDevelopment())
 // Serve uploaded files from wwwroot/uploads (no auth required — links are opaque GUIDs)
 app.UseStaticFiles();
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

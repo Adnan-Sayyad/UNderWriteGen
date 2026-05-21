@@ -22,6 +22,8 @@ namespace SubmissionAndIntake.Controllers
         public async Task<IActionResult> GetBySubmissionId(Guid submissionId)
         {
             var questionnaires = await _service.GetQuestionnairesBySubmissionIdAsync(submissionId);
+            if (!questionnaires.Any())
+                return NotFound(new { message = $"No questionnaire found for submission '{submissionId}'." });
             return Ok(questionnaires);
         }
 
@@ -38,6 +40,15 @@ namespace SubmissionAndIntake.Controllers
         public async Task<IActionResult> Update(Guid qId, [FromBody] UpdateQuestionnaireDto dto)
         {
             var updated = await _service.UpdateQuestionnaireAsync(qId, dto);
+            if (updated is null) return NotFound();
+            return Ok(updated);
+        }
+
+        // PATCH /api/questionnaires/{qId}/status
+        [HttpPatch("{qId:guid}/status")]
+        public async Task<IActionResult> UpdateStatus(Guid qId, [FromBody] UpdateQuestionnaireStatusDto dto)
+        {
+            var updated = await _service.UpdateQuestionnaireStatusAsync(qId, dto);
             if (updated is null) return NotFound();
             return Ok(updated);
         }

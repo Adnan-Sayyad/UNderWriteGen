@@ -6,8 +6,6 @@
   <Project Path="NotificationsAndAlerts/NotificationsAndAlerts.csproj" />
   <Project Path="PolicyBindingIssuanceAndEndorsements/PolicyBindingIssuanceAndEndorsements.csproj" />
   <Project Path="PricingQuotationAndTerms/PricingQuotationAndTerms.csproj" />
-  <Project Path="ReportingAndPortfolioAnalytics/ReportingAndPortfolioAnalytics.csproj" />
-  <Project Path="RiskDataAndEvidence/RiskDataAndEvidence.csproj" />
   <Project Path="RulesScoringAndReferralMatrix/RulesScoringAndReferralMatrix.csproj" />
   <Project Path="SubmissionAndIntake/SubmissionAndIntake.csproj" />
   <Project Path="UnderwritingWorkflowAndDecisions/UnderwritingWorkflowAndDecisions.csproj" />

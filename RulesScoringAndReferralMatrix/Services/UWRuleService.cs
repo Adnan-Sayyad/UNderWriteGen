@@ -10,18 +10,15 @@ namespace RulesScoringAndReferralMatrix.Services
     {
         private readonly IUWRuleRepository _repository;
         private readonly IRiskScoreService _riskScoreService;
-        private readonly IReferralMatrixRepository _matrixRepository;
         private readonly INotificationClientService _notifications;
 
         public UWRuleService(
             IUWRuleRepository repository,
             IRiskScoreService riskScoreService,
-            IReferralMatrixRepository matrixRepository,
             INotificationClientService notifications)
         {
             _repository = repository;
             _riskScoreService = riskScoreService;
-            _matrixRepository = matrixRepository;
             _notifications = notifications;
         }
 
@@ -68,14 +65,13 @@ namespace RulesScoringAndReferralMatrix.Services
         {
             var rule = new UWRule
             {
-                ProductLine = dto.ProductLine,
-                RuleName = dto.RuleName,
-                Description = dto.Description,
+                ProductLine    = dto.ProductLine,
+                RuleName       = dto.RuleName,
+                Description    = dto.Description,
                 ExpressionJSON = dto.ExpressionJSON,
-                Severity = dto.Severity,
-                Status = dto.Status
+                Severity       = dto.Severity,
+                Status         = dto.Status
             };
-
             var created = await _repository.CreateAsync(rule);
             return MapToResponseDto(created);
         }
@@ -84,15 +80,14 @@ namespace RulesScoringAndReferralMatrix.Services
         {
             var rule = new UWRule
             {
-                UWRuleID = id,
-                ProductLine = dto.ProductLine,
-                RuleName = dto.RuleName,
-                Description = dto.Description,
+                UWRuleID       = id,
+                ProductLine    = dto.ProductLine,
+                RuleName       = dto.RuleName,
+                Description    = dto.Description,
                 ExpressionJSON = dto.ExpressionJSON,
-                Severity = dto.Severity,
-                Status = dto.Status
+                Severity       = dto.Severity,
+                Status         = dto.Status
             };
-
             var updated = await _repository.UpdateAsync(rule);
             return updated is null ? null : MapToResponseDto(updated);
         }
@@ -116,11 +111,9 @@ namespace RulesScoringAndReferralMatrix.Services
 
         public async Task<EvaluateRulesResponseDto> EvaluateRulesForSubmissionAsync(Guid submissionId)
         {
-            // 1. Calculate / retrieve risk score
-            var riskScore = await _riskScoreService.CalculateScoreForSubmissionAsync(submissionId);
-
-            // 2. Evaluate all active UW rules
+            var riskScore   = await _riskScoreService.CalculateScoreForSubmissionAsync(submissionId);
             var activeRules = await _repository.GetActiveRulesAsync();
+
             var results = activeRules.Select(rule => new RuleEvaluationResultDto
             {
                 UWRuleID    = rule.UWRuleID,
@@ -131,73 +124,25 @@ namespace RulesScoringAndReferralMatrix.Services
                 Message     = $"Rule '{rule.RuleName ?? rule.UWRuleID.ToString()}' evaluated for submission {submissionId}"
             }).ToList();
 
-            bool hasBlocking = results.Any(r => r.Triggered && r.Severity == Severity.Block);
-            bool hasRefer    = results.Any(r => r.Triggered && r.Severity == Severity.Refer);
-
-            // 3. Check referral matrix for the risk band
-            bool needsReferral   = false;
-            string? requiredAuth = null;
-            if (!hasBlocking && (hasRefer || riskScore.Band == Band.High))
-            {
-                var matrices = await _matrixRepository.GetAllAsync();
-                RulesScoringAndReferralMatrix.Models.ReferralMatrix? match = null;
-                foreach (var m in matrices)
-                {
-                    if (string.Equals(m.Operator, "gte", StringComparison.OrdinalIgnoreCase) &&
-                        double.TryParse(m.Threshold, out var tVal) &&
-                        riskScore.ScoreValue >= tVal)
-                    {
-                        match = m;
-                        break;
-                    }
-                }
-                if (match is not null)
-                {
-                    needsReferral = true;
-                    requiredAuth  = match.RequiredAuthority.ToString();
-                }
-                else if (hasRefer)
-                {
-                    needsReferral = true;
-                    requiredAuth  = RequiredAuthority.UW1.ToString();
-                }
-            }
-
-            // 4. Build recommendation
-            string recommendation = hasBlocking ? "Block"
-                : needsReferral                 ? $"Refer (Authority: {requiredAuth})"
-                : "Proceed to Pricing";
-
-            // 5. Notify if referral is needed
-            if (needsReferral)
-                _ = _notifications.BroadcastAsync(
-                    "UWManager",
-                    $"Submission '{submissionId}' requires referral (Risk: {riskScore.Band}, Authority: {requiredAuth}).",
-                    "Referral");
-
             return new EvaluateRulesResponseDto
             {
-                SubmissionID     = submissionId,
-                Results          = results,
-                HasBlockingRules = hasBlocking,
-                NeedsReferral    = needsReferral,
-                RequiredAuthority = requiredAuth,
-                RiskScore        = riskScore.ScoreValue,
-                RiskBand         = riskScore.Band.ToString(),
-                Recommendation   = recommendation,
-                EvaluatedAt      = DateTime.UtcNow
+                SubmissionID = submissionId,
+                Results      = results,
+                RiskScore    = riskScore.ScoreValue,
+                RiskBand     = riskScore.Band.ToString(),
+                EvaluatedAt  = DateTime.UtcNow
             };
         }
 
         private static UWRuleResponseDto MapToResponseDto(UWRule rule) => new()
         {
-            UWRuleID = rule.UWRuleID,
-            ProductLine = rule.ProductLine,
-            RuleName = rule.RuleName,
-            Description = rule.Description,
+            UWRuleID       = rule.UWRuleID,
+            ProductLine    = rule.ProductLine,
+            RuleName       = rule.RuleName,
+            Description    = rule.Description,
             ExpressionJSON = rule.ExpressionJSON,
-            Severity = rule.Severity,
-            Status = rule.Status
+            Severity       = rule.Severity,
+            Status         = rule.Status
         };
     }
 }

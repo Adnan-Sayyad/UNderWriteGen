@@ -27,14 +27,9 @@ builder.Services.AddDbContext<RulesScoringAndReferralMatrixDbContext>(options =>
 // Repository registrations
 builder.Services.AddScoped<IUWRuleRepository, UWRuleRepository>();
 builder.Services.AddScoped<IRiskScoreRepository, RiskScoreRepository>();
-builder.Services.AddScoped<IReferralMatrixRepository, ReferralMatrixRepository>();
-builder.Services.AddScoped<IReferralRepository, ReferralRepository>();
-
 // Service registrations
 builder.Services.AddScoped<IUWRuleService, UWRuleService>();
 builder.Services.AddScoped<IRiskScoreService, RiskScoreService>();
-builder.Services.AddScoped<IReferralMatrixService, ReferralMatrixService>();
-builder.Services.AddScoped<IReferralService, ReferralService>();
 
 // JWT Authentication
 var jwtKey = builder.Configuration["Jwt:SecretKey"]!;
@@ -53,6 +48,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
+
+builder.Services.AddCors(opts =>
+    opts.AddDefaultPolicy(p =>
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 // Inter-service HTTP clients
 var notificationApiUrl = builder.Configuration["Services:NotificationApi"];
@@ -73,6 +72,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

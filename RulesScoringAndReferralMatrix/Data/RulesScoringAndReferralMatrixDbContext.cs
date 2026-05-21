@@ -11,7 +11,5 @@ namespace RulesScoringAndReferralMatrix.Data
         }
         public DbSet<UWRule> Rules { get; set; }
         public DbSet<RiskScore> RiskScores { get; set; }
-        public DbSet<ReferralMatrix> ReferralMatrices { get; set; }
-        public DbSet<Referral> Referrals { get; set; }
     }
 }
