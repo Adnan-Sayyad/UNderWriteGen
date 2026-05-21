@@ -1,21 +1,9 @@
 <div class="page-container">
   <app-page-header
     title="Policy Detail"
-    subtitle="View policy information, coverage, endorsements and cancellations"
+    subtitle="View policy information and coverage"
     icon="bi-journal-bookmark"
     [breadcrumbs]="breadcrumbs">
-    @if (policy()) {
-      @if (canEndorse()) {
-        <button class="btn btn-sm btn-outline-primary me-2" (click)="goEndorsement()">
-          <i class="bi bi-pencil-square me-1"></i>Endorse
-        </button>
-      }
-      @if (canCancel()) {
-        <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
-          <i class="bi bi-x-circle me-1"></i>Cancel Policy
-        </button>
-      }
-    }
   </app-page-header>
 
   @if (alertMsg()) {
@@ -46,22 +34,6 @@
           <li class="nav-item">
             <button class="nav-link" [class.active]="activeTab() === 'coverage'" (click)="selectTab('coverage')">
               <i class="bi bi-shield-check me-1"></i>Coverage
-            </button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link" [class.active]="activeTab() === 'endorsements'" (click)="selectTab('endorsements')">
-              <i class="bi bi-pencil-square me-1"></i>Endorsements
-              @if (endorsements().length) {
-                <span class="badge bg-secondary ms-1">{{ endorsements().length }}</span>
-              }
-            </button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link" [class.active]="activeTab() === 'cancellations'" (click)="selectTab('cancellations')">
-              <i class="bi bi-x-circle me-1"></i>Cancellations
-              @if (cancellations().length) {
-                <span class="badge bg-secondary ms-1">{{ cancellations().length }}</span>
-              }
             </button>
           </li>
         </ul>
@@ -142,144 +114,6 @@
             }
           </div>
         }
-
-        <!-- Endorsements Tab -->
-        @if (activeTab() === 'endorsements') {
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center justify-content-between">
-              <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-pencil-square text-primary"></i>
-                <span class="fw-semibold small">Endorsements</span>
-              </div>
-              @if (canEndorse()) {
-                <button class="btn btn-sm btn-outline-primary" (click)="goEndorsement()">
-                  <i class="bi bi-plus me-1"></i>New Endorsement
-                </button>
-              }
-            </div>
-            @if (loadingEndorsements()) {
-              <div class="card-body text-center py-4">
-                <span class="spinner-border spinner-border-sm text-primary"></span>
-              </div>
-            } @else if (!endorsements().length) {
-              <div class="card-body text-center text-muted py-5">
-                <i class="bi bi-pencil-square fs-2 d-block mb-2"></i>No endorsements found.
-              </div>
-            } @else {
-              <div class="card-body p-0">
-                <table class="table table-sm table-hover mb-0 align-middle">
-                  <thead class="table-light">
-                    <tr>
-                      <th>Type</th>
-                      <th>Effective Date</th>
-                      <th>Premium Delta</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (e of endorsements(); track e.endorsementId) {
-                      <tr>
-                        <td class="small">{{ e.endorsementType }}</td>
-                        <td class="small text-muted">{{ e.effectiveDate | date:'mediumDate' }}</td>
-                        <td class="small fw-medium"
-                            [class.text-success]="e.premiumDelta > 0"
-                            [class.text-danger]="e.premiumDelta < 0">
-                          {{ e.premiumDelta >= 0 ? '+' : '' }}{{ e.premiumDelta | number:'1.2-2' }}
-                        </td>
-                        <td>
-                          <span class="badge" [ngClass]="statusClass(e.status)">{{ e.status }}</span>
-                        </td>
-                        <td>
-                          @if (e.status === 'Proposed' && canApproveEndorsement()) {
-                            <button class="btn btn-sm btn-success"
-                                    [disabled]="approvingId() === e.endorsementId"
-                                    (click)="approveEndorsement(e.endorsementId)">
-                              @if (approvingId() === e.endorsementId) {
-                                <span class="spinner-border spinner-border-sm"></span>
-                              } @else {
-                                <i class="bi bi-check-lg me-1"></i>Approve
-                              }
-                            </button>
-                          } @else if (e.status === 'Proposed') {
-                            <span class="text-muted small">Pending UW review</span>
-                          }
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          </div>
-        }
-
-        <!-- Cancellations Tab -->
-        @if (activeTab() === 'cancellations') {
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center justify-content-between">
-              <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-x-circle text-danger"></i>
-                <span class="fw-semibold small">Cancellation Requests</span>
-              </div>
-              @if (policy()!.status === 'Active' && canCancel()) {
-                <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
-                  <i class="bi bi-x-circle me-1"></i>Request Cancellation
-                </button>
-              }
-            </div>
-            @if (loadingCancellations()) {
-              <div class="card-body text-center py-4">
-                <span class="spinner-border spinner-border-sm text-danger"></span>
-              </div>
-            } @else if (!cancellations().length) {
-              <div class="card-body text-center text-muted py-5">
-                <i class="bi bi-x-circle fs-2 d-block mb-2"></i>No cancellation requests found.
-              </div>
-            } @else {
-              <div class="card-body p-0">
-                <table class="table table-sm table-hover mb-0 align-middle">
-                  <thead class="table-light">
-                    <tr>
-                      <th>Reason</th>
-                      <th>Cancel Date</th>
-                      <th>Refund ($)</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (c of cancellations(); track c.cancellationId) {
-                      <tr>
-                        <td class="small">{{ c.cancelReason }}</td>
-                        <td class="small text-muted">{{ c.cancelDate | date:'mediumDate' }}</td>
-                        <td class="small">{{ c.refundPremium | number:'1.2-2' }}</td>
-                        <td>
-                          <span class="badge" [ngClass]="statusClass(c.status)">{{ c.status }}</span>
-                        </td>
-                        <td>
-                          @if (c.status === 'Requested' && canApproveCancellation()) {
-                            <button class="btn btn-sm btn-warning"
-                                    [disabled]="approvingId() === c.cancellationId"
-                                    (click)="approveCancellation(c.cancellationId)">
-                              @if (approvingId() === c.cancellationId) {
-                                <span class="spinner-border spinner-border-sm"></span>
-                              } @else {
-                                <i class="bi bi-check-lg me-1"></i>Approve
-                              }
-                            </button>
-                          } @else if (c.status === 'Requested') {
-                            <span class="text-muted small">Pending UW review</span>
-                          }
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          </div>
-        }
       </div>
 
       <!-- Right: Status Card -->
@@ -296,16 +130,6 @@
             </div>
             <hr />
             <div class="d-grid gap-2">
-              @if (canEndorse()) {
-                <button class="btn btn-sm btn-outline-primary" (click)="goEndorsement()">
-                  <i class="bi bi-pencil-square me-1"></i>Add Endorsement
-                </button>
-              }
-              @if (canCancel()) {
-                <button class="btn btn-sm btn-outline-danger" (click)="goCancellation()">
-                  <i class="bi bi-x-circle me-1"></i>Request Cancellation
-                </button>
-              }
               <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/policy', 'renewals']">
                 <i class="bi bi-arrow-repeat me-1"></i>View Renewals
               </a>

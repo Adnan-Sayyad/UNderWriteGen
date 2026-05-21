@@ -41,7 +41,7 @@ export class AgentListPage implements OnInit {
 
   /** Only Admin can add or edit agents. */
   readonly canManageAgents = computed(() => this.auth.hasRole('Admin'));
-
+//Filtering and Sorting agents
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
     const s = this.filterStatus();
@@ -54,7 +54,7 @@ export class AgentListPage implements OnInit {
       return a.name.localeCompare(b.name);
     });
   });
-
+//Pagination
   readonly totalElements = computed(() => this.filtered().length);
   readonly totalPages    = computed(() => Math.max(1, Math.ceil(this.totalElements() / this.pageSize())));
   readonly paginated     = computed(() => {
@@ -95,6 +95,8 @@ export class AgentListPage implements OnInit {
   onPageChange(p: number): void { this.currentPage.set(p); }
   onSizeChange(s: number): void { this.pageSize.set(s); this.currentPage.set(0); }
 
+
+//loads agents
   load(): void {
     this.loading.set(true);
     this.svc.getAgents().subscribe({
@@ -134,6 +136,8 @@ export class AgentListPage implements OnInit {
       region:      v.region ?? '',
       contactInfo: v.contactInfo ?? undefined,
     };
+
+    
     const req = this.modalMode() === 'edit'
       ? this.svc.updateAgent(this.selected()!.agentID, payload)
       : this.svc.createAgent(payload);

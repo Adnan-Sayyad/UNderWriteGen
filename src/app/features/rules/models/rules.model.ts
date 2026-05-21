@@ -2,24 +2,18 @@
 // Backend enums are serialised as integers by System.Text.Json (default).
 // The API service normalises numeric enums into the string unions below.
 
-export type RuleSeverity   = 'Block' | 'Refer' | 'Load' | 'Info';
-export type UWStatus       = 'Active' | 'Inactive';
-export type RiskBand       = 'Low' | 'Medium' | 'High';
-export type Authority      = 'UW1' | 'UW2' | 'UWManager' | 'Committee';
-export type ReferralStatus = 'Pending' | 'Approved' | 'Rejected';
-export type CriteriaType   = 'SumInsured' | 'Class' | 'RiskBand';
+export type RuleSeverity = 'Block' | 'Refer' | 'Load' | 'Info';
+export type UWStatus     = 'Active' | 'Inactive';
+export type RiskBand     = 'Low' | 'Medium' | 'High';
 
 export type ConditionOperator =
   | 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'between';
 
 export type FieldType = 'number' | 'string' | 'boolean' | 'enum';
 
-export const SEVERITIES:  RuleSeverity[]   = ['Block', 'Refer', 'Load', 'Info'];
-export const UW_STATUSES: UWStatus[]       = ['Active', 'Inactive'];
-export const RISK_BANDS:  RiskBand[]       = ['Low', 'Medium', 'High'];
-export const AUTHORITIES: Authority[]      = ['UW1', 'UW2', 'UWManager', 'Committee'];
-export const REFERRAL_STATUSES: ReferralStatus[] = ['Pending', 'Approved', 'Rejected'];
-export const CRITERIA_TYPES: CriteriaType[] = ['SumInsured', 'Class', 'RiskBand'];
+export const SEVERITIES:  RuleSeverity[] = ['Block', 'Refer', 'Load', 'Info'];
+export const UW_STATUSES: UWStatus[]     = ['Active', 'Inactive'];
+export const RISK_BANDS:  RiskBand[]     = ['Low', 'Medium', 'High'];
 
 export const PRODUCT_LINES = ['Life', 'Health', 'PnC', 'Commercial'] as const;
 export type ProductLine = typeof PRODUCT_LINES[number];
@@ -152,27 +146,6 @@ export interface RiskScore {
   scoredDate: string;
 }
 
-export interface ReferralMatrix {
-  referralMatrixID: string;
-  productLine: string;
-  criteriaJSON: CriteriaType;
-  operator: ConditionOperator | null;
-  threshold: string | null;
-  requiredAuthority: Authority;
-  status: UWStatus;
-}
-
-export interface Referral {
-  referralID: string;
-  submissionID: string;
-  raisedBy: string;
-  reason: string;
-  requiredAuthority: Authority;
-  assignedTo: string;
-  createdDate: string;
-  status: ReferralStatus;
-}
-
 export interface PagedResult<T> {
   content: T[];
   page: number;
@@ -195,7 +168,6 @@ export interface RuleEvaluationResult {
 export interface EvaluateRulesResponse {
   submissionID: string;
   results: RuleEvaluationResult[];
-  hasBlockingRules: boolean;
   evaluatedAt: string;
 }
 

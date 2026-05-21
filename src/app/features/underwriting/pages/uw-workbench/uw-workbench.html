@@ -613,24 +613,15 @@
                   @if (!rulesResult()) {
                     <p class="text-muted small mb-0">
                       <i class="bi bi-info-circle me-1"></i>
-                      Click <strong>Run Evaluation</strong> to evaluate all active UW rules, calculate the risk score, and check the referral matrix.
+                      Click <strong>Run Evaluation</strong> to evaluate all active UW rules and calculate the risk score.
                     </p>
                   } @else {
                     <!-- Summary Banner -->
-                    <div class="alert mb-3 py-2"
-                         [class.alert-danger]="rulesResult().hasBlockingRules"
-                         [class.alert-warning]="!rulesResult().hasBlockingRules && rulesResult().needsReferral"
-                         [class.alert-success]="!rulesResult().hasBlockingRules && !rulesResult().needsReferral">
+                    <div class="alert alert-success mb-3 py-2">
                       <div class="fw-semibold">
-                        <i class="bi me-1"
-                           [class.bi-x-circle-fill]="rulesResult().hasBlockingRules"
-                           [class.bi-exclamation-triangle-fill]="!rulesResult().hasBlockingRules && rulesResult().needsReferral"
-                           [class.bi-check-circle-fill]="!rulesResult().hasBlockingRules && !rulesResult().needsReferral"></i>
-                        Recommendation: {{ rulesResult().recommendation }}
+                        <i class="bi bi-check-circle-fill me-1"></i>
+                        Rules evaluated successfully.
                       </div>
-                      @if (rulesResult().requiredAuthority) {
-                        <div class="small mt-1">Required Authority: <strong>{{ rulesResult().requiredAuthority }}</strong></div>
-                      }
                     </div>
 
                     <!-- Risk Score row -->
@@ -649,17 +640,12 @@
                         </span>
                       </div>
                       <div class="col-md-3">
-                        <div class="detail-label">Blocking Rules</div>
-                        <span class="badge" [class.bg-danger]="rulesResult().hasBlockingRules" [class.bg-success]="!rulesResult().hasBlockingRules">
-                          {{ rulesResult().hasBlockingRules ? 'Yes' : 'None' }}
-                        </span>
+                        <div class="detail-label">Total Rules</div>
+                        <div class="fw-bold fs-5">{{ rulesResult().results?.length ?? 0 }}</div>
                       </div>
                       <div class="col-md-3">
-                        <div class="detail-label">Needs Referral</div>
-                        <span class="badge" [class.bg-warning]="rulesResult().needsReferral" [class.bg-success]="!rulesResult().needsReferral"
-                              [class.text-dark]="rulesResult().needsReferral">
-                          {{ rulesResult().needsReferral ? 'Yes' : 'No' }}
-                        </span>
+                        <div class="detail-label">Evaluated At</div>
+                        <div class="small">{{ rulesResult().evaluatedAt | date:'short' }}</div>
                       </div>
                     </div>
 
@@ -682,10 +668,10 @@
                                 <td><span class="badge bg-secondary">{{ r.productLine }}</span></td>
                                 <td>
                                   <span class="badge"
-                                        [class.bg-danger]="r.severity === 'Block' || r.severity === 2"
-                                        [class.bg-warning]="r.severity === 'Refer' || r.severity === 1"
-                                        [class.text-dark]="r.severity === 'Refer' || r.severity === 1"
-                                        [class.bg-info]="r.severity === 'Informational' || r.severity === 0">
+                                        [class.bg-danger]="r.severity === 'Block'"
+                                        [class.bg-warning]="r.severity === 'Refer'"
+                                        [class.text-dark]="r.severity === 'Refer'"
+                                        [class.bg-info]="r.severity === 'Load' || r.severity === 'Info'">
                                     {{ r.severity }}
                                   </span>
                                 </td>

@@ -84,18 +84,6 @@
     "changeOrigin": true,
     "logLevel": "info"
   },
-  "/api/referral-matrix": {
-    "target": "http://localhost:8085",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "info"
-  },
-  "/api/referrals": {
-    "target": "http://localhost:8085",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "info"
-  },
   "/api/pricing-params": {
     "target": "http://localhost:8086",
     "secure": false,
@@ -132,18 +120,6 @@
     "changeOrigin": true,
     "logLevel": "info"
   },
-  "/api/endorsements": {
-    "target": "http://localhost:8088",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "info"
-  },
-  "/api/cancellations": {
-    "target": "http://localhost:8088",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "info"
-  },
   "/api/renewals": {
     "target": "http://localhost:8088",
     "secure": false,
@@ -164,24 +140,6 @@
   },
   "/api/exception-logs": {
     "target": "http://localhost:8089",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "info"
-  },
-  "/api/reports": {
-    "target": "http://localhost:8090",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "info"
-  },
-  "/api/risk-profiles": {
-    "target": "http://localhost:8091",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "info"
-  },
-  "/api/evidence-refs": {
-    "target": "http://localhost:8091",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"

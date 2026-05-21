@@ -295,7 +295,7 @@ export class SubmissionApiService {
   }
 
   getUWDecisions(submissionId: string) {
-    return this.http.get<any>(`${this.base}/uw-decisions/submission/${submissionId}`);
+    return this.http.get<any>(`${this.base}/uw-decisions/${submissionId}`);
   }
 
   // ── Referrals ─────────────────────────────────────────────────────────────

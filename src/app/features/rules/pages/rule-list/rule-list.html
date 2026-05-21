@@ -1,13 +1,11 @@
 <div class="page-container">
   <app-page-header
     title="UW Rules"
-    subtitle="Eligibility, blocking, referral and loading rules per product line"
+    subtitle="Eligibility, blocking and loading rules per product line"
     icon="bi-diagram-3"
     [breadcrumbs]="breadcrumbs">
     <div class="d-flex gap-2 flex-wrap">
       <a routerLink="/rules/risk-scores"     class="btn btn-sm btn-outline-secondary"><i class="bi bi-speedometer2 me-1"></i>Risk Scoring</a>
-      <a routerLink="/rules/referral-matrix" class="btn btn-sm btn-outline-secondary"><i class="bi bi-grid-3x3 me-1"></i>Referral Matrix</a>
-      <a routerLink="/rules/referrals"       class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left-right me-1"></i>Referrals</a>
       <button class="btn btn-sm btn-outline-primary" (click)="openEvaluate()">
         <i class="bi bi-play-circle me-1"></i>Evaluate
       </button>
@@ -168,9 +166,7 @@
             <strong>Submission:</strong>
             <code class="ms-1 small">{{ ev.submissionID }}</code>
           </div>
-          <span class="badge" [class.bg-danger]="ev.hasBlockingRules" [class.bg-success]="!ev.hasBlockingRules">
-            {{ ev.hasBlockingRules ? 'Blocking rules triggered' : 'Clear' }}
-          </span>
+          <span class="badge bg-success">Evaluated</span>
         </div>
         <small class="text-muted d-block mb-2">Evaluated at {{ ev.evaluatedAt | date:'medium' }}</small>
 

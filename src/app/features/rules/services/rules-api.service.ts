@@ -3,16 +3,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
-  UWRule, RiskScore, ReferralMatrix, Referral,
-  RuleSeverity, UWStatus, RiskBand, Authority, ReferralStatus, CriteriaType,
+  UWRule, RiskScore,
+  RuleSeverity, UWStatus, RiskBand,
   EvaluateRulesResponse, RuleEvaluationResult, PagedResult,
-  SEVERITIES, RISK_BANDS, AUTHORITIES, REFERRAL_STATUSES, CRITERIA_TYPES, UW_STATUSES,
+  SEVERITIES, RISK_BANDS, UW_STATUSES,
   ConditionOperator,
 } from '../models/rules.model';
 
 function normalizePage<T>(res: any, normalizer: (x: any) => T): PagedResult<T> {
-  // Backend returns { content, page, size, totalElements, totalPages }.
-  // If callers ever return a raw array, wrap it as a single page so list pages still work.
   if (Array.isArray(res)) {
     const items = res.map(normalizer);
     return { content: items, page: 0, size: items.length || 1, totalElements: items.length, totalPages: 1 };
@@ -37,7 +35,6 @@ function pageParams(page: number, size: number, extra?: Record<string, string | 
   return p;
 }
 
-// ── enum normalisation: backend may send numeric or string enums ────────────
 function toEnumString<T extends string>(value: unknown, table: readonly T[], fallback: T): T {
   if (typeof value === 'number' && value >= 0 && value < table.length) return table[value];
   if (typeof value === 'string' && (table as readonly string[]).includes(value)) return value as T;
@@ -72,32 +69,6 @@ function normalizeRiskScore(r: any): RiskScore {
     scoreValue:   Number(r?.scoreValue ?? r?.ScoreValue ?? 0),
     band:         toEnumString<RiskBand>(r?.band ?? r?.Band, RISK_BANDS, 'Low'),
     scoredDate:   r?.scoredDate ?? r?.ScoredDate ?? '',
-  };
-}
-
-function normalizeMatrix(r: any): ReferralMatrix {
-  const opRaw = (r?.operator ?? r?.Operator ?? null);
-  return {
-    referralMatrixID: pickId(r, 'referralMatrixID', 'ReferralMatrixID', 'matrixId'),
-    productLine:      r?.productLine ?? r?.ProductLine ?? '',
-    criteriaJSON:     toEnumString<CriteriaType>(r?.criteriaJSON ?? r?.CriteriaJSON, CRITERIA_TYPES, 'SumInsured'),
-    operator:         (opRaw ?? null) as (ConditionOperator | null),
-    threshold:        (r?.threshold ?? r?.Threshold ?? null) || null,
-    requiredAuthority:toEnumString<Authority>(r?.requiredAuthority ?? r?.RequiredAuthority, AUTHORITIES, 'UW1'),
-    status:           toEnumString<UWStatus>(r?.status ?? r?.Status, UW_STATUSES, 'Active'),
-  };
-}
-
-function normalizeReferral(r: any): Referral {
-  return {
-    referralID:        pickId(r, 'referralID', 'ReferralID', 'referralId'),
-    submissionID:      pickId(r, 'submissionID', 'SubmissionID', 'submissionId'),
-    raisedBy:          r?.raisedBy ?? r?.RaisedBy ?? '',
-    reason:            r?.reason ?? r?.Reason ?? '',
-    requiredAuthority: toEnumString<Authority>(r?.requiredAuthority ?? r?.RequiredAuthority, AUTHORITIES, 'UW1'),
-    assignedTo:        r?.assignedTo ?? r?.AssignedTo ?? '',
-    createdDate:       r?.createdDate ?? r?.CreatedDate ?? '',
-    status:            toEnumString<ReferralStatus>(r?.status ?? r?.Status, REFERRAL_STATUSES, 'Pending'),
   };
 }
 
@@ -180,9 +151,8 @@ export class RulesApiService {
       .pipe(map(r => {
         const data = r?.data ?? r;
         return {
-          submissionID:     pickId(data, 'submissionID', 'SubmissionID'),
-          hasBlockingRules: !!(data?.hasBlockingRules ?? data?.HasBlockingRules),
-          evaluatedAt:      data?.evaluatedAt ?? data?.EvaluatedAt ?? '',
+          submissionID: pickId(data, 'submissionID', 'SubmissionID'),
+          evaluatedAt:  data?.evaluatedAt ?? data?.EvaluatedAt ?? '',
           results: asArray({ data: data?.results ?? data?.Results }).map((x): RuleEvaluationResult => ({
             uwRuleID:    pickId(x, 'uwRuleID', 'UWRuleID'),
             ruleName:    (x?.ruleName ?? x?.RuleName ?? null) || null,
@@ -193,105 +163,6 @@ export class RulesApiService {
           })),
         };
       }));
-  }
-
-  // ── Referral Matrix ───────────────────────────────────────────────────────
-  getMatrices(page = 0, size = 20, filters?: {
-    productLine?: string; authority?: Authority | ''; status?: UWStatus | '';
-  }): Observable<PagedResult<ReferralMatrix>> {
-    const params = pageParams(page, size, {
-      productLine: filters?.productLine || undefined,
-      authority:   filters?.authority   || undefined,
-      status:      filters?.status      || undefined,
-    });
-    return this.http.get<any>(`${this.base}/referral-matrix`, { params })
-      .pipe(map(r => normalizePage(r, normalizeMatrix)));
-  }
-
-  getMatrixById(id: string): Observable<ReferralMatrix | null> {
-    return this.http.get<any>(`${this.base}/referral-matrix/${id}`)
-      .pipe(map(r => r ? normalizeMatrix(r?.data ?? r) : null));
-  }
-
-  createMatrix(payload: {
-    productLine: string;
-    criteriaJSON: CriteriaType;
-    operator?: ConditionOperator | null;
-    threshold?: string | null;
-    requiredAuthority: Authority;
-    status: UWStatus;
-  }) {
-    return this.http.post<any>(`${this.base}/referral-matrix`, payload)
-      .pipe(map(r => normalizeMatrix(r?.data ?? r)));
-  }
-
-  updateMatrix(id: string, payload: {
-    productLine: string;
-    criteriaJSON: CriteriaType;
-    operator?: ConditionOperator | null;
-    threshold?: string | null;
-    requiredAuthority: Authority;
-    status: UWStatus;
-  }) {
-    return this.http.put<any>(`${this.base}/referral-matrix/${id}`, payload)
-      .pipe(map(r => normalizeMatrix(r?.data ?? r)));
-  }
-
-  updateMatrixStatus(id: string, status: UWStatus) {
-    return this.http.patch<any>(`${this.base}/referral-matrix/${id}/status`, { status })
-      .pipe(map(r => normalizeMatrix(r?.data ?? r)));
-  }
-
-  deleteMatrix(id: string) {
-    return this.http.delete<void>(`${this.base}/referral-matrix/${id}`);
-  }
-
-  // ── Referrals ─────────────────────────────────────────────────────────────
-  getReferrals(page = 0, size = 20, filters?: {
-    status?: ReferralStatus | ''; authority?: Authority | ''; submissionId?: string;
-  }): Observable<PagedResult<Referral>> {
-    const params = pageParams(page, size, {
-      status:       filters?.status       || undefined,
-      authority:    filters?.authority    || undefined,
-      submissionId: filters?.submissionId || undefined,
-    });
-    return this.http.get<any>(`${this.base}/referrals`, { params })
-      .pipe(map(r => normalizePage(r, normalizeReferral)));
-  }
-
-  getReferralById(id: string): Observable<Referral | null> {
-    return this.http.get<any>(`${this.base}/referrals/${id}`)
-      .pipe(map(r => r ? normalizeReferral(r?.data ?? r) : null));
-  }
-
-  getReferralsBySubmission(submissionId: string): Observable<Referral[]> {
-    return this.http.get<any>(`${this.base}/referrals/submission/${submissionId}`)
-      .pipe(map(r => asArray(r).map(normalizeReferral)));
-  }
-
-  getReferralsByAuthority(authority: Authority): Observable<Referral[]> {
-    return this.http.get<any>(`${this.base}/referrals/authority/${authority}`)
-      .pipe(map(r => asArray(r).map(normalizeReferral)));
-  }
-
-  getReferralsAssignedTo(userId: string): Observable<Referral[]> {
-    return this.http.get<any>(`${this.base}/referrals/assigned/${encodeURIComponent(userId)}`)
-      .pipe(map(r => asArray(r).map(normalizeReferral)));
-  }
-
-  createReferral(payload: { submissionID: string; raisedBy: string; reason: string; requiredAuthority: Authority; assignedTo: string; }) {
-    return this.http.post<any>(`${this.base}/referrals`, payload)
-      .pipe(map(r => normalizeReferral(r?.data ?? r)));
-  }
-
-  updateReferral(id: string, payload: { assignedTo: string; status: ReferralStatus; }) {
-    return this.http.put<any>(`${this.base}/referrals/${id}`, payload)
-      .pipe(map(r => normalizeReferral(r?.data ?? r)));
-  }
-
-  updateReferralStatus(id: string, status: ReferralStatus) {
-    return this.http.patch<any>(`${this.base}/referrals/${id}/status`, { status })
-      .pipe(map(r => normalizeReferral(r?.data ?? r)));
   }
 
   // ── Risk Scores ───────────────────────────────────────────────────────────

@@ -15,75 +15,375 @@
   }
 
   @if (loading()) {
-    <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading questionnaire…</div>
+    <div class="text-center py-5 text-muted">
+      <span class="spinner-border spinner-border-sm me-2"></span>Loading questionnaire…
+    </div>
   } @else {
     <div class="card border-0 shadow-sm">
-      <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2">
+
+      <!-- Card Header -->
+      <div class="card-header bg-transparent border-bottom py-2 d-flex align-items-center gap-2 flex-wrap">
         <i class="bi bi-card-checklist text-primary"></i>
         <span class="fw-semibold small">Risk Assessment</span>
+        @if (productLine()) {
+          <span class="badge {{ productLineBadgeClass() }} ms-1">{{ productLineLabel() }}</span>
+        }
         <span class="text-muted small ms-auto">Submission: {{ submissionId() }}</span>
       </div>
+
       <div class="card-body">
         @if (questionnaire()) {
           <div class="alert alert-success d-flex gap-2 py-2 mb-3">
             <i class="bi bi-check-circle-fill"></i>
-            <span>Questionnaire previously completed on {{ questionnaire()!.completedDate | date:'mediumDate' }}. You may update responses below.</span>
+            <span>Previously completed on {{ questionnaire()!.completedDate | date:'mediumDate' }}. You may update responses below.</span>
           </div>
         }
-        <form [formGroup]="form" novalidate>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label small fw-medium required-mark">Occupation Type</label>
-              <input type="text" class="form-control form-control-sm" formControlName="occupationType"
-                     [class.is-invalid]="form.controls.occupationType.invalid && form.controls.occupationType.touched"
-                     placeholder="e.g. Professional, Manual Labour, Executive" />
-              <div class="invalid-feedback">Occupation type is required.</div>
+
+        <!-- ═══════════════════════════════════════════════
+             LIFE INSURANCE QUESTIONNAIRE
+        ════════════════════════════════════════════════ -->
+        @if (productLine() === 'Life') {
+          <form [formGroup]="lifeForm" novalidate>
+            <div class="section-title mb-3">
+              <i class="bi bi-heart-pulse text-success me-2"></i>Life Insurance Risk Assessment
             </div>
-            <div class="col-md-6">
-              <label class="form-label small fw-medium required-mark">Sum Insured ($)</label>
-              <input type="number" class="form-control form-control-sm" formControlName="sumInsured"
-                     min="0" step="1000"
-                     [class.is-invalid]="form.controls.sumInsured.invalid && form.controls.sumInsured.touched" />
-              <div class="invalid-feedback">Sum insured is required.</div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Sum Insured (₹)</label>
+                <input type="number" class="form-control form-control-sm" formControlName="sumInsured"
+                       min="100000" step="50000"
+                       [class.is-invalid]="lifeForm.controls.sumInsured.invalid && lifeForm.controls.sumInsured.touched" />
+                <div class="invalid-feedback">Sum insured must be greater than 0.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Policy Tenure</label>
+                <select class="form-select form-select-sm" formControlName="policyTenureMonths">
+                  <option [value]="12">12 Months (1 Year)</option>
+                  <option [value]="24">24 Months (2 Years)</option>
+                  <option [value]="36">36 Months (3 Years)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Occupation Type</label>
+                <select class="form-select form-select-sm" formControlName="occupationType"
+                        [class.is-invalid]="lifeForm.controls.occupationType.invalid && lifeForm.controls.occupationType.touched">
+                  <option value="">— Select occupation —</option>
+                  <option value="IT">IT / Software</option>
+                  <option value="Banking">Banking / Finance</option>
+                  <option value="Education">Education</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Agriculture">Agriculture</option>
+                  <option value="Construction">Construction</option>
+                  <option value="Mining">Mining</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div class="invalid-feedback">Occupation type is required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Smoking Status</label>
+                <select class="form-select form-select-sm" formControlName="smokingStatus">
+                  <option value="Non-Smoker">Non-Smoker</option>
+                  <option value="Smoker">Smoker</option>
+                  <option value="Ex-Smoker">Ex-Smoker</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Annual Income (₹)</label>
+                <input type="number" class="form-control form-control-sm" formControlName="annualIncome"
+                       min="0" step="10000"
+                       [class.is-invalid]="lifeForm.controls.annualIncome.invalid && lifeForm.controls.annualIncome.touched" />
+                <div class="invalid-feedback">Annual income is required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium">Existing Medical Conditions</label>
+                <select class="form-select form-select-sm" formControlName="existingConditions">
+                  <option value="None">None</option>
+                  <option value="Diabetes">Diabetes</option>
+                  <option value="Hypertension">Hypertension</option>
+                  <option value="Heart Disease">Heart Disease</option>
+                  <option value="Cancer">Cancer</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium">Family Medical History</label>
+                <select class="form-select form-select-sm" formControlName="familyMedicalHistory">
+                  <option value="None">None</option>
+                  <option value="Diabetes">Diabetes</option>
+                  <option value="Hypertension">Hypertension</option>
+                  <option value="Heart Disease">Heart Disease</option>
+                  <option value="Cancer">Cancer</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-medium">Additional Notes</label>
+                <textarea class="form-control form-control-sm" formControlName="additionalNotes" rows="2"
+                          placeholder="Any additional information relevant to life insurance risk…"></textarea>
+              </div>
             </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-medium">Existing Medical Conditions</label>
-              <select class="form-select form-select-sm" formControlName="existingConditions">
-                <option value="None">None</option>
-                <option value="Diabetes">Diabetes</option>
-                <option value="Hypertension">Hypertension</option>
-                <option value="Heart Disease">Heart Disease</option>
-                <option value="Cancer">Cancer</option>
-                <option value="Other">Other</option>
-              </select>
+          </form>
+        }
+
+        <!-- ═══════════════════════════════════════════════
+             HEALTH INSURANCE QUESTIONNAIRE
+        ════════════════════════════════════════════════ -->
+        @if (productLine() === 'Health') {
+          <form [formGroup]="healthForm" novalidate>
+            <div class="section-title mb-3">
+              <i class="bi bi-hospital text-info me-2"></i>Health Insurance Risk Assessment
             </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-medium">Smoking Status</label>
-              <select class="form-select form-select-sm" formControlName="smokingStatus">
-                <option value="Non-Smoker">Non-Smoker</option>
-                <option value="Smoker">Smoker</option>
-                <option value="Ex-Smoker">Ex-Smoker</option>
-              </select>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Sum Insured (₹)</label>
+                <input type="number" class="form-control form-control-sm" formControlName="sumInsured"
+                       min="100000" step="50000"
+                       [class.is-invalid]="healthForm.controls.sumInsured.invalid && healthForm.controls.sumInsured.touched" />
+                <div class="invalid-feedback">Sum insured must be greater than 0.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Policy Tenure</label>
+                <select class="form-select form-select-sm" formControlName="policyTenureMonths">
+                  <option [value]="12">12 Months (1 Year)</option>
+                  <option [value]="24">24 Months (2 Years)</option>
+                  <option [value]="36">36 Months (3 Years)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Occupation Type</label>
+                <select class="form-select form-select-sm" formControlName="occupationType"
+                        [class.is-invalid]="healthForm.controls.occupationType.invalid && healthForm.controls.occupationType.touched">
+                  <option value="">— Select occupation —</option>
+                  <option value="IT">IT / Software</option>
+                  <option value="Banking">Banking / Finance</option>
+                  <option value="Education">Education</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Agriculture">Agriculture</option>
+                  <option value="Construction">Construction</option>
+                  <option value="Mining">Mining</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div class="invalid-feedback">Occupation type is required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium">Existing Medical Conditions</label>
+                <select class="form-select form-select-sm" formControlName="existingConditions">
+                  <option value="None">None</option>
+                  <option value="Diabetes">Diabetes</option>
+                  <option value="Hypertension">Hypertension</option>
+                  <option value="Heart Disease">Heart Disease</option>
+                  <option value="Cancer">Cancer</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Smoking Status</label>
+                <select class="form-select form-select-sm" formControlName="smokingStatus">
+                  <option value="Non-Smoker">Non-Smoker</option>
+                  <option value="Smoker">Smoker</option>
+                  <option value="Ex-Smoker">Ex-Smoker</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Number of Family Members to Cover</label>
+                <input type="number" class="form-control form-control-sm" formControlName="numberOfFamilyMembers"
+                       min="1" step="1"
+                       [class.is-invalid]="healthForm.controls.numberOfFamilyMembers.invalid && healthForm.controls.numberOfFamilyMembers.touched" />
+                <div class="invalid-feedback">At least 1 family member required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium">Hospitalisation in Last 3 Years?</label>
+                <select class="form-select form-select-sm" formControlName="hospitalizationLast3Years">
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium">Surgical History in Last 5 Years?</label>
+                <select class="form-select form-select-sm" formControlName="surgicalHistoryLast5Years">
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-medium">Additional Notes</label>
+                <textarea class="form-control form-control-sm" formControlName="additionalNotes" rows="2"
+                          placeholder="Any pre-existing conditions or medical history details…"></textarea>
+              </div>
             </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-medium">Annual Income ($)</label>
-              <input type="number" class="form-control form-control-sm" formControlName="annualIncome" min="0" step="1000" />
+          </form>
+        }
+
+        <!-- ═══════════════════════════════════════════════
+             PnC INSURANCE QUESTIONNAIRE
+        ════════════════════════════════════════════════ -->
+        @if (productLine() === 'PnC') {
+          <form [formGroup]="pncForm" novalidate>
+            <div class="section-title mb-3">
+              <i class="bi bi-house-check text-warning me-2"></i>Property &amp; Casualty Risk Assessment
             </div>
-            <div class="col-12">
-              <label class="form-label small fw-medium">Additional Notes</label>
-              <textarea class="form-control form-control-sm" formControlName="additionalNotes" rows="3"
-                        placeholder="Any additional information relevant to the risk…"></textarea>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Sum Insured (₹)</label>
+                <input type="number" class="form-control form-control-sm" formControlName="sumInsured"
+                       min="50000" step="25000"
+                       [class.is-invalid]="pncForm.controls.sumInsured.invalid && pncForm.controls.sumInsured.touched" />
+                <div class="invalid-feedback">Sum insured must be greater than 0.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Policy Tenure</label>
+                <select class="form-select form-select-sm" formControlName="policyTenureMonths">
+                  <option [value]="12">12 Months (1 Year)</option>
+                  <option [value]="24">24 Months (2 Years)</option>
+                  <option [value]="36">36 Months (3 Years)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Property Type</label>
+                <select class="form-select form-select-sm" formControlName="propertyType"
+                        [class.is-invalid]="pncForm.controls.propertyType.invalid && pncForm.controls.propertyType.touched">
+                  <option value="Residential">Residential</option>
+                  <option value="Commercial">Commercial</option>
+                  <option value="Industrial">Industrial</option>
+                  <option value="Mixed-Use">Mixed-Use</option>
+                </select>
+                <div class="invalid-feedback">Property type is required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Year of Construction</label>
+                <input type="number" class="form-control form-control-sm" formControlName="constructionYear"
+                       min="1900" [max]="2025" step="1"
+                       [class.is-invalid]="pncForm.controls.constructionYear.invalid && pncForm.controls.constructionYear.touched" />
+                <div class="invalid-feedback">Please enter a valid construction year.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Occupancy Type</label>
+                <select class="form-select form-select-sm" formControlName="occupancyType">
+                  <option value="Owner-Occupied">Owner-Occupied</option>
+                  <option value="Tenant">Tenant</option>
+                  <option value="Vacant">Vacant</option>
+                  <option value="Mixed">Mixed</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium">Security System Installed?</label>
+                <select class="form-select form-select-sm" formControlName="hasSecuritySystem">
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Previous Claims in Last 5 Years</label>
+                <input type="number" class="form-control form-control-sm" formControlName="previousClaimsLast5Years"
+                       min="0" step="1"
+                       [class.is-invalid]="pncForm.controls.previousClaimsLast5Years.invalid && pncForm.controls.previousClaimsLast5Years.touched" />
+                <div class="invalid-feedback">Please enter number of previous claims (0 or more).</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-medium">Additional Notes</label>
+                <textarea class="form-control form-control-sm" formControlName="additionalNotes" rows="2"
+                          placeholder="Describe the property, location, special risks or valuables…"></textarea>
+              </div>
             </div>
+          </form>
+        }
+
+        <!-- ═══════════════════════════════════════════════
+             COMMERCIAL INSURANCE QUESTIONNAIRE
+        ════════════════════════════════════════════════ -->
+        @if (productLine() === 'Commercial') {
+          <form [formGroup]="commercialForm" novalidate>
+            <div class="section-title mb-3">
+              <i class="bi bi-building text-primary me-2"></i>Commercial Insurance Risk Assessment
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Sum Insured (₹)</label>
+                <input type="number" class="form-control form-control-sm" formControlName="sumInsured"
+                       min="100000" step="100000"
+                       [class.is-invalid]="commercialForm.controls.sumInsured.invalid && commercialForm.controls.sumInsured.touched" />
+                <div class="invalid-feedback">Sum insured must be greater than 0.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Policy Tenure</label>
+                <select class="form-select form-select-sm" formControlName="policyTenureMonths">
+                  <option [value]="12">12 Months (1 Year)</option>
+                  <option [value]="24">24 Months (2 Years)</option>
+                  <option [value]="36">36 Months (3 Years)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Business Type</label>
+                <select class="form-select form-select-sm" formControlName="businessType"
+                        [class.is-invalid]="commercialForm.controls.businessType.invalid && commercialForm.controls.businessType.touched">
+                  <option value="">— Select business type —</option>
+                  <option value="Retail">Retail</option>
+                  <option value="Manufacturing">Manufacturing</option>
+                  <option value="Services">Services</option>
+                  <option value="IT">IT / Technology</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Logistics">Logistics / Transport</option>
+                  <option value="Hospitality">Hospitality</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div class="invalid-feedback">Business type is required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Number of Employees</label>
+                <input type="number" class="form-control form-control-sm" formControlName="numberOfEmployees"
+                       min="1" step="1"
+                       [class.is-invalid]="commercialForm.controls.numberOfEmployees.invalid && commercialForm.controls.numberOfEmployees.touched" />
+                <div class="invalid-feedback">At least 1 employee required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Annual Revenue (₹)</label>
+                <input type="number" class="form-control form-control-sm" formControlName="annualRevenue"
+                       min="0" step="100000"
+                       [class.is-invalid]="commercialForm.controls.annualRevenue.invalid && commercialForm.controls.annualRevenue.touched" />
+                <div class="invalid-feedback">Annual revenue is required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Years in Operation</label>
+                <input type="number" class="form-control form-control-sm" formControlName="yearsInOperation"
+                       min="0" step="1"
+                       [class.is-invalid]="commercialForm.controls.yearsInOperation.invalid && commercialForm.controls.yearsInOperation.touched" />
+                <div class="invalid-feedback">Years in operation is required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium required-mark">Risk Location</label>
+                <select class="form-select form-select-sm" formControlName="riskLocation">
+                  <option value="Urban">Urban</option>
+                  <option value="Semi-Urban">Semi-Urban</option>
+                  <option value="Rural">Rural</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-medium">Additional Notes</label>
+                <textarea class="form-control form-control-sm" formControlName="additionalNotes" rows="2"
+                          placeholder="Describe business operations, key risks, special equipment or assets…"></textarea>
+              </div>
+            </div>
+          </form>
+        }
+
+        <!-- Fallback if productLine not yet loaded -->
+        @if (!productLine()) {
+          <div class="text-center py-4 text-muted">
+            <span class="spinner-border spinner-border-sm me-2"></span>Loading insurance type…
           </div>
-        </form>
+        }
+
       </div>
+
       <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
         <a [routerLink]="['/submissions', submissionId()]" class="btn btn-outline-secondary btn-sm">
           <i class="bi bi-arrow-left me-1"></i>Back to Submission
         </a>
-        <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving()">
+        <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving() || !productLine()">
           @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          Save Questionnaire
+          <i class="bi bi-save me-1"></i>Save Questionnaire
         </button>
       </div>
     </div>

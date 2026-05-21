@@ -52,7 +52,7 @@ export class PartyListPage implements OnInit {
     if (this.isAgent()) return p.createdByUserId === this.auth.currentUser()?.userId;
     return false;
   }
-
+//Search and Sort
   readonly filtered = computed(() => {
     const q = this.searchQuery().toLowerCase();
     const t = this.filterType();

@@ -51,8 +51,7 @@ export class Sidebar {
     {
       title: 'Underwriting',
       items: [
-        { label: 'UW Workbench',    icon: 'bi-briefcase',    route: '/underwriting', roles: ['Underwriter', 'Admin'] },
-        { label: 'Risk & Evidence', icon: 'bi-shield-check', route: '/risk',          roles: ['Underwriter', 'UWAssistant', 'Admin'] },
+        { label: 'UW Workbench', icon: 'bi-briefcase', route: '/underwriting', roles: ['Underwriter', 'Admin'] },
       ],
     },
 
@@ -60,9 +59,8 @@ export class Sidebar {
     {
       title: 'Rules & Scoring',
       items: [
-        { label: 'UW Rules',        icon: 'bi-diagram-3',      route: '/rules/list',           roles: ['Underwriter', 'UWAssistant', 'Operations', 'Admin'] },
-        { label: 'Risk Scoring',    icon: 'bi-speedometer2',   route: '/rules/risk-scores',    roles: ['Underwriter', 'UWAssistant', 'Operations', 'Admin'] },
-        { label: 'Referral Matrix', icon: 'bi-grid-3x3',       route: '/rules/referral-matrix', roles: ['Underwriter', 'UWAssistant', 'Operations', 'Admin'] },
+        { label: 'UW Rules',     icon: 'bi-diagram-3',    route: '/rules/list',        roles: ['Underwriter', 'UWAssistant', 'Operations', 'Admin'] },
+        { label: 'Risk Scoring', icon: 'bi-speedometer2', route: '/rules/risk-scores', roles: ['Underwriter', 'UWAssistant', 'Operations', 'Admin'] },
       ],
     },
 
@@ -90,14 +88,6 @@ export class Sidebar {
       items: [
         { label: 'Checklists',    icon: 'bi-clipboard2-check', route: '/compliance/checklists',  roles: ['Compliance', 'UWAssistant', 'Admin'] },
         { label: 'Exception Log', icon: 'bi-bug',              route: '/compliance/exceptions', roles: ['Compliance', 'Admin'] },
-      ],
-    },
-
-    // ── Reports  (Compliance + PricingAnalyst + Underwriter + Admin) ─────────
-    {
-      title: 'Reports',
-      items: [
-        { label: 'Reports', icon: 'bi-bar-chart-line', route: '/reports', roles: ['Compliance', 'PricingAnalyst', 'Underwriter', 'Admin'] },
       ],
     },
 

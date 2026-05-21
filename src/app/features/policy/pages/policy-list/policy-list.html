@@ -255,21 +255,54 @@
                 <span class="fw-semibold">Policy Details</span>
               </div>
               <div class="row g-2">
+
+                <!-- Auto-generated Policy Number (readonly) -->
                 <div class="col-7">
-                  <label class="form-label small fw-medium mb-1">Policy Number <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control form-control-sm"
-                         placeholder="e.g. POL-2026-001"
-                         [value]="bindPolicyNumber()"
-                         (input)="bindPolicyNumber.set($any($event.target).value)" />
+                  <label class="form-label small fw-medium mb-1">
+                    Policy Number
+                    <span class="badge bg-secondary ms-1" style="font-size:.65rem;font-weight:500">Auto-generated</span>
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light">
+                      @if (generatingPolicyNum()) {
+                        <span class="spinner-border spinner-border-sm text-muted"></span>
+                      } @else {
+                        <i class="bi bi-hash text-success"></i>
+                      }
+                    </span>
+                    <input type="text" class="form-control form-control-sm bg-light"
+                           readonly
+                           [value]="generatingPolicyNum() ? 'Generating…' : bindPolicyNumber()"
+                           placeholder="Generating…" />
+                  </div>
+                  <div class="form-text text-muted" style="font-size:.7rem">
+                    Unique number generated automatically — guaranteed not to duplicate existing policies.
+                  </div>
                 </div>
+
+                <!-- Auto-fetched Product Line (readonly) -->
                 <div class="col-5">
-                  <label class="form-label small fw-medium mb-1">Product Line <span class="text-danger">*</span></label>
-                  <select class="form-select form-select-sm"
-                          [value]="bindProductLine()"
-                          (change)="bindProductLine.set($any($event.target).value)">
-                    @for (p of productLines; track p) { <option [value]="p">{{ p }}</option> }
-                  </select>
+                  <label class="form-label small fw-medium mb-1">
+                    Product Line
+                    <span class="badge bg-secondary ms-1" style="font-size:.65rem;font-weight:500">From submission</span>
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light">
+                      @if (fetchingProductLine()) {
+                        <span class="spinner-border spinner-border-sm text-muted"></span>
+                      } @else {
+                        <i class="bi bi-layers text-primary"></i>
+                      }
+                    </span>
+                    <input type="text" class="form-control form-control-sm bg-light"
+                           readonly
+                           [value]="fetchingProductLine() ? 'Fetching…' : (bindProductLine() || '—')" />
+                  </div>
+                  <div class="form-text text-muted" style="font-size:.7rem">
+                    Fetched automatically from the linked submission.
+                  </div>
                 </div>
+
                 <div class="col-6">
                   <label class="form-label small fw-medium mb-1">Inception Date <span class="text-danger">*</span></label>
                   <input type="date" class="form-control form-control-sm"
@@ -282,6 +315,7 @@
                          [value]="bindExpiryDate()"
                          (input)="bindExpiryDate.set($any($event.target).value)" />
                 </div>
+
               </div>
             </div>
           }
@@ -294,7 +328,7 @@
             Cancel
           </button>
           <button class="btn btn-success btn-sm px-4" (click)="bindPolicy()"
-                  [disabled]="binding() || !bindQuoteId() || !bindPolicyNumber().trim() || !bindInceptionDate() || !bindExpiryDate()">
+                  [disabled]="binding() || !bindQuoteId() || !bindInceptionDate() || !bindExpiryDate() || generatingPolicyNum() || fetchingProductLine() || !bindProductLine()">
             @if (binding()) {
               <span class="spinner-border spinner-border-sm me-1"></span>Binding…
             } @else {

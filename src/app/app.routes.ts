@@ -37,11 +37,6 @@ export const routes: Routes = [
         loadChildren: () => import('./features/submission/submission.routes').then(m => m.SUBMISSION_ROUTES),
       },
       {
-        path: 'risk',
-        canActivate: [roleGuard], data: { roles: ['Underwriter', 'UWAssistant', 'Admin'] },
-        loadChildren: () => import('./features/risk/risk.routes').then(m => m.RISK_ROUTES),
-      },
-      {
         path: 'rules',
         canActivate: [roleGuard], data: { roles: ['Underwriter', 'UWAssistant', 'Operations', 'Admin'] },
         loadChildren: () => import('./features/rules/rules.routes').then(m => m.RULES_ROUTES),
@@ -66,12 +61,7 @@ export const routes: Routes = [
         canActivate: [roleGuard], data: { roles: ['Compliance', 'UWAssistant', 'Admin'] },
         loadChildren: () => import('./features/compliance/compliance.routes').then(m => m.COMPLIANCE_ROUTES),
       },
-      {
-        path: 'reports',
-        canActivate: [roleGuard], data: { roles: ['Compliance', 'PricingAnalyst', 'Underwriter', 'Admin'] },
-        loadChildren: () => import('./features/reports/reports.routes').then(m => m.REPORTS_ROUTES),
-      },
-      { path: 'notifications', loadChildren: () => import('./features/notifications/notifications.routes').then(m => m.NOTIFICATIONS_ROUTES) },
+{ path: 'notifications', loadChildren: () => import('./features/notifications/notifications.routes').then(m => m.NOTIFICATIONS_ROUTES) },
       { path: 'profile',       loadComponent: () => import('./features/auth/pages/profile/profile').then(m => m.ProfilePage) },
       { path: 'access-denied', loadComponent: () => import('./features/access-denied/access-denied').then(m => m.AccessDeniedPage) },
       {

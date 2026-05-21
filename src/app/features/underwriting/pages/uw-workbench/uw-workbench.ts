@@ -290,8 +290,7 @@ export class UwWorkbenchPage implements OnInit {
         const data = res?.data ?? res;
         this.rulesResult.set(data);
         this.evaluatingRules.set(false);
-        const rec = data?.recommendation ?? '';
-        this.flash('success', `Rules evaluated — Recommendation: ${rec}`);
+        this.flash('success', 'Rules evaluated successfully.');
       },
       error: () => { this.evaluatingRules.set(false); this.flash('danger', 'Rules evaluation failed.'); },
     });

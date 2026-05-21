@@ -1,1 +1,14 @@
-﻿
+.section-title {
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: #6c757d;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.required-mark::after {
+  content: ' *';
+  color: #dc3545;
+}

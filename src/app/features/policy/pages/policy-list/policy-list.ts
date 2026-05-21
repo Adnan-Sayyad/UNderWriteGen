@@ -39,11 +39,13 @@ export class PolicyListPage implements OnInit {
   readonly binding       = signal(false);
 
   // Bind form fields
-  readonly bindSubId         = signal('');
-  readonly bindPolicyNumber  = signal('');
-  readonly bindProductLine   = signal('Life');
-  readonly bindInceptionDate = signal('');
-  readonly bindExpiryDate    = signal('');
+  readonly bindSubId            = signal('');
+  readonly bindPolicyNumber     = signal('');
+  readonly bindProductLine      = signal('');
+  readonly bindInceptionDate    = signal('');
+  readonly bindExpiryDate       = signal('');
+  readonly generatingPolicyNum  = signal(false);
+  readonly fetchingProductLine  = signal(false);
 
   // Accepted quotes for bind dropdown
   readonly acceptedQuotes = signal<Quote[]>([]);
@@ -104,9 +106,11 @@ export class PolicyListPage implements OnInit {
     this.bindQuoteId.set('');
     this.bindSubId.set('');
     this.bindPolicyNumber.set('');
-    this.bindProductLine.set('Life');
+    this.bindProductLine.set('');
     this.bindInceptionDate.set('');
     this.bindExpiryDate.set('');
+    this.generatingPolicyNum.set(false);
+    this.fetchingProductLine.set(false);
     this.loadAcceptedQuotes();
   }
 
@@ -127,9 +131,33 @@ export class PolicyListPage implements OnInit {
   onQuoteSelect(quoteId: string): void {
     this.bindQuoteId.set(quoteId);
     const q = this.acceptedQuotes().find(x => x.quoteId === quoteId);
-    if (q) {
-      this.bindSubId.set(q.submissionId);
-    }
+    if (!q) return;
+
+    this.bindSubId.set(q.submissionId);
+    this.bindPolicyNumber.set('');
+    this.bindProductLine.set('');
+
+    // 1. Auto-fetch product line from submission
+    this.fetchingProductLine.set(true);
+    this.submissionSvc.getById(q.submissionId).subscribe({
+      next: (res: any) => {
+        const sub = res?.data ?? res;
+        const pl: string = sub?.productLine ?? '';
+        this.bindProductLine.set(pl);
+        this.fetchingProductLine.set(false);
+      },
+      error: () => { this.bindProductLine.set(''); this.fetchingProductLine.set(false); },
+    });
+
+    // 2. Auto-generate a unique policy number
+    this.generatingPolicyNum.set(true);
+    this.svc.generatePolicyNumber().subscribe({
+      next: (res: any) => {
+        this.bindPolicyNumber.set(res?.policyNumber ?? '');
+        this.generatingPolicyNum.set(false);
+      },
+      error: () => { this.bindPolicyNumber.set(''); this.generatingPolicyNum.set(false); },
+    });
   }
 
   bindPolicy(): void {
@@ -138,8 +166,12 @@ export class PolicyListPage implements OnInit {
     const pl  = this.bindProductLine();
     const id  = this.bindInceptionDate();
     const ed  = this.bindExpiryDate();
-    if (!this.bindQuoteId() || !sid || !pn || !pl || !id || !ed) {
-      this.flash('danger', 'All fields are required to bind a policy.');
+    if (!this.bindQuoteId() || !sid || !pl || !id || !ed) {
+      this.flash('danger', 'Please select a quote and fill in all date fields.');
+      return;
+    }
+    if (this.generatingPolicyNum() || this.fetchingProductLine()) {
+      this.flash('danger', 'Please wait — fetching policy details…');
       return;
     }
     this.binding.set(true);
