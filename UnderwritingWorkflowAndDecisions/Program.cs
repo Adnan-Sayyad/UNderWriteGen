@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using UnderwritingWorkflowAndDecisions.Data;
 using UnderwritingWorkflowAndDecisions.Services;
 
@@ -13,6 +14,29 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "UW Workflow & Decisions Service", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name         = "Authorization",
+        Type         = SecuritySchemeType.Http,
+        Scheme       = "bearer",
+        BearerFormat = "JWT",
+        In           = ParameterLocation.Header,
+        Description  = "Paste your JWT token here (without 'Bearer ' prefix)"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id   = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 // Register EF Core DbContext
@@ -45,6 +69,13 @@ builder.Services.AddCors(opts =>
 builder.Services.AddScoped<IUWNoteService, UWNoteService>();
 builder.Services.AddScoped<IUWDecisionService, UWDecisionService>();
 builder.Services.AddScoped<ISubjectivityService, SubjectivityService>();
+builder.Services.AddScoped<IAiSummaryService, AiSummaryService>();
+
+// Named HTTP client for Groq API (OpenAI-compatible, free tier)
+builder.Services.AddHttpClient("GroqApi", c =>
+{
+    c.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
+});
 
 // Inter-service HTTP clients
 var submissionApiUrl = builder.Configuration["Services:SubmissionApi"] ?? "http://localhost:8080/";

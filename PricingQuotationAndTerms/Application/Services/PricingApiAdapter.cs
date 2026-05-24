@@ -10,26 +10,38 @@ namespace PricingQuotationAndTerms.Application.Services;
 /// Bridges the public IPricingApi contract (used by other modules)
 /// to our internal IPricingService (which has richer input types).
 ///
-/// Why this exists:
-///   IPricingApi only takes a submissionId (simple contract for callers).
-///   IPricingService needs full SubmissionPricingInput + RiskScoreInput.
-///   This adapter fetches the submission and builds the full input objects.
+/// Flow:
+///   1. Fetch submission data from SubmissionAndIntake service.
+///   2. Fetch the risk score from Rules/Scoring service.
+///      If no score exists yet, trigger calculation first.
+///   3. Pass both to PricingService to produce the premium breakdown.
 /// </summary>
 public class PricingApiAdapter : IPricingApi
 {
     private readonly IPricingService _pricingService;
     private readonly ISubmissionApi  _submissionApi;
+    private readonly IRulesApi       _rulesApi;
 
-    public PricingApiAdapter(IPricingService pricingService, ISubmissionApi submissionApi)
+    public PricingApiAdapter(
+        IPricingService pricingService,
+        ISubmissionApi  submissionApi,
+        IRulesApi       rulesApi)
     {
         _pricingService = pricingService;
         _submissionApi  = submissionApi;
+        _rulesApi       = rulesApi;
     }
 
     public async Task<PricingResultDto> CalculatePricingAsync(Guid submissionId, CancellationToken ct = default)
     {
         var submission = await _submissionApi.GetSubmissionByIdAsync(submissionId, ct)
             ?? throw new KeyNotFoundException($"Submission '{submissionId}' not found.");
+
+        // Get the risk score from the Rules/Scoring service.
+        // If no score has been calculated yet, trigger the calculation now.
+        var riskScoreDto = await _rulesApi.GetRiskScoreAsync(submissionId, ct);
+        if (riskScoreDto is null)
+            riskScoreDto = await _rulesApi.CalculateRiskScoreAsync(submissionId, ct);
 
         var pricingInput = new SubmissionPricingInput
         {
@@ -43,9 +55,10 @@ public class PricingApiAdapter : IPricingApi
 
         var riskInput = new RiskScoreInput
         {
-            SubmissionId = submission.Id,
-            ScoreValue   = submission.RiskScore,
-            Band         = submission.RiskBand
+            SubmissionId = submissionId,
+            ScoreValue   = riskScoreDto.ScoreValue,
+            Band         = riskScoreDto.Band,
+            ModelVersion = riskScoreDto.ModelVersion
         };
 
         var result = await _pricingService.CalculatePremiumAsync(pricingInput, riskInput, ct);

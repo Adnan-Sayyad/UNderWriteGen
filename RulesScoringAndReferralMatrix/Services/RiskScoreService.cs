@@ -8,11 +8,15 @@ namespace RulesScoringAndReferralMatrix.Services
 {
     public class RiskScoreService : IRiskScoreService
     {
-        private readonly IRiskScoreRepository _repository;
+        private readonly IRiskScoreRepository      _repository;
+        private readonly ISubmissionClientService  _submissionClient;
 
-        public RiskScoreService(IRiskScoreRepository repository)
+        public RiskScoreService(
+            IRiskScoreRepository     repository,
+            ISubmissionClientService submissionClient)
         {
-            _repository = repository;
+            _repository       = repository;
+            _submissionClient = submissionClient;
         }
 
         public async Task<IEnumerable<RiskScoreResponseDto>> GetAllScoresAsync()
@@ -79,37 +83,107 @@ namespace RulesScoringAndReferralMatrix.Services
             {
                 SubmissionID = dto.SubmissionID,
                 ModelVersion = dto.ModelVersion,
-                ScoreValue = dto.ScoreValue,
-                Band = dto.Band,
-                ScoredDate = dto.ScoredDate == default ? DateTime.UtcNow : dto.ScoredDate
+                ScoreValue   = dto.ScoreValue,
+                Band         = dto.Band,
+                ScoredDate   = dto.ScoredDate == default ? DateTime.UtcNow : dto.ScoredDate
             };
-
             var created = await _repository.CreateAsync(score);
             return MapToResponseDto(created);
         }
 
+        public async Task<RiskScoreResponseDto> UpsertScoreAsync(
+            Guid submissionId, double scoreValue, Band band, string modelVersion)
+        {
+            var record = await _repository.UpsertScoreAsync(submissionId, scoreValue, band, modelVersion);
+            return MapToResponseDto(record);
+        }
+
+        /// <summary>
+        /// Calculates a risk score based on real submission factors fetched from the
+        /// Submission service. Factors: occupation type, sum insured, product line, tenure.
+        /// Score range: 0–100  (higher = more risky)
+        /// Bands: Low &lt; 35 | Medium 35–64 | High 65–84 | Unacceptable ≥ 85
+        /// </summary>
         public async Task<RiskScoreResponseDto> CalculateScoreForSubmissionAsync(Guid submissionId)
         {
-            // Derive a deterministic score from the submissionId so the same submission
-            // always produces the same value regardless of how many times this is called.
-            var seed       = BitConverter.ToInt32(submissionId.ToByteArray(), 0);
-            var scoreValue = Math.Round(new Random(seed).NextDouble() * 100, 2);
-            var band       = scoreValue < 33 ? Band.Low : scoreValue < 66 ? Band.Medium : Band.High;
+            var submission = await _submissionClient.GetSubmissionAsync(submissionId)
+                ?? throw new KeyNotFoundException($"Submission '{submissionId}' not found.");
 
-            // Upsert: corrects any old random records in the DB and ensures exactly
-            // one record per submission with the stable deterministic value.
-            var record = await _repository.UpsertScoreAsync(submissionId, scoreValue, band, "v1.0");
+            double score = 20.0; // base score
+
+            // ── Occupation factor ────────────────────────────────────────
+            string occ = submission.OccupationType.ToLowerInvariant();
+            score += occ switch
+            {
+                var o when o.Contains("explo")   || o.Contains("demoli")   => 45,
+                var o when o.Contains("chemi")   || o.Contains("nuclear")  => 40,
+                var o when o.Contains("mining")                             => 40,
+                var o when o.Contains("construct")                          => 30,
+                var o when o.Contains("offshore") || o.Contains("fishing") => 25,
+                var o when o.Contains("manufactur")                         => 20,
+                var o when o.Contains("transport") || o.Contains("logist") => 15,
+                var o when o.Contains("health") || o.Contains("medical")   => 15,
+                var o when o.Contains("retail") || o.Contains("hospit")    => 10,
+                var o when o.Contains("office") || o.Contains("admin")
+                        || o.Contains("clerk") || o.Contains("profess")
+                        || o.Contains("it")    || o.Contains("software")
+                        || o.Contains("legal") || o.Contains("finance")
+                        || o.Contains("educat")                             => 0,
+                _ => 10  // unknown occupations treated as moderate
+            };
+
+            // ── Sum insured factor ───────────────────────────────────────
+            score += submission.SumInsured switch
+            {
+                > 100_000_000m => 30,
+                > 50_000_000m  => 25,
+                > 20_000_000m  => 15,
+                > 10_000_000m  => 10,
+                > 5_000_000m   => 5,
+                _              => 0
+            };
+
+            // ── Product line factor ──────────────────────────────────────
+            string pl = submission.ProductLine.ToLowerInvariant();
+            score += pl switch
+            {
+                "commercial" => 10,
+                "pnc"        => 5,
+                "health"     => 5,
+                _            => 0  // Life
+            };
+
+            // ── Tenure factor ────────────────────────────────────────────
+            score += submission.PolicyTenureMonths switch
+            {
+                >= 60 => 5,
+                >= 36 => 3,
+                < 6   => -5,
+                _     => 0
+            };
+
+            score = Math.Round(Math.Clamp(score, 0.0, 100.0), 2);
+
+            var band = score switch
+            {
+                >= 85 => Band.Unacceptable,
+                >= 65 => Band.High,
+                >= 35 => Band.Medium,
+                _     => Band.Low
+            };
+
+            var record = await _repository.UpsertScoreAsync(submissionId, score, band, "v2.0");
             return MapToResponseDto(record);
         }
 
         private static RiskScoreResponseDto MapToResponseDto(RiskScore score) => new()
         {
-            RiskScoreID = score.RiskScoreID,
+            RiskScoreID  = score.RiskScoreID,
             SubmissionID = score.SubmissionID,
             ModelVersion = score.ModelVersion,
-            ScoreValue = score.ScoreValue,
-            Band = score.Band,
-            ScoredDate = score.ScoredDate
+            ScoreValue   = score.ScoreValue,
+            Band         = score.Band,
+            ScoredDate   = score.ScoredDate
         };
     }
 }

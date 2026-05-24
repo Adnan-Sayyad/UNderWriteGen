@@ -37,6 +37,13 @@ public static class DependencyInjection
         // ── Application Services ──────────────────────────────────────
         services.AddScoped<IPricingService, PricingService>();
         services.AddScoped<IPricingParamService, PricingParamService>();
+        services.AddScoped<IAiExplanationService, AiExplanationService>();
+
+        // Named HTTP client for Groq API (OpenAI-compatible, free tier)
+        services.AddHttpClient("GroqApi", c =>
+        {
+            c.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
+        });
 
         services.AddScoped<QuoteService>();
         services.AddScoped<IQuoteService>(sp => sp.GetRequiredService<QuoteService>());

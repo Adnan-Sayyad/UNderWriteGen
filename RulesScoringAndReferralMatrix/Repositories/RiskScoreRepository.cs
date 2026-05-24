@@ -103,7 +103,7 @@ namespace RulesScoringAndReferralMatrix.Repositories
                 record.ScoreValue   = scoreValue;
                 record.Band         = band;
                 record.ModelVersion = modelVersion;
-                record.ScoredDate   = record.ScoredDate; // preserve original date
+                record.ScoredDate   = DateTime.UtcNow;
             }
             else
             {

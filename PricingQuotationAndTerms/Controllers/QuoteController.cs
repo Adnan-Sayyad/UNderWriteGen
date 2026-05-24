@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PricingQuotationAndTerms.Application.DTOs.Requests;
 using PricingQuotationAndTerms.Application.Interfaces;
+using PricingQuotationAndTerms.Contracts.Interfaces;
 
 namespace PricingQuotationAndTerms.Controllers;
 
@@ -11,13 +12,21 @@ namespace PricingQuotationAndTerms.Controllers;
 [Authorize]
 public class QuoteController : ControllerBase
 {
-    private readonly IQuoteService _quoteService;
+    private readonly IQuoteService         _quoteService;
+    private readonly ISubmissionApi        _submissionApi;
+    private readonly IAiExplanationService _aiExplanation;
     private readonly ILogger<QuoteController> _logger;
 
-    public QuoteController(IQuoteService quoteService, ILogger<QuoteController> logger)
+    public QuoteController(
+        IQuoteService         quoteService,
+        ISubmissionApi        submissionApi,
+        IAiExplanationService aiExplanation,
+        ILogger<QuoteController> logger)
     {
-        _quoteService = quoteService;
-        _logger       = logger;
+        _quoteService  = quoteService;
+        _submissionApi = submissionApi;
+        _aiExplanation = aiExplanation;
+        _logger        = logger;
     }
 
     // ═══════════════════════════════════════════════════════
@@ -175,6 +184,28 @@ public class QuoteController : ControllerBase
             return Ok(new { message = "Terms updated successfully.", quoteId });
         }
         catch (KeyNotFoundException ex) { return NotFound(new { error = ex.Message }); }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // GET /api/quotes/{quoteId}/ai-explanation
+    // Returns a Claude-generated plain-English premium letter
+    // that an agent can send directly to the customer.
+    // ═══════════════════════════════════════════════════════
+    [HttpGet("{quoteId:guid}/ai-explanation")]
+    [Authorize(Roles = "PricingAnalyst,Agent,Underwriter,Admin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAiExplanation(Guid quoteId, CancellationToken ct)
+    {
+        var quote = await _quoteService.GetQuoteByIdAsync(quoteId, ct);
+        if (quote is null)
+            return NotFound(new { error = $"Quote '{quoteId}' not found." });
+
+        // Fetch submission context for richer explanation (non-blocking if unavailable)
+        var submission = await _submissionApi.GetSubmissionByIdAsync(quote.SubmissionId, ct);
+
+        var result = await _aiExplanation.ExplainQuoteAsync(quote, submission, ct);
+        return Ok(result);
     }
 
     // ═══════════════════════════════════════════════════════

@@ -11,8 +11,13 @@ namespace UnderwritingWorkflowAndDecisions.Controllers
     public class UWDecisionsController : ControllerBase
     {
         private readonly IUWDecisionService _service;
+        private readonly IAiSummaryService  _aiSummary;
 
-        public UWDecisionsController(IUWDecisionService service) => _service = service;
+        public UWDecisionsController(IUWDecisionService service, IAiSummaryService aiSummary)
+        {
+            _service   = service;
+            _aiSummary = aiSummary;
+        }
 
         [HttpGet("{submissionId:guid}")]
         public IActionResult GetBySubmission(Guid submissionId) =>
@@ -48,6 +53,25 @@ namespace UnderwritingWorkflowAndDecisions.Controllers
 
             var decision = _service.Add(dto);
             return CreatedAtAction(nameof(GetById), new { decisionId = decision.DecisionID }, decision);
+        }
+
+        /// <summary>
+        /// GET /api/uw-decisions/submissions/{submissionId}/ai-summary
+        /// Returns a Claude-generated plain-English risk summary for the underwriter,
+        /// built from real submission data and UW decision/note history.
+        /// </summary>
+        [HttpGet("submissions/{submissionId:guid}/ai-summary")]
+        public async Task<IActionResult> GetAiSummary(Guid submissionId, CancellationToken ct)
+        {
+            try
+            {
+                var result = await _aiSummary.SummarizeSubmissionAsync(submissionId, ct);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "AI summary failed.", detail = ex.Message });
+            }
         }
 
         [HttpPut("{decisionId:guid}")]

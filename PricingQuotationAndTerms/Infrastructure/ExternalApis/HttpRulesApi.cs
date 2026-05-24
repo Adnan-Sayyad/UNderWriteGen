@@ -16,7 +16,7 @@ public class HttpRulesApi : IRulesApi
     private readonly string _internalKey;
 
     // Valid band names emitted by the Rules service (JsonStringEnumConverter)
-    private static readonly HashSet<string> ValidBands = ["Low", "Medium", "High"];
+    private static readonly HashSet<string> ValidBands = ["Low", "Medium", "High", "Unacceptable"];
 
     public HttpRulesApi(HttpClient http, ILogger<HttpRulesApi> logger, IConfiguration config)
     {
@@ -63,6 +63,41 @@ public class HttpRulesApi : IRulesApi
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Failed to reach Rules service for SubmissionId={Id}", submissionId);
+            throw new InvalidOperationException(
+                "Rules/Scoring service is unavailable. Cannot calculate risk score.", ex);
+        }
+    }
+
+    public async Task<RiskScoreDto> CalculateRiskScoreAsync(Guid submissionId, CancellationToken ct = default)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, $"risk-scores/calculate/{submissionId}");
+            req.Headers.Add("X-Internal-Service-Key", _internalKey);
+            var response = await _http.SendAsync(req, ct);
+            response.EnsureSuccessStatusCode();
+
+            var raw = await response.Content.ReadFromJsonAsync<RiskScoreRaw>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }, ct);
+
+            if (raw is null)
+                throw new InvalidOperationException("Rules service returned empty response for calculate.");
+
+            string bandName = (!string.IsNullOrWhiteSpace(raw.Band) && ValidBands.Contains(raw.Band))
+                ? raw.Band
+                : "Medium";
+
+            return new RiskScoreDto
+            {
+                SubmissionId = raw.SubmissionID,
+                ScoreValue   = (decimal)raw.ScoreValue,
+                Band         = bandName,
+                ModelVersion = raw.ModelVersion ?? "v2.0"
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Failed to reach Rules service (calculate) for SubmissionId={Id}", submissionId);
             throw new InvalidOperationException(
                 "Rules/Scoring service is unavailable. Cannot calculate risk score.", ex);
         }

@@ -4,6 +4,7 @@
     {
         Low,
         Medium,
-        High
+        High,
+        Unacceptable
     }
 }

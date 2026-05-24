@@ -31,6 +31,16 @@ builder.Services.AddScoped<IRiskScoreRepository, RiskScoreRepository>();
 builder.Services.AddScoped<IUWRuleService, UWRuleService>();
 builder.Services.AddScoped<IRiskScoreService, RiskScoreService>();
 
+// Inter-service HTTP client — calls SubmissionAndIntake to fetch risk factors
+var submissionApiUrl = builder.Configuration["Services:SubmissionApi"];
+if (string.IsNullOrWhiteSpace(submissionApiUrl))
+{
+    submissionApiUrl = "http://localhost:8083/api/";
+    Console.WriteLine($"[WARN] Services:SubmissionApi not configured — defaulting to {submissionApiUrl}");
+}
+builder.Services.AddHttpClient<ISubmissionClientService, HttpSubmissionClientService>(c =>
+    c.BaseAddress = new Uri(submissionApiUrl));
+
 // JWT Authentication
 var jwtKey = builder.Configuration["Jwt:SecretKey"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

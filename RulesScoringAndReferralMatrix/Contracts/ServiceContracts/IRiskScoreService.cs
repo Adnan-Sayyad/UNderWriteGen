@@ -14,5 +14,6 @@ namespace RulesScoringAndReferralMatrix.Contracts.ServiceContracts
         Task<PagedResultDto<RiskScoreResponseDto>> GetScoresByBandPagedAsync(Band band, int page, int size);
         Task<RiskScoreResponseDto> CreateScoreAsync(CreateRiskScoreDto dto);
         Task<RiskScoreResponseDto> CalculateScoreForSubmissionAsync(Guid submissionId);
+        Task<RiskScoreResponseDto> UpsertScoreAsync(Guid submissionId, double scoreValue, Band band, string modelVersion);
     }
 }
