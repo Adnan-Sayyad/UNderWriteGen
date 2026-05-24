@@ -98,4 +98,11 @@ export class PricingApiService {
       : `${this.base}/quotes`;
     return this.http.get<any>(url);
   }
+
+  /** GET /api/quotes/{quoteId}/ai-explanation */
+  getAiExplanation(quoteId: string) {
+    return this.http.get<{ quoteId: string; explanation: string; generatedAt: string }>(
+      `${this.base}/quotes/${quoteId}/ai-explanation`
+    );
+  }
 }

@@ -6,6 +6,7 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { SubmissionApiService } from '../../../submission/services/submission-api.service';
+import { UnderwritingApiService } from '../../services/underwriting-api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 import {
   Submission, Subjectivity, UWNote, SubmissionStatus,
@@ -24,7 +25,7 @@ const ROLE_TRANSITIONS: Record<string, Record<string, SubmissionStatus[]>> = {
   },
 };
 
-type DetailTab = 'overview' | 'questionnaire' | 'attachments' | 'subjectivities' | 'notes' | 'rules';
+type DetailTab = 'overview' | 'questionnaire' | 'attachments' | 'subjectivities' | 'notes' | 'rules' | 'ai-summary';
 
 @Component({
   selector: 'app-uw-workbench',
@@ -84,9 +85,14 @@ export class UwWorkbenchPage implements OnInit {
   readonly decisionReason   = signal('');
   readonly submittingDecision = signal(false);
 
+  // AI Summary
+  readonly aiSummary        = signal<string | null>(null);
+  readonly loadingAiSummary = signal(false);
+
   // Status change
   readonly updatingStatus = signal(false);
   private readonly auth   = inject(AuthService);
+  private readonly uwSvc  = inject(UnderwritingApiService);
 
   readonly allowedTransitions = computed<SubmissionStatus[]>(() => {
     const role    = this.auth.currentUser()?.role ?? '';
@@ -155,6 +161,7 @@ export class UwWorkbenchPage implements OnInit {
     this.notes.set([]);
     this.riskScore.set(null);
     this.rulesResult.set(null);
+    this.aiSummary.set(null);
     this.decisionValue.set('');
     this.decisionReason.set('');
     this.loadDetailData(sub.submissionId);
@@ -220,7 +227,21 @@ export class UwWorkbenchPage implements OnInit {
 
   closeDetail(): void { this.selected.set(null); }
 
-  setDetailTab(t: DetailTab): void { this.detailTab.set(t); }
+  setDetailTab(t: DetailTab): void {
+    this.detailTab.set(t);
+    if (t === 'ai-summary' && !this.aiSummary()) this.generateAiSummary();
+  }
+
+  generateAiSummary(): void {
+    const id = this.selected()?.submissionId;
+    if (!id) return;
+    this.loadingAiSummary.set(true);
+    this.aiSummary.set(null);
+    this.uwSvc.getAiSummary(id).subscribe({
+      next: res => { this.aiSummary.set(res.summary); this.loadingAiSummary.set(false); },
+      error: () => { this.aiSummary.set('AI summary could not be generated. Please try again.'); this.loadingAiSummary.set(false); },
+    });
+  }
 
   // ── Subjectivity Create ────────────────────────────────────────────────────
 

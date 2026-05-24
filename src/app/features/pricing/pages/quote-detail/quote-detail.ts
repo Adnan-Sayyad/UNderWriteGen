@@ -23,13 +23,15 @@ const ALL_STATUSES: QuoteStatus[] = ['Draft', 'Presented', 'Accepted', 'Declined
 export class QuoteDetailPage implements OnInit {
 
   /* ── state ──────────────────────────────────────────────────────────── */
-  readonly quoteId     = signal('');
-  readonly quote       = signal<Quote | null>(null);
-  readonly loading     = signal(true);
-  readonly accepting   = signal(false);
-  readonly saving      = signal(false);
-  readonly activePanel = signal<ActivePanel>(null);
-  readonly alertMsg    = signal<{ type: 'success' | 'danger' | 'warning'; text: string } | null>(null);
+  readonly quoteId          = signal('');
+  readonly quote            = signal<Quote | null>(null);
+  readonly loading          = signal(true);
+  readonly accepting        = signal(false);
+  readonly saving           = signal(false);
+  readonly activePanel      = signal<ActivePanel>(null);
+  readonly alertMsg         = signal<{ type: 'success' | 'danger' | 'warning'; text: string } | null>(null);
+  readonly aiExplanation    = signal<string | null>(null);
+  readonly loadingAiExpl    = signal(false);
 
   readonly ALL_STATUSES = ALL_STATUSES;
 
@@ -194,6 +196,17 @@ export class QuoteDetailPage implements OnInit {
         this.saving.set(false);
         this.flash('danger', err.error?.error ?? 'Failed to update status.');
       },
+    });
+  }
+
+  getAiExplanation(): void {
+    const id = this.quoteId();
+    if (!id) return;
+    this.loadingAiExpl.set(true);
+    this.aiExplanation.set(null);
+    this.svc.getAiExplanation(id).subscribe({
+      next: res => { this.aiExplanation.set(res.explanation); this.loadingAiExpl.set(false); },
+      error: () => { this.aiExplanation.set('AI explanation could not be generated. Please try again.'); this.loadingAiExpl.set(false); },
     });
   }
 

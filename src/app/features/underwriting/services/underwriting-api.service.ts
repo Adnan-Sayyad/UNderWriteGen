@@ -108,4 +108,10 @@ export class UnderwritingApiService {
     }
     return this.http.put<ApiResponse<Subjectivity>>(`${this.base}/subjectivities/${id}`, payload);
   }
+
+  getAiSummary(submissionId: string) {
+    return this.http.get<{ summary: string; generatedAt: string }>(
+      `${this.base}/uw-decisions/submissions/${submissionId}/ai-summary`
+    );
+  }
 }

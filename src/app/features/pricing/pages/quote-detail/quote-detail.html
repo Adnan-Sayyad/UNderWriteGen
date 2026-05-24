@@ -482,6 +482,42 @@
           </div>
         </div>
 
+        <!-- AI Premium Explanation -->
+        <div class="card border-0 shadow-sm mt-3">
+          <div class="card-header bg-white border-bottom py-2 d-flex align-items-center justify-content-between">
+            <span class="fw-semibold small">
+              <i class="bi bi-stars text-primary me-1"></i>AI Premium Explanation
+            </span>
+            <button class="btn btn-xs btn-outline-primary"
+                    (click)="getAiExplanation()"
+                    [disabled]="loadingAiExpl()">
+              @if (loadingAiExpl()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              } @else {
+                <i class="bi bi-arrow-clockwise me-1"></i>
+              }
+              {{ aiExplanation() ? 'Regenerate' : 'Generate' }}
+            </button>
+          </div>
+          <div class="card-body">
+            @if (loadingAiExpl()) {
+              <div class="text-center py-3 text-muted">
+                <span class="spinner-border spinner-border-sm me-1"></span>Generating explanation…
+              </div>
+            } @else if (aiExplanation()) {
+              <p class="small mb-2" style="line-height:1.7; white-space:pre-wrap">{{ aiExplanation() }}</p>
+              <div class="text-muted" style="font-size:.7rem">
+                <i class="bi bi-info-circle me-1"></i>AI-generated — for agent use only.
+              </div>
+            } @else {
+              <p class="text-muted small mb-0">
+                <i class="bi bi-info-circle me-1"></i>
+                Click <strong>Generate</strong> to get an AI explanation of this premium for the customer.
+              </p>
+            }
+          </div>
+        </div>
+
       </div><!-- /right col -->
 
     </div>
